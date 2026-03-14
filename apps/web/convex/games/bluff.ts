@@ -50,7 +50,7 @@ registerGameHandlers("bluff", {
     // Reject if it matches the real answer (case-insensitive)
     const promptId = (room.phaseData as any)?.promptId;
     if (promptId) {
-      const prompt = await ctx.db.get(promptId);
+      const prompt = await ctx.db.get(promptId as Id<"prompts">);
       if (
         prompt?.answer &&
         text.toLowerCase() === prompt.answer.toLowerCase()
@@ -103,7 +103,7 @@ registerGameHandlers("bluff", {
     const promptId = (room.phaseData as any)?.promptId;
     let realAnswer = "Ukendt svar";
     if (promptId) {
-      const prompt = await ctx.db.get(promptId);
+      const prompt = await ctx.db.get(promptId as Id<"prompts">);
       if (prompt?.answer) realAnswer = prompt.answer;
     }
 
@@ -190,7 +190,7 @@ registerGameHandlers("bluff", {
     const promptId = (room.phaseData as any)?.promptId;
     let realAnswer = "Ukendt svar";
     if (promptId) {
-      const prompt = await ctx.db.get(promptId);
+      const prompt = await ctx.db.get(promptId as Id<"prompts">);
       if (prompt?.answer) realAnswer = prompt.answer;
     }
 

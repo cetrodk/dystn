@@ -120,7 +120,7 @@ registerGameHandlers("tegn", {
 
   async buildVoteData(ctx, room, _players) {
     const phase = room.currentPhase!; // e.g. "guess_0"
-    const votePhase = phase.replace("guess_", "vote_"); // won't be used here but kept for clarity
+    // phase is e.g. "guess_0" — used to derive the current drawing index
     const phaseData = room.phaseData as any;
 
     // Get all guesses for this sub-round

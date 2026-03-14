@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { api } from "../../convex/_generated/api";
 import { useSessionId } from "@/providers/SessionProvider";
-import { AVATARS, getAvatarSrc } from "@/lib/avatars";
+import { getAvatarSrc } from "@/lib/avatars";
 import { AvatarPickerModal } from "@/components/AvatarPickerModal";
 import { da } from "@/lib/da";
 

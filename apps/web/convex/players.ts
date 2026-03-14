@@ -1,6 +1,7 @@
 import { query, mutation, internalMutation } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { v } from "convex/values";
+import type { Id } from "./_generated/dataModel";
 import { getAvatarColor } from "./lib/colors";
 
 const AVATAR_IMAGES = [
@@ -191,7 +192,7 @@ export const heartbeat = mutation({
     const rooms = await Promise.all(players.map((p) => ctx.db.get(p.roomId)));
     const now = Date.now();
 
-    const activeRoomIds: Set<string> = new Set();
+    const activeRoomIds = new Set<Id<"rooms">>();
     await Promise.all(
       players
         .filter((_, i) => {

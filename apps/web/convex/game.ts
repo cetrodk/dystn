@@ -221,7 +221,6 @@ export const submitAnswer = mutation({
     }
 
     const handlers = getGameHandlers(room.gameType);
-    const basePhase = phase.split("_")[0];
 
     if (isVotePhase(phase)) {
       await handlers.onVote(ctx, room, player, content);

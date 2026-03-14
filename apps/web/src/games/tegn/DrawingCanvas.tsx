@@ -53,7 +53,7 @@ export const DrawingCanvas = forwardRef<DrawingCanvasRef, Props>(
     ref,
   ) {
     const [cachedStrokes, setCachedStrokes] = useState<CachedStroke[]>([]);
-    const [renderTick, setRenderTick] = useState(0);
+    const [, setRenderTick] = useState(0);
     const [internalColor, setInternalColor] = useState(COLORS[0]);
     const [internalSize, setInternalSize] = useState(SIZES[0].value);
     const svgRef = useRef<SVGSVGElement>(null);
