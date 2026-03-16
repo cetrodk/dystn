@@ -135,3 +135,84 @@ export function sfxUrgent() {
     osc.stop(ac.currentTime + 0.1);
   });
 }
+
+/** Drumroll — rising noise burst before a reveal */
+export function sfxDrumroll() {
+  play((ac) => {
+    const t = ac.currentTime;
+    // Snare-like noise bursts that accelerate (exponential decay spacing)
+    const delays = [0, 0.10, 0.19, 0.27, 0.33, 0.38, 0.42, 0.45];
+    for (let i = 0; i < 8; i++) {
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+      osc.type = "triangle";
+      const delay = delays[i];
+      const freq = 200 + i * 30;
+      osc.frequency.setValueAtTime(freq, t + delay);
+      osc.frequency.exponentialRampToValueAtTime(freq * 1.5, t + delay + 0.04);
+      gain.gain.setValueAtTime(0.06 + i * 0.01, t + delay);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + delay + 0.06);
+      osc.connect(gain).connect(ac.destination);
+      osc.start(t + delay);
+      osc.stop(t + delay + 0.06);
+    }
+  });
+}
+
+/** Answer pop — punchy sound when an answer card appears */
+export function sfxAnswerPop() {
+  play((ac) => {
+    const osc = ac.createOscillator();
+    const gain = ac.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(500, ac.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(800, ac.currentTime + 0.05);
+    osc.frequency.exponentialRampToValueAtTime(600, ac.currentTime + 0.12);
+    gain.gain.setValueAtTime(0.15, ac.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.15);
+    osc.connect(gain).connect(ac.destination);
+    osc.start();
+    osc.stop(ac.currentTime + 0.15);
+  });
+}
+
+/** Crowd reaction — warm layered "ooh" shimmer */
+export function sfxCrowdReact() {
+  play((ac) => {
+    const t = ac.currentTime;
+    // Layer several detuned tones with vibrato for a "crowd murmur" feel
+    const freqs = [280, 350, 420, 330];
+    freqs.forEach((freq, i) => {
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(freq + (i * 7), t);
+      osc.frequency.setValueAtTime(freq + 20, t + 0.2);
+      osc.frequency.setValueAtTime(freq - 10, t + 0.4);
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(0.04, t + 0.05 + i * 0.03);
+      gain.gain.setValueAtTime(0.04, t + 0.3);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.6);
+      osc.connect(gain).connect(ac.destination);
+      osc.start(t);
+      osc.stop(t + 0.6);
+    });
+  });
+}
+
+/** Vote result whoosh — dramatic percentage bar fill */
+export function sfxVoteReveal() {
+  play((ac) => {
+    const osc = ac.createOscillator();
+    const gain = ac.createGain();
+    osc.type = "sawtooth";
+    osc.frequency.setValueAtTime(150, ac.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(600, ac.currentTime + 0.3);
+    gain.gain.setValueAtTime(0.06, ac.currentTime);
+    gain.gain.setValueAtTime(0.06, ac.currentTime + 0.2);
+    gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.35);
+    osc.connect(gain).connect(ac.destination);
+    osc.start();
+    osc.stop(ac.currentTime + 0.35);
+  });
+}

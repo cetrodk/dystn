@@ -1,12 +1,17 @@
-import { useEffect } from "react";
 import { useMutation } from "convex/react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { api } from "../../../convex/_generated/api";
 import { CountdownTimer } from "@festspil/ui/CountdownTimer";
-import { sfxReveal, sfxFanfare, sfxScore } from "@/lib/sounds";
+import {
+  sfxDrumroll,
+  sfxAnswerPop,
+  sfxCrowdReact,
+  sfxFanfare,
+} from "@/lib/sounds";
 import { GameAvatar } from "@/components/GameAvatar";
 import { da } from "@/lib/da";
 import { DrawingDisplay } from "./DrawingDisplay";
+import { useStaggeredReveal } from "@/hooks/useStaggeredReveal";
 import type { PhaseComponentProps } from "../registry";
 
 export default function HostReveal({ room, sessionId }: PhaseComponentProps) {
@@ -24,23 +29,25 @@ export default function HostReveal({ room, sessionId }: PhaseComponentProps) {
   const fakes = results.filter((r: any) => !r.isReal);
   const truth = results.find((r: any) => r.isReal);
 
-  useEffect(() => {
-    sfxReveal();
-    const timers: ReturnType<typeof setTimeout>[] = [];
-    fakes.forEach((_: any, i: number) => {
-      timers.push(setTimeout(sfxScore, i * 400 + 200));
-    });
-    const truthDelay = (fakes.length * 0.4 + 0.5) * 1000;
-    timers.push(setTimeout(sfxFanfare, truthDelay));
-    return () => timers.forEach(clearTimeout);
-  }, []);
+  const { stage, visibleItems, schedule } = useStaggeredReveal({
+    itemCount: fakes.length,
+    onItemReveal: (i) => {
+      sfxAnswerPop();
+      if (fakes[i]?.fooledCount > 0) {
+        schedule(sfxCrowdReact, 800);
+      }
+    },
+    onDrumroll: () => sfxDrumroll(),
+    onFinalReveal: () => {
+      sfxFanfare();
+      schedule(sfxCrowdReact, 500);
+    },
+  });
 
-  const truthDelay = fakes.length * 0.4 + 0.5;
-  const buttonDelay = truthDelay + 0.6;
+  const showTruth = stage === "final" || stage === "done";
 
   return (
     <div className="fixed inset-0 flex p-6 pt-14 gap-8">
-      {/* Left: drawing fills available space */}
       <div className="flex-[3] flex flex-col min-h-0">
         <div className="text-sm uppercase tracking-widest text-[var(--color-text-muted)] mb-3">
           {da.tegn.drawing} {drawingIndex + 1} {da.of} {totalDrawings}
@@ -50,114 +57,151 @@ export default function HostReveal({ room, sessionId }: PhaseComponentProps) {
         </div>
       </div>
 
-      {/* Right: results */}
       <div className="flex-[2] flex flex-col justify-center gap-5 overflow-y-auto">
-        {/* Fakes */}
-        {fakes.map((result: any, i: number) => (
-          <motion.div
-            key={result.answerId}
-            initial={{ opacity: 0, y: 30, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ delay: i * 0.4, type: "spring", stiffness: 200 }}
-            className="flex items-center gap-4 rounded-2xl bg-[var(--color-surface)] p-5"
-          >
-            <GameAvatar
-              name={result.playerName}
-              avatarColor={result.avatarColor}
-              avatarImage={result.avatarImage}
-              className="h-14 w-14"
-            />
-            <div className="flex-1 min-w-0">
-              <p className="text-xl font-bold">{result.text}</p>
-              <p className="text-sm text-[var(--color-text-muted)]">
-                {result.playerName}
-              </p>
-              {result.voterNames.length > 0 ? (
-                <p className="text-sm text-[var(--color-primary-light)]">
-                  {da.bluff.fooledBy}: {result.voterNames.join(", ")}
-                </p>
-              ) : null}
-            </div>
-            <div className="text-right min-w-[4rem]">
-              {result.fooledCount > 0 ? (
+        <AnimatePresence>
+          {stage === "intro" && (
+            <motion.p
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="text-xl italic text-[var(--color-text-muted)] text-center"
+            >
+              {da.host.letsSeePre}
+            </motion.p>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {fakes.slice(0, visibleItems).map((result: any) => (
+            <motion.div
+              key={result.answerId}
+              initial={{ opacity: 0, x: -40, scale: 0.9 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              transition={{ type: "spring", stiffness: 180, damping: 18 }}
+              className="flex items-center gap-4 rounded-2xl bg-[var(--color-surface)] p-5"
+            >
+              <GameAvatar
+                name={result.playerName}
+                avatarColor={result.avatarColor}
+                avatarImage={result.avatarImage}
+                className="h-14 w-14"
+              />
+              <div className="flex-1 min-w-0">
+                <p className="text-xl font-bold">{result.text}</p>
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.4 }}
+                  className="text-sm text-[var(--color-text-muted)]"
+                >
+                  {result.playerName}
+                </motion.p>
+                {result.voterNames.length > 0 && (
+                  <motion.p
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.8 }}
+                    className="text-sm text-[var(--color-primary-light)]"
+                  >
+                    {da.bluff.fooledBy}: {result.voterNames.join(", ")}
+                  </motion.p>
+                )}
+              </div>
+              <div className="text-right min-w-[4rem]">
                 <motion.p
                   initial={{ opacity: 0, scale: 0.5 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: i * 0.4 + 0.3, type: "spring" }}
-                  className="font-display text-2xl font-bold text-[var(--color-primary)]"
+                  transition={{ delay: 0.6, type: "spring" }}
+                  className={`font-display text-2xl font-bold ${
+                    result.fooledCount > 0
+                      ? "text-[var(--color-primary)]"
+                      : "text-[var(--color-text-muted)]"
+                  }`}
                 >
                   +{result.fooledCount * 500}
+                </motion.p>
+              </div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {stage === "drumroll" && (
+            <motion.p
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: [0, 1, 1, 0.5], scale: [0.8, 1.05, 1, 1] }}
+              transition={{ duration: 1.2 }}
+              className="text-2xl font-bold text-[var(--color-primary)] text-center"
+            >
+              {da.tegn.theWordWas}..
+            </motion.p>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {showTruth && truth && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0 }}
+              animate={{ opacity: 1, scale: [0, 1.05, 1] }}
+              transition={{ duration: 0.5, type: "spring", stiffness: 120 }}
+              className="rounded-2xl bg-[var(--color-primary)]/15 ring-2 ring-[var(--color-primary)] p-6 text-center"
+            >
+              <p className="text-sm uppercase tracking-widest text-[var(--color-primary)]">
+                {da.tegn.theWordWas}
+              </p>
+              <p className="mt-2 font-display text-4xl font-bold">{theWord}</p>
+              {truth.voterNames.length > 0 ? (
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.5 }}
+                  className="mt-2 text-base text-[var(--color-primary-light)]"
+                >
+                  {da.bluff.correctGuess} {truth.voterNames.join(", ")}
                 </motion.p>
               ) : (
                 <motion.p
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  transition={{ delay: i * 0.4 + 0.3 }}
-                  className="text-lg font-bold text-[var(--color-text-muted)]"
+                  transition={{ delay: 0.5 }}
+                  className="mt-2 text-base text-[var(--color-text-muted)]"
                 >
-                  +0
+                  {da.bluff.noOneGuessed}
                 </motion.p>
               )}
-            </div>
-          </motion.div>
-        ))}
+              {artistBonus && (
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.8 }}
+                  className="mt-2 text-base font-bold text-[var(--color-primary)]"
+                >
+                  {da.tegn.artistBonus} {artistName} +1000
+                </motion.p>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-        {/* Truth reveal */}
-        {truth ? (
-          <motion.div
-            initial={{ opacity: 0, scale: 0 }}
-            animate={{ opacity: 1, scale: [0, 1.05, 1] }}
-            transition={{
-              delay: truthDelay,
-              duration: 0.5,
-              type: "spring",
-              stiffness: 120,
-            }}
-            className="rounded-2xl bg-[var(--color-primary)]/15 ring-2 ring-[var(--color-primary)] p-6 text-center"
-          >
-            <p className="text-sm uppercase tracking-widest text-[var(--color-primary)]">
-              {da.tegn.theWordWas}
-            </p>
-            <p className="mt-2 font-display text-4xl font-bold">{theWord}</p>
-            {truth.voterNames.length > 0 ? (
-              <p className="mt-2 text-base text-[var(--color-primary-light)]">
-                {da.bluff.correctGuess} {truth.voterNames.join(", ")}
-              </p>
-            ) : (
-              <p className="mt-2 text-base text-[var(--color-text-muted)]">
-                {da.bluff.noOneGuessed}
-              </p>
-            )}
-            {artistBonus ? (
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: truthDelay + 0.3 }}
-                className="mt-2 text-base font-bold text-[var(--color-primary)]"
+        <AnimatePresence>
+          {stage === "done" && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex items-center justify-center gap-4"
+            >
+              <button
+                onClick={() => hostAdvance({ roomId: room._id, hostId: sessionId })}
+                className="rounded-2xl bg-[var(--color-primary)] px-10 py-4 text-xl font-bold transition-transform hover:scale-105 active:scale-95 cursor-pointer"
               >
-                {da.tegn.artistBonus} {artistName} +1000
-              </motion.p>
-            ) : null}
-          </motion.div>
-        ) : null}
-
-        {/* Advance button */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: buttonDelay }}
-          className="flex items-center justify-center gap-4"
-        >
-          <button
-            onClick={() => hostAdvance({ roomId: room._id, hostId: sessionId })}
-            className="rounded-2xl bg-[var(--color-primary)] px-10 py-4 text-xl font-bold transition-transform hover:scale-105 active:scale-95 cursor-pointer"
-          >
-            {isLastDrawing ? da.scores : da.tegn.nextDrawing}
-          </button>
-          <span className="text-base text-[var(--color-text-muted)]">
-            <CountdownTimer deadline={room.phaseDeadline ?? null} />s
-          </span>
-        </motion.div>
+                {isLastDrawing ? da.scores : da.tegn.nextDrawing}
+              </button>
+              <span className="text-base text-[var(--color-text-muted)]">
+                <CountdownTimer deadline={room.phaseDeadline ?? null} />s
+              </span>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

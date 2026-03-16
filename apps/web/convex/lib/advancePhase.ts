@@ -12,8 +12,8 @@ import "../games/telefon";
 /** Default phase durations in ms */
 export const DEFAULT_DURATIONS: Record<string, number> = {
   submit: 60_000,
-  vote: 30_000,
-  reveal: 10_000,
+  vote: 15_000,
+  reveal: 60_000,
   scores: 8_000,
   draw: 90_000,
   guess: 45_000,

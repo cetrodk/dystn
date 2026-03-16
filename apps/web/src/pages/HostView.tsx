@@ -16,8 +16,8 @@ const GAME_ICONS = { duel: Swords, bluff: Drama, tegn: Paintbrush, telefon: Phon
 
 const TIMER_OPTIONS = [
   { key: "submitTime", label: "Svartid", defaultMs: 60_000, min: 15, max: 180 },
-  { key: "voteTime", label: "Stemmetid", defaultMs: 30_000, min: 10, max: 90 },
-  { key: "revealTime", label: "Afsløring", defaultMs: 10_000, min: 5, max: 30 },
+  { key: "voteTime", label: "Stemmetid", defaultMs: 15_000, min: 10, max: 60 },
+  { key: "revealTime", label: "Afsløring", defaultMs: 60_000, min: 15, max: 90 },
   { key: "scoresTime", label: "Pointvisning", defaultMs: 8_000, min: 3, max: 20 },
   { key: "drawTime", label: "Tegnetid", defaultMs: 90_000, min: 30, max: 180 },
   { key: "guessTime", label: "Gættetid", defaultMs: 45_000, min: 15, max: 90 },

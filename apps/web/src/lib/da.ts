@@ -42,6 +42,17 @@ export const da = {
   lookAtScreen: "Se op på skærmen!",
   waiting: "Venter på andre...",
 
+  // Host lines
+  host: {
+    letsSeePre: "Lad os se hvad I har fundet på...",
+    andTheWinnerIs: "Og vinderen er...",
+    closeOne: "Uh, det var tæt!",
+    unanimous: "Enstemmigt! Ingen tvivl der!",
+    noVotes: "Ingen stemmer? Hårdt.",
+    roundIntro: (n: number, total: number) => `Runde ${n} af ${total} — gør jer klar!`,
+    nextUp: "Næste svar...",
+  },
+
   // Connection
   connectionLost: "Forbindelse mistet — genopretter...",
 
