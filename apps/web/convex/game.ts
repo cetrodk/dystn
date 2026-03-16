@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { getGameHandlers } from "./gameHandlers";
 import { advancePhaseInternal, getPhaseDuration } from "./lib/advancePhase";
+import { MIN_PLAYERS } from "./lib/gameConfig";
 
 // Ensure game handlers are registered
 import "./games/duel";
@@ -40,7 +41,7 @@ export const startGame = mutation({
       .withIndex("by_room", (q) => q.eq("roomId", roomId))
       .collect();
 
-    if (players.length < 1) throw new Error("Need at least 1 player");
+    if (players.length < MIN_PLAYERS) throw new Error(`Need at least ${MIN_PLAYERS} player(s)`);
 
     const isSingleRound = room.gameType === "tegn" || room.gameType === "telefon";
     const totalRounds = isSingleRound ? 1 : Math.min(players.length, 3);

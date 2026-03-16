@@ -10,6 +10,7 @@ import { gameComponents } from "@/games/registry";
 import { sfxFanfare } from "@/lib/sounds";
 import { GameAvatar } from "@/components/GameAvatar";
 import { da } from "@/lib/da";
+import { MIN_PLAYERS } from "../../convex/lib/gameConfig";
 
 const GAME_ICONS = { duel: Swords, bluff: Drama, tegn: Paintbrush, telefon: Phone } as const;
 
@@ -409,21 +410,21 @@ export function HostView() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.35, type: "spring" }}
-        whileHover={room.players.length >= 1 ? { scale: 1.05 } : undefined}
-        whileTap={room.players.length >= 1 ? { scale: 0.95 } : undefined}
-        disabled={room.players.length < 1}
+        whileHover={room.players.length >= MIN_PLAYERS ? { scale: 1.05 } : undefined}
+        whileTap={room.players.length >= MIN_PLAYERS ? { scale: 0.95 } : undefined}
+        disabled={room.players.length < MIN_PLAYERS}
         onClick={() => startGame({ roomId: room._id, hostId: sessionId })}
         className="rounded-2xl px-14 py-5 text-2xl font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
         style={{
           backgroundColor: gameMeta.color,
           color: gameMeta.textColor,
-          boxShadow: room.players.length >= 1
+          boxShadow: room.players.length >= MIN_PLAYERS
             ? `0 0 30px ${gameMeta.color}40, 0 4px 20px ${gameMeta.color}20`
             : undefined,
         }}
       >
-        {room.players.length < 1
-          ? `${da.needMorePlayers} (${room.players.length}/1)`
+        {room.players.length < MIN_PLAYERS
+          ? `${da.needMorePlayers} (${room.players.length}/${MIN_PLAYERS})`
           : da.startGame}
       </motion.button>
     </div>

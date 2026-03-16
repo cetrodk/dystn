@@ -1,3 +1,5 @@
+import { MIN_PLAYERS, MAX_PLAYERS } from "../../convex/lib/gameConfig";
+
 export const da = {
   // App
   title: "Festspil",
@@ -23,7 +25,7 @@ export const da = {
   startGame: "Start Spil",
   playersJoined: "spillere tilsluttet",
   youreIn: "Du er med!",
-  needMorePlayers: "Mindst 3 spillere",
+  needMorePlayers: `Mindst ${MIN_PLAYERS} spiller(e)`,
   roomCode: "Rumkode",
 
   // Game common
@@ -48,7 +50,7 @@ export const da = {
     name: "Duel",
     description: "Skriv sjove svar — stem på det bedste!",
     howToPlay: "Alle får det samme spørgsmål og skriver et sjovt svar. Derefter stemmer alle på det bedste svar — undtagen dit eget!",
-    expects: "3–8 spillere • 3 runder • Tekst",
+    expects: `${MIN_PLAYERS}–${MAX_PLAYERS} spillere • 3 runder • Tekst`,
     writeAnswer: "Skriv dit svar",
     prompt: "Spørgsmål",
     voteForBest: "Stem på det bedste svar",
@@ -60,7 +62,7 @@ export const da = {
     name: "Bluff",
     description: "Find det rigtige svar blandt løgnene",
     howToPlay: "Du får et spørgsmål med et hul — skriv et falsk svar der lyder ægte. Gæt derefter det rigtige svar mellem alle løgnene. Du scorer point for at narre andre!",
-    expects: "3–8 spillere • 3 runder • Tekst",
+    expects: `${MIN_PLAYERS}–${MAX_PLAYERS} spillere • 3 runder • Tekst`,
     writeFake: "Skriv et falsk svar",
     guessReal: "Gæt det rigtige svar",
     theRealAnswer: "Det rigtige svar",
@@ -77,7 +79,7 @@ export const da = {
     name: "Tegn & Gæt",
     description: "Tegn på din telefon — andre gætter!",
     howToPlay: "Alle tegner et hemmeligt ord på telefonen. Derefter gætter de andre hvad det forestiller — skriv falske gæt for at narre! Stem på det rigtige ord.",
-    expects: "3–8 spillere • 1 runde • Tegning + tekst",
+    expects: `${MIN_PLAYERS}–${MAX_PLAYERS} spillere • 1 runde • Tegning + tekst`,
     draw: "Tegn!",
     guess: "Skriv dit gæt",
     theWordWas: "Ordet var:",
@@ -99,7 +101,7 @@ export const da = {
     name: "Telefon",
     description: "Skriv, tegn, gæt — se hvad der sker!",
     howToPlay: "Skriv en sjov sætning. Den næste tegner den, den næste gætter tegningen, den næste tegner gættet... Til sidst afsløres hele kæden — og du ser hvor galt det gik!",
-    expects: "3–8 spillere • 1 runde • Tegning + tekst",
+    expects: `${MIN_PLAYERS}–${MAX_PLAYERS} spillere • 1 runde • Tegning + tekst`,
     writePrompt: "Skriv en sjov sætning",
     writePlaceholder: "Fx: En hest der læser avisen...",
     drawThis: "Tegn dette:",
