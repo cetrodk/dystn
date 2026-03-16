@@ -17,6 +17,7 @@ import type * as games_tegn from "../games/tegn.js";
 import type * as games_telefon from "../games/telefon.js";
 import type * as lib_advancePhase from "../lib/advancePhase.js";
 import type * as lib_colors from "../lib/colors.js";
+import type * as lib_gameConfig from "../lib/gameConfig.js";
 import type * as lib_roomCodes from "../lib/roomCodes.js";
 import type * as players from "../players.js";
 import type * as rooms from "../rooms.js";
@@ -41,6 +42,7 @@ declare const fullApi: ApiFromModules<{
   "games/telefon": typeof games_telefon;
   "lib/advancePhase": typeof lib_advancePhase;
   "lib/colors": typeof lib_colors;
+  "lib/gameConfig": typeof lib_gameConfig;
   "lib/roomCodes": typeof lib_roomCodes;
   players: typeof players;
   rooms: typeof rooms;
