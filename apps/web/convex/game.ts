@@ -40,7 +40,7 @@ export const startGame = mutation({
       .withIndex("by_room", (q) => q.eq("roomId", roomId))
       .collect();
 
-    if (players.length < 3) throw new Error("Need at least 3 players");
+    if (players.length < 1) throw new Error("Need at least 1 player");
 
     const isSingleRound = room.gameType === "tegn" || room.gameType === "telefon";
     const totalRounds = isSingleRound ? 1 : Math.min(players.length, 3);
