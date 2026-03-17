@@ -1,277 +1,203 @@
-import { useState } from "react";
 import { useMutation } from "convex/react";
 import { useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
-import { Swords, Drama, Paintbrush, Phone, Tag, ExternalLink } from "lucide-react";
+import { motion } from "framer-motion";
 import { api } from "../../convex/_generated/api";
 import { useSessionId } from "@/providers/SessionProvider";
 import { da } from "@/lib/da";
-
-const GAMES = [
-  {
-    id: "duel",
-    ...da.duel,
-    Icon: Swords,
-    color: "var(--color-duel)",
-    glow: "var(--color-duel-glow)",
-    textColor: "#fff",
-  },
-  {
-    id: "bluff",
-    ...da.bluff,
-    Icon: Drama,
-    color: "var(--color-bluff)",
-    glow: "var(--color-bluff-glow)",
-    textColor: "#0d0b1a",
-  },
-  {
-    id: "tegn",
-    ...da.tegn,
-    Icon: Paintbrush,
-    color: "var(--color-tegn)",
-    glow: "var(--color-tegn-glow)",
-    textColor: "#fff",
-  },
-  {
-    id: "telefon",
-    ...da.telefon,
-    Icon: Phone,
-    color: "var(--color-telefon)",
-    glow: "var(--color-telefon-glow)",
-    textColor: "#0d0b1a",
-  },
-] as const;
-
-type Game = (typeof GAMES)[number];
 
 export function LandingPage() {
   const navigate = useNavigate();
   const sessionId = useSessionId();
   const createRoom = useMutation(api.rooms.createRoom);
-  const [selectedGame, setSelectedGame] = useState<Game | null>(null);
 
-  async function handleStartRoom(gameType: string) {
-    const { code } = await createRoom({ gameType, hostId: sessionId });
+  async function handleCreateRoom() {
+    const { code } = await createRoom({ hostId: sessionId });
     navigate(`/host/${code}`);
   }
 
   return (
     <div className="relative flex min-h-dvh flex-col items-center justify-center p-4 sm:p-8">
-      <AnimatePresence mode="wait">
-        {selectedGame ? (
-          <GameDetailSplash
-            key="detail"
-            game={selectedGame}
-            onBack={() => setSelectedGame(null)}
-            onStart={() => handleStartRoom(selectedGame.id)}
-          />
-        ) : (
-          <GameGrid
-            key="grid"
-            onSelect={setSelectedGame}
-          />
-        )}
-      </AnimatePresence>
 
-      {/* Join link — always visible */}
-      <motion.a
+      <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.5 }}
-        href="/play"
-        className="mt-8 text-sm text-[var(--color-text-muted)] underline underline-offset-4 decoration-[var(--color-text-muted)]/30 hover:decoration-[var(--color-text-muted)] transition-colors"
+        transition={{ duration: 0.5 }}
+        className="relative z-10 flex w-full max-w-lg flex-col items-center gap-10"
       >
-        {da.join} →
-      </motion.a>
+        {/* Badge */}
+        <motion.span
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1, type: "spring", stiffness: 200 }}
+          className="font-display inline-block rounded-full border border-[var(--color-primary)]/20 bg-[var(--color-primary)]/10 px-4 py-1.5 text-xs font-semibold tracking-widest text-[var(--color-primary-light)] uppercase"
+        >
+          Det ultimative festspil
+        </motion.span>
+
+        {/* Title */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15, type: "spring", stiffness: 150 }}
+          className="text-center"
+        >
+          <h1 className="font-display text-6xl font-bold tracking-tight glow-text sm:text-8xl">
+            {da.title}
+          </h1>
+          <p className="mx-auto mt-3 max-w-xs text-base text-[var(--color-text-muted)] sm:text-lg">
+            {da.subtitle}
+          </p>
+        </motion.div>
+
+        {/* Two equal action cards */}
+        <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2">
+          <ActionCard
+            index={0}
+            icon={<TvIcon />}
+            title="Vær vært"
+            description="Vis spillet på dit TV eller din computer."
+            accentColor="var(--color-primary)"
+            onClick={handleCreateRoom}
+          />
+          <ActionCard
+            index={1}
+            icon={<PhoneIcon />}
+            title="Deltag"
+            description="Brug din telefon til at spille med dine venner."
+            accentColor="var(--color-accent)"
+            onClick={() => navigate("/play")}
+          />
+        </div>
+
+        {/* How it works hint */}
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.6 }}
+          className="text-center text-xs text-[var(--color-text-muted)]/60"
+        >
+          En spiller opretter et rum og viser det på TV
+          <span className="mx-1.5">·</span>
+          Alle andre deltager via telefonen
+        </motion.p>
+      </motion.div>
+
+      {/* Footer */}
+      <motion.footer
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.8 }}
+        className="absolute bottom-4 text-[10px] tracking-[0.2em] text-[var(--color-text-muted)]/30 uppercase"
+      >
+        &copy; 2026 Festspil Platform
+      </motion.footer>
     </div>
   );
 }
 
-/* ── Game Grid (Step 1) ────────────────────────────────── */
-
-function GameGrid({ onSelect }: { onSelect: (game: Game) => void }) {
+function ActionCard({
+  index,
+  icon,
+  title,
+  description,
+  accentColor,
+  onClick,
+}: {
+  index: number;
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  accentColor: string;
+  onClick: () => void;
+}) {
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0, y: -20 }}
-      transition={{ duration: 0.25 }}
-      className="flex w-full max-w-lg flex-col items-center gap-6 sm:gap-8"
+    <motion.button
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{
+        delay: 0.25 + index * 0.1,
+        type: "spring",
+        stiffness: 180,
+        damping: 18,
+      }}
+      whileHover={{ y: -4, scale: 1.02 }}
+      whileTap={{ scale: 0.97 }}
+      onClick={onClick}
+      className="card-glow group relative cursor-pointer rounded-2xl bg-[var(--color-surface)] p-6 text-left transition-shadow hover:shadow-lg sm:p-7"
+      style={{
+        ["--card-accent" as string]: accentColor,
+      }}
     >
-      {/* Title */}
-      <div className="text-center">
-        <h1 className="font-display text-5xl font-bold tracking-tight glow-text sm:text-7xl">
-          {da.title}
-        </h1>
-        <p className="mt-2 text-sm text-[var(--color-text-muted)] sm:text-base">
-          {da.subtitle}
-        </p>
-      </div>
+      {/* Hover glow behind card */}
+      <div
+        className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+        style={{
+          background: `radial-gradient(ellipse at 30% 20%, color-mix(in srgb, ${accentColor} 12%, transparent), transparent 70%)`,
+        }}
+      />
 
-      <p className="text-xs font-semibold uppercase tracking-widest text-[var(--color-text-muted)]">
-        {da.pickGame}
-      </p>
-
-      {/* 2x2 grid */}
-      <div className="grid w-full grid-cols-2 gap-3 sm:gap-4">
-        {GAMES.map((game, i) => (
-          <motion.button
-            key={game.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 + i * 0.07, type: "spring", stiffness: 200 }}
-            whileHover={{ scale: 1.03, y: -2 }}
-            whileTap={{ scale: 0.97 }}
-            onClick={() => onSelect(game)}
-            className="card-glow group relative flex flex-col items-center gap-2 rounded-2xl bg-[var(--color-surface)] p-5 sm:p-6 cursor-pointer transition-shadow hover:shadow-lg"
-            style={{ "--tw-shadow-color": game.glow } as any}
-          >
-            <game.Icon className="h-10 w-10 sm:h-12 sm:w-12" style={{ color: game.color }} />
-            <span
-              className="font-display text-lg font-bold sm:text-xl"
-              style={{ color: game.color }}
-            >
-              {game.name}
-            </span>
-            <span className="text-xs text-[var(--color-text-muted)] leading-relaxed sm:text-sm">
-              {game.description}
-            </span>
-          </motion.button>
-        ))}
-      </div>
-
-      {/* External games */}
-      <p className="text-xs font-semibold uppercase tracking-widest text-[var(--color-text-muted)]">
-        {da.externalGames}
-      </p>
-
-      <motion.a
-        href="https://quizmaster.cetropolis.dk/"
-        target="_blank"
-        rel="noopener noreferrer"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.15 + GAMES.length * 0.07, type: "spring", stiffness: 200 }}
-        whileHover={{ scale: 1.03, y: -2 }}
-        whileTap={{ scale: 0.97 }}
-        className="card-glow flex w-full items-center gap-4 rounded-2xl bg-[var(--color-surface)] p-4 sm:p-5 cursor-pointer transition-shadow hover:shadow-lg"
-        style={{ "--tw-shadow-color": "var(--color-pris-glow)" } as any}
+      {/* Icon */}
+      <div
+        className="relative mb-4 flex h-12 w-12 items-center justify-center rounded-xl"
+        style={{
+          background: `color-mix(in srgb, ${accentColor} 15%, transparent)`,
+          color: accentColor,
+        }}
       >
-        <Tag className="h-8 w-8 shrink-0 sm:h-10 sm:w-10" style={{ color: "var(--color-pris)" }} />
-        <div className="flex flex-col gap-0.5 text-left">
-          <span
-            className="font-display text-lg font-bold sm:text-xl"
-            style={{ color: "var(--color-pris)" }}
-          >
-            {da.pris.name}
-          </span>
-          <span className="text-xs text-[var(--color-text-muted)] leading-relaxed sm:text-sm">
-            {da.pris.description}
-          </span>
-        </div>
-        <ExternalLink className="ml-auto h-4 w-4 shrink-0 text-[var(--color-text-muted)]" />
-      </motion.a>
-    </motion.div>
+        {icon}
+      </div>
+
+      {/* Text */}
+      <h2 className="font-display relative text-xl font-bold text-[var(--color-text)]">
+        {title}
+      </h2>
+      <p className="relative mt-1 text-sm leading-relaxed text-[var(--color-text-muted)]">
+        {description}
+      </p>
+
+      {/* Arrow hint */}
+      <span
+        className="absolute right-5 bottom-5 text-lg opacity-0 transition-all duration-200 group-hover:translate-x-1 group-hover:opacity-60"
+        style={{ color: accentColor }}
+      >
+        &rarr;
+      </span>
+    </motion.button>
   );
 }
 
-/* ── Game Detail Splash (Step 2) ──────────────────────── */
-
-function GameDetailSplash({
-  game,
-  onBack,
-  onStart,
-}: {
-  game: Game;
-  onBack: () => void;
-  onStart: () => void;
-}) {
+function TvIcon() {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 20 }}
-      transition={{ duration: 0.25 }}
-      className="flex w-full max-w-sm flex-col items-center gap-6"
+    <svg
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
     >
-      {/* Back button */}
-      <motion.button
-        initial={{ opacity: 0, x: -10 }}
-        animate={{ opacity: 1, x: 0 }}
-        onClick={onBack}
-        className="self-start flex items-center gap-1 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors cursor-pointer"
-      >
-        ← {da.back}
-      </motion.button>
+      <rect x="2" y="7" width="20" height="15" rx="2" ry="2" />
+      <polyline points="17 2 12 7 7 2" />
+    </svg>
+  );
+}
 
-      {/* Game icon + name */}
-      <motion.div
-        initial={{ scale: 0.8 }}
-        animate={{ scale: 1 }}
-        transition={{ type: "spring", stiffness: 200 }}
-        className="flex flex-col items-center gap-2"
-      >
-        <game.Icon className="h-16 w-16" style={{ color: game.color }} />
-        <h2
-          className="font-display text-4xl font-bold"
-          style={{ color: game.color }}
-        >
-          {game.name}
-        </h2>
-      </motion.div>
-
-      {/* Description */}
-      <motion.p
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.1 }}
-        className="text-center text-lg text-[var(--color-text-muted)]"
-      >
-        {game.description}
-      </motion.p>
-
-      {/* How to play */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.15 }}
-        className="w-full rounded-2xl bg-[var(--color-surface)] p-5"
-      >
-        <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-[var(--color-text-muted)]">
-          {da.howToPlay}
-        </p>
-        <p className="text-sm leading-relaxed text-[var(--color-text)]">
-          {game.howToPlay}
-        </p>
-      </motion.div>
-
-      {/* Player count / expectations */}
-      <motion.p
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.2 }}
-        className="text-xs font-medium text-[var(--color-text-muted)]"
-      >
-        {game.expects}
-      </motion.p>
-
-      {/* Start button */}
-      <motion.button
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.25, type: "spring", stiffness: 200 }}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        onClick={onStart}
-        className="w-full rounded-2xl py-4 text-xl font-bold cursor-pointer"
-        style={{
-          backgroundColor: game.color,
-          color: game.textColor,
-          boxShadow: `0 0 30px ${game.glow}, 0 4px 20px ${game.glow}`,
-        }}
-      >
-        {da.startRoom}
-      </motion.button>
-    </motion.div>
+function PhoneIcon() {
+  return (
+    <svg
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+      <line x1="12" y1="18" x2="12.01" y2="18" />
+    </svg>
   );
 }

@@ -4,10 +4,12 @@ import { JoinPage } from "@/pages/JoinPage";
 import { HostView } from "@/pages/HostView";
 import { PlayerView } from "@/pages/PlayerView";
 import { ConnectionBanner } from "@/components/ConnectionBanner";
+import { ConfettiBackground } from "@/components/ConfettiBackground";
 
 export default function App() {
   return (
     <BrowserRouter>
+      <ConfettiBackground />
       <ConnectionBanner />
       <Routes>
         <Route path="/" element={<LandingPage />} />
