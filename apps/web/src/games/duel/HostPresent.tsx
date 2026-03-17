@@ -25,8 +25,8 @@ export default function HostPresent({ room, sessionId }: PhaseComponentProps) {
 
   useEffect(() => {
     if (!allRevealed || advancedRef.current) return;
+    advancedRef.current = true;
     const timer = setTimeout(() => {
-      advancedRef.current = true;
       hostAdvance({ roomId: room._id, hostId: sessionId });
     }, AUTO_ADVANCE_DELAY);
     return () => clearTimeout(timer);

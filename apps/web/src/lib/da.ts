@@ -69,7 +69,6 @@ export const da = {
     prompt: "Spørgsmål",
     voteForBest: "Stem på det bedste svar",
     voteNowOnPhone: "Stem nu på jeres telefoner!",
-    startVoting: "Start afstemning",
     lookAtScreenForAnswers: "Se op på skærmen for alle svarene!",
     resultsAreIn: "Stemmerne er talt op...",
     winner: "Vinder",

@@ -30,15 +30,16 @@ function getWinnerAnnouncement(results: any[]): {
   return { type: "winner", names: [results[0].playerName] };
 }
 
-function getHostReaction(results: any[]) {
+function getHostReaction(
+  announcement: ReturnType<typeof getWinnerAnnouncement>,
+  results: any[],
+) {
   if (results.length < 2) return null;
-  const top = results[0]?.votes ?? 0;
-  const second = results[1]?.votes ?? 0;
-  if (top === 0) return da.host.noVotes;
-  if (top === second) return da.host.closeOne;
+  if (announcement.type === "none") return da.host.noVotes;
+  if (announcement.type === "tie") return da.host.closeOne;
   const totalVotes = results.reduce((s: number, r: any) => s + r.votes, 0);
-  if (top === totalVotes) return da.host.unanimous;
-  if (top - second <= 1) return da.host.closeOne;
+  if (results[0].votes === totalVotes) return da.host.unanimous;
+  if (results.length >= 2 && results[0].votes - results[1].votes <= 1) return da.host.closeOne;
   return null;
 }
 
@@ -68,7 +69,7 @@ export default function HostReveal({ room, sessionId }: PhaseComponentProps) {
 
   const showVotes = stage === "final" || stage === "done";
   const showWinner = stage === "done";
-  const hostReaction = getHostReaction(results);
+  const hostReaction = getHostReaction(announcement, results);
 
   return (
     <div className="flex flex-col items-center gap-8">
@@ -163,7 +164,7 @@ export default function HostReveal({ room, sessionId }: PhaseComponentProps) {
       </AnimatePresence>
 
       <AnimatePresence>
-        {showWinner && announcement.type === "winner" && (
+        {showWinner && announcement.type !== "none" && (
           <motion.div
             initial={{ scale: 0, rotate: -10 }}
             animate={{ scale: 1, rotate: 0 }}
@@ -175,44 +176,20 @@ export default function HostReveal({ room, sessionId }: PhaseComponentProps) {
               animate={{ opacity: 1 }}
               className="text-base text-[var(--color-text-muted)]"
             >
-              {da.duel.winner}
+              {announcement.type === "winner" ? da.duel.winner : da.duel.tieLabel}
             </motion.p>
             <motion.p
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="font-display text-5xl font-bold"
+              className={`font-display font-bold ${announcement.type === "winner" ? "text-5xl" : "text-4xl"}`}
             >
-              {announcement.names[0]}
+              {announcement.type === "winner"
+                ? announcement.names[0]
+                : announcement.names.join(" & ")}
             </motion.p>
           </motion.div>
         )}
-
-        {showWinner && announcement.type === "tie" && (
-          <motion.div
-            initial={{ scale: 0, rotate: -10 }}
-            animate={{ scale: 1, rotate: 0 }}
-            transition={{ type: "spring", stiffness: 150 }}
-            className="text-center"
-          >
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-base text-[var(--color-text-muted)]"
-            >
-              {da.duel.tieLabel}
-            </motion.p>
-            <motion.p
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="font-display text-4xl font-bold"
-            >
-              {announcement.names.join(" & ")}
-            </motion.p>
-          </motion.div>
-        )}
-
       </AnimatePresence>
 
       <AnimatePresence>

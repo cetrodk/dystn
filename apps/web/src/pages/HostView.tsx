@@ -2,7 +2,7 @@ import { Suspense, lazy, useEffect, useState, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery, useMutation } from "convex/react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Settings, SkipForward } from "lucide-react";
+import { Settings, SkipForward, Square } from "lucide-react";
 
 // Lazy-load QR code (only used in lobby)
 const QRCodeSVG = lazy(() =>
@@ -134,7 +134,9 @@ function HostToolbar({
   onSettings: () => void;
 }) {
   const hostAdvance = useMutation(api.game.hostAdvance);
+  const backToLobby = useMutation(api.game.backToLobby);
   const gameMeta = getGameMeta(room.gameType);
+  const [confirmStop, setConfirmStop] = useState(false);
 
   return (
     <motion.div
@@ -158,6 +160,34 @@ function HostToolbar({
       </div>
 
       <div className="flex items-center gap-2">
+        {confirmStop ? (
+          <>
+            <span className="text-xs text-[var(--color-text-muted)]">Stop spillet?</span>
+            <button
+              onClick={() => {
+                backToLobby({ roomId: room._id, hostId: sessionId });
+                setConfirmStop(false);
+              }}
+              className="rounded-lg bg-[var(--color-danger)]/20 px-3 py-1.5 text-xs font-bold text-[var(--color-danger)] hover:bg-[var(--color-danger)]/30 transition-colors cursor-pointer"
+            >
+              Ja, stop
+            </button>
+            <button
+              onClick={() => setConfirmStop(false)}
+              className="rounded-lg bg-[var(--color-surface-light)] px-3 py-1.5 text-xs font-bold text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors cursor-pointer"
+            >
+              Annuller
+            </button>
+          </>
+        ) : (
+          <button
+            onClick={() => setConfirmStop(true)}
+            className="rounded-lg bg-[var(--color-surface-light)] p-1.5 hover:bg-[var(--color-danger)]/20 hover:text-[var(--color-danger)] transition-colors cursor-pointer"
+            title="Stop spil"
+          >
+            <Square className="h-4 w-4" />
+          </button>
+        )}
         <button
           onClick={() => hostAdvance({ roomId: room._id, hostId: sessionId })}
           className="rounded-lg bg-[var(--color-surface-light)] px-3 py-1.5 text-xs font-bold text-[var(--color-text)] hover:bg-[var(--color-primary)]/20 hover:text-[var(--color-primary-light)] transition-colors cursor-pointer"

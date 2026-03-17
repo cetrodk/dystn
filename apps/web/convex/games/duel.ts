@@ -207,11 +207,8 @@ registerGameHandlers("duel", {
       };
     }
     if (phase === "present") {
-      return {
-        ...pd,
-        answersAnonymized: (pd.answersAnonymized ?? []).map(() => ({})),
-        answers: undefined,
-      };
+      const { answersAnonymized: _, answers: __, ...rest } = pd;
+      return rest;
     }
     if (phase === "vote") {
       const myVote = submissions.find(
