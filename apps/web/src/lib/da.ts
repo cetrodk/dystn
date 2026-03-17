@@ -135,6 +135,26 @@ export const da = {
     matchBonus: "Det matchede originalen!",
   },
 
+  sandhed: {
+    name: "Sandhed",
+    description: "Sandt eller falsk? Kap om at nå målet!",
+    howToPlay: "Et udsagn vises på skærmen — flyt dig til SANDT eller FALSK. Se hvad de andre gør i realtid og skift side for at narre dem. Men pas på: det tager tid at skifte, og bliver du fanget midt imellem, tæller det ikke! Rigtigt svar = ét skridt fremad. Først i mål vinder!",
+    expects: `${MIN_PLAYERS}–${MAX_PLAYERS} spillere • Uendelige runder • Videns-quiz`,
+    sandt: "Sandt",
+    falsk: "Falsk",
+    transit: "Skifter side...",
+    correct: "Rigtigt!",
+    wrong: "Forkert!",
+    noAnswer: "Du nåede ikke at vælge!",
+    position: "Position",
+    finish: "Mål",
+    winner: "I mål!",
+    sharedWin: "Delt sejr!",
+    getReady: "Gør jer klar!",
+    statement: "Påstand",
+    lookAtScreenForChoices: "Se op — hvem skifter side?",
+  },
+
   // External games
   externalGames: "Bonusspil",
   opensNewTab: "Åbner i nyt faneblad",

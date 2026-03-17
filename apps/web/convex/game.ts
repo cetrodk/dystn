@@ -10,11 +10,12 @@ import "./games/duel";
 import "./games/bluff";
 import "./games/tegn";
 import "./games/telefon";
+import "./games/sandhed";
 
 /** Check if a phase accepts player submissions */
 function isSubmittablePhase(phase: string): boolean {
   const base = phase.split("_")[0];
-  return ["submit", "vote", "draw", "guess", "write"].includes(base);
+  return ["submit", "vote", "draw", "guess", "write", "commit"].includes(base);
 }
 
 /** Check if a phase is a vote-type phase */
@@ -45,11 +46,12 @@ export const startGame = mutation({
     if (players.length < MIN_PLAYERS) throw new Error(`Need at least ${MIN_PLAYERS} player(s)`);
 
     const gameType = room.gameType;
-    const isSingleRound = gameType === "tegn" || gameType === "telefon";
-    const totalRounds = isSingleRound ? 1 : Math.min(players.length, 3);
-    const firstPhase = gameType === "tegn" ? "draw" : gameType === "telefon" ? "write" : "submit";
-
     const handlers = getGameHandlers(gameType);
+    const config = handlers.config ?? {};
+    const firstPhase = config.initialPhase ?? "submit";
+    const totalRounds = config.totalRoundsForPlayerCount
+      ? config.totalRoundsForPlayerCount(players.length)
+      : Math.min(players.length, 3);
     const roundData = await handlers.setupRound(
       ctx,
       { ...room, roundNumber: 1, totalRounds },
@@ -101,6 +103,7 @@ export const updateSettings = mutation({
       drawTime: v.optional(v.float64()),
       guessTime: v.optional(v.float64()),
       writeTime: v.optional(v.float64()),
+      commitTime: v.optional(v.float64()),
     }),
   },
   handler: async (ctx, { roomId, hostId, settings }) => {

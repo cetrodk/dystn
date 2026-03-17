@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Swords, Drama, Paintbrush, Phone, Tag, ExternalLink } from "lucide-react";
+import { Swords, Drama, Paintbrush, Phone, Tag, ExternalLink, Scale } from "lucide-react";
 import { da } from "@/lib/da";
 
 export const GAMES = [
@@ -36,11 +36,19 @@ export const GAMES = [
     glow: "var(--color-telefon-glow)",
     textColor: "#0d0b1a",
   },
+  {
+    id: "sandhed",
+    ...da.sandhed,
+    Icon: Scale,
+    color: "var(--color-sandhed)",
+    glow: "var(--color-sandhed-glow)",
+    textColor: "#fff",
+  },
 ] as const;
 
 export type GameMeta = (typeof GAMES)[number];
 
-export const GAME_ICONS = { duel: Swords, bluff: Drama, tegn: Paintbrush, telefon: Phone } as const;
+export const GAME_ICONS = { duel: Swords, bluff: Drama, tegn: Paintbrush, telefon: Phone, sandhed: Scale } as const;
 
 /**
  * Game picker with 2x2 grid and detail splash.

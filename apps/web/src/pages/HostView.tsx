@@ -13,7 +13,7 @@ import { useSessionId } from "@/providers/SessionProvider";
 import { gameComponents, type RoomSnapshot } from "@/games/registry";
 import { sfxFanfare } from "@/lib/sounds";
 import { GameAvatar } from "@/components/GameAvatar";
-import { GamePicker, GAME_ICONS } from "@/components/GamePicker";
+import { GamePicker, GAMES, GAME_ICONS } from "@/components/GamePicker";
 import { da } from "@/lib/da";
 import { MIN_PLAYERS } from "../../convex/lib/gameConfig";
 
@@ -32,6 +32,7 @@ const GAME_OPTIONS = [
   { id: "bluff", color: "var(--color-bluff)", textColor: "#0d0b1a" },
   { id: "tegn", color: "var(--color-tegn)", textColor: "#fff" },
   { id: "telefon", color: "var(--color-telefon)", textColor: "#0d0b1a" },
+  { id: "sandhed", color: "var(--color-sandhed)", textColor: "#fff" },
 ] as const;
 
 function getGameMeta(gameType: string | undefined) {
@@ -210,9 +211,9 @@ function HostToolbar({
 /* ── Game Info Card (lobby, game selected) ─────────────── */
 
 function getGameInfo(gameType: string) {
-  const meta = GAME_OPTIONS.find((g) => g.id === gameType) ?? GAME_OPTIONS[0];
-  const strings = gameType === "duel" ? da.duel : gameType === "bluff" ? da.bluff : gameType === "telefon" ? da.telefon : da.tegn;
-  return { ...meta, ...strings };
+  const game = GAMES.find((g) => g.id === gameType);
+  if (game) return game;
+  return GAMES[0];
 }
 
 function GameInfoCard({ gameType, onChangeGame }: { gameType: string; onChangeGame: () => void }) {

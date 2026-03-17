@@ -8,6 +8,7 @@ import "../games/duel";
 import "../games/bluff";
 import "../games/tegn";
 import "../games/telefon";
+import "../games/sandhed";
 
 /** Default phase durations in ms */
 export const DEFAULT_DURATIONS: Record<string, number> = {
@@ -19,6 +20,9 @@ export const DEFAULT_DURATIONS: Record<string, number> = {
   draw: 90_000,
   guess: 45_000,
   write: 60_000,
+  countdown: 4_000,
+  commit: 10_000,
+  victory: 15_000,
 };
 
 const SETTINGS_KEY: Record<string, string> = {
@@ -30,6 +34,7 @@ const SETTINGS_KEY: Record<string, string> = {
   draw: "drawTime",
   guess: "guessTime",
   write: "writeTime",
+  commit: "commitTime",
 };
 
 /** Get phase duration, respecting room settings overrides */

@@ -8,6 +8,7 @@ import "./games/duel";
 import "./games/bluff";
 import "./games/tegn";
 import "./games/telefon";
+import "./games/sandhed";
 
 export const createRoom = mutation({
   args: {
@@ -76,7 +77,7 @@ export const getRoom = query({
     const phase = room.currentPhase;
     const basePhase = phase?.split("_")[0];
     const isSubmittable = phase && room.roundNumber !== undefined &&
-      ["submit", "vote", "draw", "guess", "write"].includes(basePhase ?? "");
+      ["submit", "vote", "draw", "guess", "write", "commit"].includes(basePhase ?? "");
 
     if (isSubmittable) {
       const submissions = await ctx.db

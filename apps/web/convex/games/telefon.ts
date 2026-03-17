@@ -13,6 +13,10 @@ import { registerGameHandlers, type PhaseTransition } from "../gameHandlers";
  */
 
 registerGameHandlers("telefon", {
+  config: {
+    initialPhase: "write",
+    totalRoundsForPlayerCount: () => 1,
+  },
   async setupRound(_ctx, _room, players) {
     const playerIds = players
       .map((p) => p._id as string)

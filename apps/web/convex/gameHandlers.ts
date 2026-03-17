@@ -18,7 +18,17 @@ export interface PhaseTransition {
   advanceRound?: boolean;
 }
 
+export interface GameConfig {
+  /** The first phase when the game starts (defaults to "submit") */
+  initialPhase?: string;
+  /** How many rounds for a given player count (defaults to min(playerCount, 3)) */
+  totalRoundsForPlayerCount?: (playerCount: number) => number;
+}
+
 export interface GameHandlers {
+  /** Optional game-specific config for startup */
+  config?: GameConfig;
+
   /** Set up a new round: pick prompts, assign matchups, etc. */
   setupRound(
     ctx: MutationCtx,

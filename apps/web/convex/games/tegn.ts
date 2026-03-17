@@ -5,6 +5,10 @@ import { registerGameHandlers, type PhaseTransition } from "../gameHandlers";
 const TRUTH_ID = "__TRUTH__";
 
 registerGameHandlers("tegn", {
+  config: {
+    initialPhase: "draw",
+    totalRoundsForPlayerCount: () => 1,
+  },
   async setupRound(ctx, _room, players) {
     let allPrompts = await ctx.db
       .query("prompts")

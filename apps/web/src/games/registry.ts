@@ -99,4 +99,18 @@ export const gameComponents: Record<string, GameComponents> = {
       reveal: lazy(() => import("./telefon/PlayerReveal")),
     },
   },
+  sandhed: {
+    host: {
+      countdown: lazy(() => import("./sandhed/HostCountdown")),
+      commit: lazy(() => import("./sandhed/HostCommit")),
+      reveal: lazy(() => import("./sandhed/HostReveal")),
+      victory: lazy(() => import("./sandhed/HostVictory")),
+    },
+    player: {
+      countdown: lazy(() => import("./sandhed/PlayerCountdown")),
+      commit: lazy(() => import("./sandhed/PlayerCommit")),
+      reveal: lazy(() => import("./sandhed/PlayerReveal")),
+      victory: lazy(() => import("./sandhed/PlayerVictory")),
+    },
+  },
 };
