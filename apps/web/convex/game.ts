@@ -134,17 +134,17 @@ export const restartGame = mutation({
       totalRounds: undefined,
     });
 
-    // Reset all player scores
-    const players = await ctx.db
-      .query("players")
-      .withIndex("by_room", (q) => q.eq("roomId", roomId))
-      .collect();
-
-    // Delete all submissions for this room
-    const submissions = await ctx.db
-      .query("submissions")
-      .withIndex("by_room_round_phase", (q) => q.eq("roomId", roomId))
-      .collect();
+    // Reset scores and delete submissions
+    const [players, submissions] = await Promise.all([
+      ctx.db
+        .query("players")
+        .withIndex("by_room", (q) => q.eq("roomId", roomId))
+        .collect(),
+      ctx.db
+        .query("submissions")
+        .withIndex("by_room_round_phase", (q) => q.eq("roomId", roomId))
+        .collect(),
+    ]);
 
     await Promise.all([
       ...players.map((p) => ctx.db.patch(p._id, { score: 0 })),
@@ -279,20 +279,21 @@ export const submitAnswer = mutation({
     }
 
     // Check if all expected players have submitted
-    const players = await ctx.db
-      .query("players")
-      .withIndex("by_room", (q) => q.eq("roomId", roomId))
-      .collect();
-
-    const submissions = await ctx.db
-      .query("submissions")
-      .withIndex("by_room_round_phase", (q) =>
-        q
-          .eq("roomId", roomId)
-          .eq("round", room.roundNumber!)
-          .eq("phase", phase),
-      )
-      .collect();
+    const [players, submissions] = await Promise.all([
+      ctx.db
+        .query("players")
+        .withIndex("by_room", (q) => q.eq("roomId", roomId))
+        .collect(),
+      ctx.db
+        .query("submissions")
+        .withIndex("by_room_round_phase", (q) =>
+          q
+            .eq("roomId", roomId)
+            .eq("round", room.roundNumber!)
+            .eq("phase", phase),
+        )
+        .collect(),
+    ]);
 
     const expectedCount = handlers.getExpectedSubmitterCount
       ? handlers.getExpectedSubmitterCount(room, players)

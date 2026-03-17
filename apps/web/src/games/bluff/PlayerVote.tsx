@@ -14,8 +14,12 @@ export default function PlayerVote({ room, sessionId }: PhaseComponentProps) {
 
   const phaseData = room.phaseData ?? {};
   const allAnswers = phaseData.answersAnonymized ?? [];
-  const ownAnswer = allAnswers.find((a: any) => a.isOwn);
-  const voteableAnswers = allAnswers.filter((a: any) => !a.isOwn);
+  let ownAnswer: any;
+  const voteableAnswers: any[] = [];
+  for (const a of allAnswers) {
+    if (a.isOwn) ownAnswer = a;
+    else voteableAnswers.push(a);
+  }
 
   async function handleVote(answerId: string) {
     sfxClick();

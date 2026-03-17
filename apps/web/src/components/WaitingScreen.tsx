@@ -17,9 +17,9 @@ interface WaitingScreenProps {
 }
 
 export function WaitingScreen({ deadline, players, children }: WaitingScreenProps) {
-  const submittedCount = players?.filter((p) => p.hasSubmitted).length ?? 0;
-  const totalPlayers = players?.length ?? 0;
   const pendingPlayers = players?.filter((p) => !p.hasSubmitted) ?? [];
+  const totalPlayers = players?.length ?? 0;
+  const submittedCount = totalPlayers - pendingPlayers.length;
 
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center gap-4 p-4">

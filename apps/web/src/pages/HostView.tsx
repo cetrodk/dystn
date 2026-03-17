@@ -1,10 +1,13 @@
-import { Suspense, useEffect, useState, useCallback } from "react";
+import { Suspense, lazy, useEffect, useState, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery, useMutation } from "convex/react";
 import { AnimatePresence, motion } from "framer-motion";
-import confetti from "canvas-confetti";
 import { Settings, SkipForward } from "lucide-react";
-import { QRCodeSVG } from "qrcode.react";
+
+// Lazy-load QR code (only used in lobby)
+const QRCodeSVG = lazy(() =>
+  import("qrcode.react").then((m) => ({ default: m.QRCodeSVG })),
+);
 import { api } from "../../convex/_generated/api";
 import { useSessionId } from "@/providers/SessionProvider";
 import { gameComponents, type RoomSnapshot } from "@/games/registry";
@@ -385,14 +388,16 @@ export function HostView() {
         <div className="mt-2 font-display text-8xl font-bold tracking-[0.2em] glow-text">
           {room.code}
         </div>
-        <div className="mt-4 inline-block rounded-2xl bg-white p-3">
-          <QRCodeSVG
-            value={`${window.location.origin}/join/${room.code}`}
-            size={140}
-            fgColor="#0d0b1a"
-            bgColor="white"
-          />
-        </div>
+        <Suspense fallback={<div className="mt-4 h-[164px] w-[164px] rounded-2xl bg-white/10" />}>
+          <div className="mt-4 inline-block rounded-2xl bg-white p-3">
+            <QRCodeSVG
+              value={`${window.location.origin}/join/${room.code}`}
+              size={140}
+              fgColor="#0d0b1a"
+              bgColor="white"
+            />
+          </div>
+        </Suspense>
         <p className="mt-2 text-sm text-[var(--color-text-muted)]">
           Scan eller gå til{" "}
           <span className="font-bold text-[var(--color-text)]">
@@ -477,30 +482,39 @@ function FinishedScreen({ room, sessionId }: { room: RoomSnapshot; sessionId: st
   const rest = players.filter((p) => p.score < topScore);
 
   useEffect(() => {
-    const end = Date.now() + 3000;
     sfxFanfare();
-    const colors = ["#8b6eff", "#f472b6", "#fbbf24", "#34d399", "#60a5fa"];
     let rafId: number;
+    let cancelled = false;
 
-    function frame() {
-      confetti({
-        particleCount: 3,
-        angle: 60,
-        spread: 55,
-        origin: { x: 0, y: 0.7 },
-        colors,
-      });
-      confetti({
-        particleCount: 3,
-        angle: 120,
-        spread: 55,
-        origin: { x: 1, y: 0.7 },
-        colors,
-      });
-      if (Date.now() < end) rafId = requestAnimationFrame(frame);
-    }
-    rafId = requestAnimationFrame(frame);
-    return () => cancelAnimationFrame(rafId);
+    import("canvas-confetti").then(({ default: confetti }) => {
+      if (cancelled) return;
+      const end = Date.now() + 3000;
+      const colors = ["#8b6eff", "#f472b6", "#fbbf24", "#34d399", "#60a5fa"];
+
+      function frame() {
+        confetti({
+          particleCount: 3,
+          angle: 60,
+          spread: 55,
+          origin: { x: 0, y: 0.7 },
+          colors,
+        });
+        confetti({
+          particleCount: 3,
+          angle: 120,
+          spread: 55,
+          origin: { x: 1, y: 0.7 },
+          colors,
+        });
+        if (Date.now() < end) rafId = requestAnimationFrame(frame);
+      }
+      rafId = requestAnimationFrame(frame);
+    });
+
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(rafId);
+    };
   }, []);
 
   return (

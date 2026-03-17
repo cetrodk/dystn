@@ -10,6 +10,8 @@ export const AVATARS: Array<{ name: string; src: string }> = Object.entries(
   src,
 }));
 
+const AVATAR_MAP = new Map(AVATARS.map((a) => [a.name, a.src]));
+
 export function getAvatarSrc(name: string | undefined): string | undefined {
-  return AVATARS.find((a) => a.name === name)?.src;
+  return name ? AVATAR_MAP.get(name) : undefined;
 }
