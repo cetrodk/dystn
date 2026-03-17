@@ -1,6 +1,23 @@
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import type { Id, Doc } from "./_generated/dataModel";
 
+export type PhaseAction =
+  | { type: "setup" }
+  | { type: "buildVote" }
+  | { type: "buildGuess"; drawingIndex: number }
+  | { type: "computeResults" }
+  | { type: "none" }
+  | { type: "finish" };
+
+export interface PhaseTransition {
+  nextPhase: string;
+  action: PhaseAction;
+  /** Override timer duration in ms (e.g., Telefon reveal 5-min fallback) */
+  timerOverride?: number;
+  /** Increment roundNumber before calling setupRound */
+  advanceRound?: boolean;
+}
+
 export interface GameHandlers {
   /** Set up a new round: pick prompts, assign matchups, etc. */
   setupRound(
@@ -55,6 +72,14 @@ export interface GameHandlers {
     room: Doc<"rooms">,
     players: Doc<"players">[],
   ): number;
+
+  /** Determine the next phase and what action to perform */
+  getNextPhase(
+    currentPhase: string,
+    event: string,
+    room: Doc<"rooms">,
+    players: Doc<"players">[],
+  ): PhaseTransition;
 }
 
 // Game handler registry — populated by each game module

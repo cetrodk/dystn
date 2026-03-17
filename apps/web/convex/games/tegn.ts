@@ -1,6 +1,6 @@
 import { ConvexError } from "convex/values";
 import type { Id } from "../_generated/dataModel";
-import { registerGameHandlers } from "../gameHandlers";
+import { registerGameHandlers, type PhaseTransition } from "../gameHandlers";
 
 const TRUTH_ID = "__TRUTH__";
 
@@ -376,5 +376,41 @@ registerGameHandlers("tegn", {
       return players.length - 1; // artist excluded
     }
     return players.length;
+  },
+
+  getNextPhase(currentPhase, _event, room): PhaseTransition {
+    const [base, idxStr] = currentPhase.split("_");
+    const idx = idxStr !== undefined ? parseInt(idxStr, 10) : 0;
+    const pd = (room.phaseData ?? {}) as any;
+    const roundNumber = room.roundNumber ?? 1;
+    const totalRounds = room.totalRounds ?? 1;
+
+    if (currentPhase === "draw") {
+      // draw → guess_0
+      return { nextPhase: "guess_0", action: { type: "buildGuess", drawingIndex: 0 } };
+    }
+    if (base === "guess") {
+      // guess_K → vote_K
+      return { nextPhase: `vote_${idx}`, action: { type: "buildVote" } };
+    }
+    if (base === "vote" && idxStr !== undefined) {
+      // vote_K → reveal_K
+      return { nextPhase: `reveal_${idx}`, action: { type: "computeResults" } };
+    }
+    if (base === "reveal" && idxStr !== undefined) {
+      // reveal_K → guess_(K+1) or scores
+      const totalDrawings = pd?.totalDrawings ?? 1;
+      if (idx < totalDrawings - 1) {
+        return { nextPhase: `guess_${idx + 1}`, action: { type: "buildGuess", drawingIndex: idx + 1 } };
+      }
+      return { nextPhase: "scores", action: { type: "none" } };
+    }
+    if (currentPhase === "scores") {
+      if (roundNumber >= totalRounds) {
+        return { nextPhase: "finished", action: { type: "finish" } };
+      }
+      return { nextPhase: "draw", action: { type: "setup" }, advanceRound: true };
+    }
+    return { nextPhase: "finished", action: { type: "finish" } };
   },
 });

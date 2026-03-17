@@ -1,6 +1,6 @@
 import { ConvexError } from "convex/values";
 import type { Id } from "../_generated/dataModel";
-import { registerGameHandlers } from "../gameHandlers";
+import { registerGameHandlers, type PhaseTransition } from "../gameHandlers";
 
 /**
  * Telefon (Gartic Phone clone) — chain-based telephone drawing game.
@@ -320,5 +320,31 @@ registerGameHandlers("telefon", {
 
   getExpectedSubmitterCount(_room, players) {
     return players.length; // everyone participates in every phase
+  },
+
+  getNextPhase(currentPhase, _event, room): PhaseTransition {
+    const [base, idxStr] = currentPhase.split("_");
+    const idx = idxStr !== undefined ? parseInt(idxStr, 10) : 0;
+    const pd = (room.phaseData ?? {}) as any;
+    const stepCount: number = pd?.stepCount ?? 1;
+
+    if (currentPhase === "write") {
+      return { nextPhase: "draw_0", action: { type: "buildGuess", drawingIndex: 0 } };
+    }
+    if (base === "draw" && idxStr !== undefined) {
+      // draw_K → guess_K
+      return { nextPhase: `guess_${idx}`, action: { type: "buildGuess", drawingIndex: idx } };
+    }
+    if (base === "guess" && idxStr !== undefined) {
+      // guess_K → draw_(K+1) or reveal
+      if (idx < stepCount - 1) {
+        return { nextPhase: `draw_${idx + 1}`, action: { type: "buildGuess", drawingIndex: idx + 1 } };
+      }
+      return { nextPhase: "reveal", action: { type: "computeResults" }, timerOverride: 5 * 60_000 };
+    }
+    if (currentPhase === "reveal") {
+      return { nextPhase: "finished", action: { type: "finish" } };
+    }
+    return { nextPhase: "finished", action: { type: "finish" } };
   },
 });

@@ -1,6 +1,6 @@
 import { ConvexError } from "convex/values";
 import type { Id } from "../_generated/dataModel";
-import { registerGameHandlers } from "../gameHandlers";
+import { registerGameHandlers, type PhaseTransition } from "../gameHandlers";
 
 const TRUTH_ID = "__TRUTH__";
 
@@ -282,5 +282,29 @@ registerGameHandlers("bluff", {
       },
       scoreDeltas,
     };
+  },
+
+  getNextPhase(currentPhase, _event, room): PhaseTransition {
+    const roundNumber = room.roundNumber ?? 1;
+    const totalRounds = room.totalRounds ?? 1;
+
+    switch (currentPhase) {
+      case "submit":
+        return { nextPhase: "vote", action: { type: "buildVote" } };
+      case "vote":
+        return { nextPhase: "reveal", action: { type: "computeResults" } };
+      case "reveal":
+        if (roundNumber >= totalRounds) {
+          return { nextPhase: "finished", action: { type: "finish" } };
+        }
+        return { nextPhase: "scores", action: { type: "none" } };
+      case "scores":
+        if (roundNumber >= totalRounds) {
+          return { nextPhase: "finished", action: { type: "finish" } };
+        }
+        return { nextPhase: "submit", action: { type: "setup" }, advanceRound: true };
+      default:
+        return { nextPhase: "finished", action: { type: "finish" } };
+    }
   },
 });
