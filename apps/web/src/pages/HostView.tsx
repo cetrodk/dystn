@@ -3,16 +3,15 @@ import { useParams } from "react-router-dom";
 import { useQuery, useMutation } from "convex/react";
 import { AnimatePresence, motion } from "framer-motion";
 import confetti from "canvas-confetti";
-import { Swords, Drama, Paintbrush, Phone, Settings, SkipForward } from "lucide-react";
+import { Settings, SkipForward } from "lucide-react";
 import { api } from "../../convex/_generated/api";
 import { useSessionId } from "@/providers/SessionProvider";
 import { gameComponents } from "@/games/registry";
 import { sfxFanfare } from "@/lib/sounds";
 import { GameAvatar } from "@/components/GameAvatar";
+import { GamePicker, GAME_ICONS } from "@/components/GamePicker";
 import { da } from "@/lib/da";
 import { MIN_PLAYERS } from "../../convex/lib/gameConfig";
-
-const GAME_ICONS = { duel: Swords, bluff: Drama, tegn: Paintbrush, telefon: Phone } as const;
 
 const TIMER_OPTIONS = [
   { key: "submitTime", label: "Svartid", defaultMs: 60_000, min: 15, max: 180 },
@@ -31,7 +30,8 @@ const GAME_OPTIONS = [
   { id: "telefon", color: "var(--color-telefon)", textColor: "#0d0b1a" },
 ] as const;
 
-function getGameMeta(gameType: string) {
+function getGameMeta(gameType: string | undefined) {
+  if (!gameType) return { id: "none", color: "var(--color-primary)", textColor: "#fff" };
   return GAME_OPTIONS.find((g) => g.id === gameType) ?? GAME_OPTIONS[0];
 }
 
@@ -47,7 +47,6 @@ function HostSettingsOverlay({
   onClose: () => void;
 }) {
   const updateSettings = useMutation(api.game.updateSettings);
-  const restartGame = useMutation(api.game.restartGame);
   const settings = room.settings ?? {};
 
   const handleChange = useCallback(
@@ -114,18 +113,6 @@ function HostSettingsOverlay({
             );
           })}
         </div>
-
-        {room.status !== "lobby" ? (
-          <button
-            onClick={() => {
-              restartGame({ roomId: room._id, hostId: sessionId });
-              onClose();
-            }}
-            className="mt-6 w-full rounded-xl border border-[var(--color-danger)]/30 p-3 text-sm font-bold text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 transition-colors cursor-pointer"
-          >
-            Genstart spil
-          </button>
-        ) : null}
       </motion.div>
     </motion.div>
   );
@@ -151,7 +138,6 @@ function HostToolbar({
       animate={{ opacity: 1, y: 0 }}
       className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between gap-4 px-4 py-2 bg-[var(--color-bg)]/80 backdrop-blur-md border-b border-white/5"
     >
-      {/* Left: game type + room code */}
       <div className="flex items-center gap-3">
         {(() => { const Icon = GAME_ICONS[room.gameType as keyof typeof GAME_ICONS]; return Icon ? <Icon className="h-5 w-5" style={{ color: gameMeta.color }} /> : null; })()}
         <span
@@ -167,7 +153,6 @@ function HostToolbar({
         )}
       </div>
 
-      {/* Right: controls */}
       <div className="flex items-center gap-2">
         <button
           onClick={() => hostAdvance({ roomId: room._id, hostId: sessionId })}
@@ -188,7 +173,7 @@ function HostToolbar({
   );
 }
 
-/* ── Game Info Card (lobby only) ───────────────────────── */
+/* ── Game Info Card (lobby, game selected) ─────────────── */
 
 function getGameInfo(gameType: string) {
   const meta = GAME_OPTIONS.find((g) => g.id === gameType) ?? GAME_OPTIONS[0];
@@ -196,7 +181,7 @@ function getGameInfo(gameType: string) {
   return { ...meta, ...strings };
 }
 
-function GameInfoCard({ gameType }: { gameType: string }) {
+function GameInfoCard({ gameType, onChangeGame }: { gameType: string; onChangeGame: () => void }) {
   const game = getGameInfo(gameType);
 
   return (
@@ -217,14 +202,61 @@ function GameInfoCard({ gameType }: { gameType: string }) {
         <span className="text-xs text-[var(--color-text-muted)]">
           {game.expects}
         </span>
-        <a
-          href="/"
-          className="text-xs text-[var(--color-primary-light)] hover:text-[var(--color-primary)] transition-colors"
+        <button
+          onClick={onChangeGame}
+          className="text-xs text-[var(--color-primary-light)] hover:text-[var(--color-primary)] transition-colors cursor-pointer"
         >
-          ← Skift spil
-        </a>
+          ← {da.changeGame}
+        </button>
       </div>
     </div>
+  );
+}
+
+/* ── Player List ───────────────────────────────────────── */
+
+function PlayerList({ room, sessionId }: { room: any; sessionId: string }) {
+  const kickPlayer = useMutation(api.players.kickPlayer);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.15 }}
+      className="w-full max-w-md"
+    >
+      <p className="mb-4 text-center text-sm text-[var(--color-text-muted)]">
+        {room.players.length} {da.playersJoined}
+      </p>
+      <ul className="flex flex-col gap-2">
+        <AnimatePresence>
+          {room.players.map((player: any, i: number) => (
+            <motion.li
+              key={player._id}
+              initial={{ opacity: 0, x: -20, scale: 0.9 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              transition={{ delay: i * 0.05, type: "spring", stiffness: 300 }}
+              className="flex items-center gap-3 rounded-xl bg-[var(--color-surface)] p-3"
+            >
+              <GameAvatar name={player.name} avatarColor={player.avatarColor} avatarImage={player.avatarImage} />
+              <span className="font-semibold">{player.name}</span>
+              {!player.isConnected ? (
+                <span className="ml-auto text-xs text-[var(--color-text-muted)]">
+                  afbrudt
+                </span>
+              ) : null}
+              <button
+                onClick={() => kickPlayer({ roomId: room._id, hostId: sessionId, playerId: player._id })}
+                className="ml-auto rounded-lg p-1.5 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 transition-colors cursor-pointer"
+                title="Fjern spiller"
+              >
+                ✕
+              </button>
+            </motion.li>
+          ))}
+        </AnimatePresence>
+      </ul>
+    </motion.div>
   );
 }
 
@@ -235,7 +267,7 @@ export function HostView() {
   const sessionId = useSessionId();
   const room = useQuery(api.rooms.getRoom, code ? { code } : "skip");
   const startGame = useMutation(api.game.startGame);
-  const kickPlayer = useMutation(api.players.kickPlayer);
+  const changeGameType = useMutation(api.rooms.changeGameType);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   if (!room) {
@@ -253,7 +285,7 @@ export function HostView() {
   }
 
   // ── Playing ──
-  if (room.status === "playing" && room.currentPhase) {
+  if (room.status === "playing" && room.currentPhase && room.gameType) {
     const components = gameComponents[room.gameType];
     const basePhase = room.currentPhase.split("_")[0];
     const PhaseComponent = components?.host[basePhase];
@@ -307,6 +339,8 @@ export function HostView() {
 
   // ── Lobby ──
   const gameMeta = getGameMeta(room.gameType);
+  const hasGame = !!room.gameType;
+  const canStart = hasGame && room.players.length >= MIN_PLAYERS;
 
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center gap-8 p-8">
@@ -355,78 +389,63 @@ export function HostView() {
         </p>
       </motion.div>
 
-      {/* Game info */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.15 }}
-        className="w-full flex justify-center"
-      >
-        <GameInfoCard gameType={room.gameType} />
-      </motion.div>
-
       {/* Player list */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.25 }}
-        className="w-full max-w-md"
-      >
-        <p className="mb-4 text-center text-sm text-[var(--color-text-muted)]">
-          {room.players.length} {da.playersJoined}
-        </p>
-        <ul className="flex flex-col gap-2">
-          <AnimatePresence>
-            {room.players.map((player: any, i: number) => (
-              <motion.li
-                key={player._id}
-                initial={{ opacity: 0, x: -20, scale: 0.9 }}
-                animate={{ opacity: 1, x: 0, scale: 1 }}
-                transition={{ delay: i * 0.05, type: "spring", stiffness: 300 }}
-                className="flex items-center gap-3 rounded-xl bg-[var(--color-surface)] p-3"
-              >
-                <GameAvatar name={player.name} avatarColor={player.avatarColor} avatarImage={player.avatarImage} />
-                <span className="font-semibold">{player.name}</span>
-                {!player.isConnected ? (
-                  <span className="ml-auto text-xs text-[var(--color-text-muted)]">
-                    afbrudt
-                  </span>
-                ) : null}
-                <button
-                  onClick={() => kickPlayer({ roomId: room._id, hostId: sessionId, playerId: player._id })}
-                  className="ml-auto rounded-lg p-1.5 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 transition-colors cursor-pointer"
-                  title="Fjern spiller"
-                >
-                  ✕
-                </button>
-              </motion.li>
-            ))}
-          </AnimatePresence>
-        </ul>
-      </motion.div>
+      <PlayerList room={room} sessionId={sessionId} />
 
-      {/* Start button */}
-      <motion.button
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.35, type: "spring" }}
-        whileHover={room.players.length >= MIN_PLAYERS ? { scale: 1.05 } : undefined}
-        whileTap={room.players.length >= MIN_PLAYERS ? { scale: 0.95 } : undefined}
-        disabled={room.players.length < MIN_PLAYERS}
-        onClick={() => startGame({ roomId: room._id, hostId: sessionId })}
-        className="rounded-2xl px-14 py-5 text-2xl font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-        style={{
-          backgroundColor: gameMeta.color,
-          color: gameMeta.textColor,
-          boxShadow: room.players.length >= MIN_PLAYERS
-            ? `0 0 30px ${gameMeta.color}40, 0 4px 20px ${gameMeta.color}20`
-            : undefined,
-        }}
-      >
-        {room.players.length < MIN_PLAYERS
-          ? `${da.needMorePlayers} (${room.players.length}/${MIN_PLAYERS})`
-          : da.startGame}
-      </motion.button>
+      {/* Game selection or game info */}
+      {hasGame ? (
+        <>
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="w-full flex justify-center"
+          >
+            <GameInfoCard
+              gameType={room.gameType!}
+              onChangeGame={() =>
+                changeGameType({ roomId: room._id, hostId: sessionId, gameType: "" })
+              }
+            />
+          </motion.div>
+
+          {/* Start button */}
+          <motion.button
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, type: "spring" }}
+            whileHover={canStart ? { scale: 1.05 } : undefined}
+            whileTap={canStart ? { scale: 0.95 } : undefined}
+            disabled={!canStart}
+            onClick={() => startGame({ roomId: room._id, hostId: sessionId })}
+            className="rounded-2xl px-14 py-5 text-2xl font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+            style={{
+              backgroundColor: gameMeta.color,
+              color: gameMeta.textColor,
+              boxShadow: canStart
+                ? `0 0 30px ${gameMeta.color}40, 0 4px 20px ${gameMeta.color}20`
+                : undefined,
+            }}
+          >
+            {room.players.length < MIN_PLAYERS
+              ? `${da.needMorePlayers} (${room.players.length}/${MIN_PLAYERS})`
+              : da.startGame}
+          </motion.button>
+        </>
+      ) : (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="w-full flex justify-center"
+        >
+          <GamePicker
+            onSelect={(gameId) =>
+              changeGameType({ roomId: room._id, hostId: sessionId, gameType: gameId })
+            }
+            showExternalGames
+          />
+        </motion.div>
+      )}
     </div>
   );
 }
@@ -435,6 +454,7 @@ export function HostView() {
 
 function FinishedScreen({ room, sessionId }: { room: any; sessionId: string }) {
   const restartGame = useMutation(api.game.restartGame);
+  const backToLobby = useMutation(api.game.backToLobby);
   const players = [...(room.players ?? [])].sort(
     (a: any, b: any) => b.score - a.score,
   );
@@ -541,18 +561,27 @@ function FinishedScreen({ room, sessionId }: { room: any; sessionId: string }) {
         </motion.div>
       )}
 
-      <motion.button
+      {/* Two post-game options */}
+      <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5 }}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        onClick={() => restartGame({ roomId: room._id, hostId: sessionId })}
-        className="rounded-2xl bg-[var(--color-primary)] px-10 py-4 text-xl font-bold cursor-pointer"
-        style={{ boxShadow: "0 0 30px color-mix(in srgb, var(--color-primary) 25%, transparent)" }}
+        className="flex flex-col items-center gap-3"
       >
-        {da.playAgain}
-      </motion.button>
+        <button
+          onClick={() => restartGame({ roomId: room._id, hostId: sessionId })}
+          className="rounded-2xl bg-[var(--color-primary)] px-10 py-4 text-xl font-bold cursor-pointer"
+          style={{ boxShadow: "0 0 30px color-mix(in srgb, var(--color-primary) 25%, transparent)" }}
+        >
+          {da.playAgain}
+        </button>
+        <button
+          onClick={() => backToLobby({ roomId: room._id, hostId: sessionId })}
+          className="rounded-xl px-8 py-3 text-base font-semibold text-[var(--color-text-muted)] hover:text-[var(--color-text)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-light)] transition-all cursor-pointer"
+        >
+          {da.chooseNewGame}
+        </button>
+      </motion.div>
     </div>
   );
 }

@@ -35,6 +35,7 @@ export const startGame = mutation({
     if (!room) throw new Error("Room not found");
     if (room.hostId !== hostId) throw new Error("Only the host can start");
     if (room.status !== "lobby") throw new Error("Game already started");
+    if (!room.gameType) throw new Error("No game selected");
 
     const players = await ctx.db
       .query("players")
@@ -43,11 +44,12 @@ export const startGame = mutation({
 
     if (players.length < MIN_PLAYERS) throw new Error(`Need at least ${MIN_PLAYERS} player(s)`);
 
-    const isSingleRound = room.gameType === "tegn" || room.gameType === "telefon";
+    const gameType = room.gameType;
+    const isSingleRound = gameType === "tegn" || gameType === "telefon";
     const totalRounds = isSingleRound ? 1 : Math.min(players.length, 3);
-    const firstPhase = room.gameType === "tegn" ? "draw" : room.gameType === "telefon" ? "write" : "submit";
+    const firstPhase = gameType === "tegn" ? "draw" : gameType === "telefon" ? "write" : "submit";
 
-    const handlers = getGameHandlers(room.gameType);
+    const handlers = getGameHandlers(gameType);
     const roundData = await handlers.setupRound(
       ctx,
       { ...room, roundNumber: 1, totalRounds },
@@ -151,6 +153,46 @@ export const restartGame = mutation({
   },
 });
 
+export const backToLobby = mutation({
+  args: {
+    roomId: v.id("rooms"),
+    hostId: v.string(),
+  },
+  handler: async (ctx, { roomId, hostId }) => {
+    const room = await ctx.db.get(roomId);
+    if (!room) throw new Error("Room not found");
+    if (room.hostId !== hostId) throw new Error("Only the host can return to lobby");
+
+    // Reset room to lobby with no game selected
+    await ctx.db.patch(roomId, {
+      status: "lobby",
+      gameType: undefined,
+      currentPhase: undefined,
+      phaseData: undefined,
+      phaseDeadline: undefined,
+      roundNumber: undefined,
+      totalRounds: undefined,
+    });
+
+    // Reset scores and delete submissions
+    const [players, submissions] = await Promise.all([
+      ctx.db
+        .query("players")
+        .withIndex("by_room", (q) => q.eq("roomId", roomId))
+        .collect(),
+      ctx.db
+        .query("submissions")
+        .withIndex("by_room_round_phase", (q) => q.eq("roomId", roomId))
+        .collect(),
+    ]);
+
+    await Promise.all([
+      ...players.map((p) => ctx.db.patch(p._id, { score: 0 })),
+      ...submissions.map((s) => ctx.db.delete(s._id)),
+    ]);
+  },
+});
+
 export const telefonAdvanceReveal = mutation({
   args: {
     roomId: v.id("rooms"),
@@ -210,6 +252,7 @@ export const submitAnswer = mutation({
     ]);
 
     if (!room || !player) throw new Error("Not found");
+    if (!room.gameType) throw new Error("No game selected");
     const phase = room.currentPhase ?? "";
 
     if (!isSubmittablePhase(phase)) {

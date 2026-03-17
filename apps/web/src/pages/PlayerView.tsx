@@ -59,7 +59,7 @@ export function PlayerView() {
   }
 
   // Phase routing
-  if (room.status === "playing" && room.currentPhase) {
+  if (room.status === "playing" && room.currentPhase && room.gameType) {
     const components = gameComponents[room.gameType];
     const basePhase = room.currentPhase.split("_")[0];
     const PhaseComponent = components?.player[basePhase];
@@ -197,7 +197,7 @@ export function PlayerView() {
       </AnimatePresence>
 
       <p className="text-sm text-[var(--color-text-muted)] animate-gentle-pulse">
-        {da.waitingForHost}
+        {room.gameType ? da.waitingForHost : da.noGameSelected}
       </p>
       <PlayerNav roomId={room._id} sessionId={sessionId} />
     </div>

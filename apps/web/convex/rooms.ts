@@ -4,10 +4,9 @@ import { generateRoomCode } from "./lib/roomCodes";
 
 export const createRoom = mutation({
   args: {
-    gameType: v.string(),
     hostId: v.string(),
   },
-  handler: async (ctx, { gameType, hostId }) => {
+  handler: async (ctx, { hostId }) => {
     // Generate a unique room code
     let code: string;
     let attempts = 0;
@@ -28,7 +27,6 @@ export const createRoom = mutation({
     const roomId = await ctx.db.insert("rooms", {
       code,
       hostId,
-      gameType,
       status: "lobby",
       createdAt: Date.now(),
     });
@@ -48,7 +46,7 @@ export const changeGameType = mutation({
     if (!room) throw new Error("Room not found");
     if (room.hostId !== hostId) throw new Error("Only the host can change game");
     if (room.status !== "lobby") throw new Error("Can only change game in lobby");
-    await ctx.db.patch(roomId, { gameType });
+    await ctx.db.patch(roomId, { gameType: gameType || undefined });
   },
 });
 

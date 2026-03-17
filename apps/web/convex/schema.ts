@@ -5,7 +5,7 @@ export default defineSchema({
   rooms: defineTable({
     code: v.string(),
     hostId: v.string(),
-    gameType: v.string(),
+    gameType: v.optional(v.string()),
     status: v.union(
       v.literal("lobby"),
       v.literal("playing"),

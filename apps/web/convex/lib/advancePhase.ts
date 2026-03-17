@@ -55,6 +55,7 @@ export async function advancePhaseInternal(
     .withIndex("by_room", (q) => q.eq("roomId", room._id))
     .collect();
 
+  if (!room.gameType) return;
   const handlers = getGameHandlers(room.gameType);
 
   // Extract base phase and sub-round index for Tegn

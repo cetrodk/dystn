@@ -41,6 +41,9 @@ export const da = {
   yourAnswer: "Dit svar",
   lookAtScreen: "Se op på skærmen!",
   waiting: "Venter på andre...",
+  changeGame: "Skift spil",
+  chooseNewGame: "Vælg nyt spil",
+  noGameSelected: "Værten vælger spil...",
 
   // Host lines
   host: {
