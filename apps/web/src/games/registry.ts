@@ -42,12 +42,14 @@ export const gameComponents: Record<string, GameComponents> = {
   duel: {
     host: {
       submit: lazy(() => import("./duel/HostSubmit")),
+      present: lazy(() => import("./duel/HostPresent")),
       vote: lazy(() => import("./duel/HostVote")),
       reveal: lazy(() => import("./duel/HostReveal")),
       scores: lazy(() => import("./duel/HostScores")),
     },
     player: {
       submit: lazy(() => import("./duel/PlayerSubmit")),
+      present: lazy(() => import("./duel/PlayerPresent")),
       vote: lazy(() => import("./duel/PlayerVote")),
       reveal: lazy(() => import("./duel/PlayerReveal")),
       scores: lazy(() => import("./duel/PlayerReveal")), // same passive view

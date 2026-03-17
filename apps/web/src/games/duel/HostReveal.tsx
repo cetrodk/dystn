@@ -14,6 +14,22 @@ import { da } from "@/lib/da";
 import { useStaggeredReveal } from "@/hooks/useStaggeredReveal";
 import type { PhaseComponentProps } from "../registry";
 
+function getWinnerAnnouncement(results: any[]): {
+  type: "winner" | "tie" | "none";
+  names: string[];
+} {
+  if (results.length === 0) return { type: "none", names: [] };
+
+  const topVotes = results[0]?.votes ?? 0;
+  if (topVotes === 0) return { type: "none", names: [] };
+
+  const winners = results.filter((r: any) => r.votes === topVotes);
+  if (winners.length > 1) {
+    return { type: "tie", names: winners.map((w: any) => w.playerName) };
+  }
+  return { type: "winner", names: [results[0].playerName] };
+}
+
 function getHostReaction(results: any[]) {
   if (results.length < 2) return null;
   const top = results[0]?.votes ?? 0;
@@ -31,8 +47,9 @@ export default function HostReveal({ room, sessionId }: PhaseComponentProps) {
   const phaseData = room.phaseData ?? {};
   const results = phaseData.results ?? [];
   const promptText = phaseData.promptText ?? "";
-  const hasWinner = results.length > 0 && results[0].votes > 0;
   const isLastRound = (room.roundNumber ?? 1) >= (room.totalRounds ?? 1);
+
+  const announcement = getWinnerAnnouncement(results);
 
   const { stage, visibleItems, schedule } = useStaggeredReveal({
     itemCount: results.length,
@@ -40,9 +57,11 @@ export default function HostReveal({ room, sessionId }: PhaseComponentProps) {
     onDrumroll: () => sfxDrumroll(),
     onFinalReveal: () => {
       sfxVoteReveal();
-      if (hasWinner) {
+      if (announcement.type === "winner") {
         schedule(sfxFanfare, 2000);
         schedule(sfxCrowdReact, 2400);
+      } else if (announcement.type === "tie") {
+        schedule(sfxCrowdReact, 1500);
       }
     },
   });
@@ -69,7 +88,7 @@ export default function HostReveal({ room, sessionId }: PhaseComponentProps) {
             exit={{ opacity: 0, y: -10 }}
             className="text-2xl italic text-[var(--color-text-muted)]"
           >
-            {da.host.letsSeePre}
+            {da.duel.resultsAreIn}
           </motion.p>
         )}
       </AnimatePresence>
@@ -144,7 +163,7 @@ export default function HostReveal({ room, sessionId }: PhaseComponentProps) {
       </AnimatePresence>
 
       <AnimatePresence>
-        {showWinner && hasWinner && (
+        {showWinner && announcement.type === "winner" && (
           <motion.div
             initial={{ scale: 0, rotate: -10 }}
             animate={{ scale: 1, rotate: 0 }}
@@ -164,10 +183,36 @@ export default function HostReveal({ room, sessionId }: PhaseComponentProps) {
               transition={{ delay: 0.2 }}
               className="font-display text-5xl font-bold"
             >
-              {results[0].playerName}
+              {announcement.names[0]}
             </motion.p>
           </motion.div>
         )}
+
+        {showWinner && announcement.type === "tie" && (
+          <motion.div
+            initial={{ scale: 0, rotate: -10 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ type: "spring", stiffness: 150 }}
+            className="text-center"
+          >
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-base text-[var(--color-text-muted)]"
+            >
+              {da.duel.tieLabel}
+            </motion.p>
+            <motion.p
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="font-display text-4xl font-bold"
+            >
+              {announcement.names.join(" & ")}
+            </motion.p>
+          </motion.div>
+        )}
+
       </AnimatePresence>
 
       <AnimatePresence>

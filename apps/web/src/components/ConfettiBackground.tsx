@@ -4,7 +4,7 @@ const DOTS = Array.from({ length: 10 }, (_, i) => ({
   y: Math.random() * 100,
   size: 3 + Math.random() * 5,
   color: ["#8b6eff", "#f472b6", "#fbbf24", "#60a5fa", "#34d399"][i % 5],
-  delay: Math.random() * 4,
+  delay: -(Math.random() * 6),
   duration: 3 + Math.random() * 3,
 }));
 

@@ -117,6 +117,7 @@ export function PinOverlay({ children }: { children: React.ReactNode }) {
                     setError("");
                   }}
                   placeholder="····"
+                  autoComplete="off"
                   autoFocus
                   className="h-14 w-36 rounded-xl border-2 bg-[var(--color-surface)] text-center text-2xl tracking-[0.5em] outline-none transition-colors"
                   style={{

@@ -12,6 +12,7 @@ import "../games/telefon";
 /** Default phase durations in ms */
 export const DEFAULT_DURATIONS: Record<string, number> = {
   submit: 60_000,
+  present: 45_000,
   vote: 15_000,
   reveal: 60_000,
   scores: 8_000,
@@ -22,6 +23,7 @@ export const DEFAULT_DURATIONS: Record<string, number> = {
 
 const SETTINGS_KEY: Record<string, string> = {
   submit: "submitTime",
+  present: "presentTime",
   vote: "voteTime",
   reveal: "revealTime",
   scores: "scoresTime",

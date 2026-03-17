@@ -206,6 +206,13 @@ registerGameHandlers("duel", {
         submittedCount: submissions.length,
       };
     }
+    if (phase === "present") {
+      return {
+        ...pd,
+        answersAnonymized: (pd.answersAnonymized ?? []).map(() => ({})),
+        answers: undefined,
+      };
+    }
     if (phase === "vote") {
       const myVote = submissions.find(
         (s) => currentPlayer && s.playerId === currentPlayer._id && s.phase === "vote",
@@ -230,7 +237,9 @@ registerGameHandlers("duel", {
 
     switch (currentPhase) {
       case "submit":
-        return { nextPhase: "vote", action: { type: "buildVote" } };
+        return { nextPhase: "present", action: { type: "buildVote" } };
+      case "present":
+        return { nextPhase: "vote", action: { type: "none" } };
       case "vote":
         return { nextPhase: "reveal", action: { type: "computeResults" } };
       case "reveal":

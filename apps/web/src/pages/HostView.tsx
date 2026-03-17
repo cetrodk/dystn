@@ -456,9 +456,12 @@ export function HostView() {
           className="w-full flex justify-center"
         >
           <GamePicker
-            onSelect={(gameId) =>
-              changeGameType({ roomId: room._id, hostId: sessionId, gameType: gameId })
-            }
+            onSelect={async (gameId) => {
+              await changeGameType({ roomId: room._id, hostId: sessionId, gameType: gameId });
+              if (room.players.length >= MIN_PLAYERS) {
+                await startGame({ roomId: room._id, hostId: sessionId });
+              }
+            }}
             showExternalGames
           />
         </motion.div>
