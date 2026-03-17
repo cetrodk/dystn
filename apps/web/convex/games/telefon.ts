@@ -318,6 +318,57 @@ registerGameHandlers("telefon", {
     }
   },
 
+  filterForPlayer(room, currentPlayer, submissions, players) {
+    const phase = room.currentPhase ?? "";
+    const basePhase = phase.split("_")[0];
+    const pd = (room.phaseData ?? {}) as any;
+
+    if (phase === "write") {
+      const mySubmission = submissions.find(
+        (s) => currentPlayer && s.playerId === currentPlayer._id,
+      );
+      return {
+        submittedCount: submissions.length,
+        totalPlayers: players.length,
+        mySubmission: mySubmission?.content ?? null,
+      };
+    }
+    if (basePhase === "draw" && phase !== "draw") {
+      const myPrompt = currentPlayer
+        ? pd?.assignments?.[currentPlayer._id]?.myPrompt ?? null
+        : null;
+      const mySubmission = submissions.find(
+        (s) => currentPlayer && s.playerId === currentPlayer._id,
+      );
+      return {
+        stepIndex: pd?.currentStep ?? 0,
+        totalSteps: pd?.stepCount ?? 1,
+        myPrompt,
+        mySubmission: mySubmission ? true : null,
+        submittedCount: submissions.length,
+        totalPlayers: players.length,
+      };
+    }
+    if (basePhase === "guess" && phase !== "guess") {
+      const myDrawingData = currentPlayer
+        ? pd?.assignments?.[currentPlayer._id]?.myDrawingData ?? null
+        : null;
+      const mySubmission = submissions.find(
+        (s) => currentPlayer && s.playerId === currentPlayer._id,
+      );
+      return {
+        stepIndex: pd?.currentStep ?? 0,
+        totalSteps: pd?.stepCount ?? 1,
+        myDrawingData,
+        mySubmission: mySubmission?.content ?? null,
+        submittedCount: submissions.length,
+        totalPlayers: players.length,
+      };
+    }
+    // reveal: show all chain data
+    return pd ?? {};
+  },
+
   getExpectedSubmitterCount(_room, players) {
     return players.length; // everyone participates in every phase
   },

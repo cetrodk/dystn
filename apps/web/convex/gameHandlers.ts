@@ -73,6 +73,14 @@ export interface GameHandlers {
     players: Doc<"players">[],
   ): number;
 
+  /** Filter phaseData for a specific player (hide secrets, mark ownership) */
+  filterForPlayer(
+    room: Doc<"rooms">,
+    currentPlayer: Doc<"players"> | null,
+    submissions: Doc<"submissions">[],
+    players: Doc<"players">[],
+  ): Record<string, unknown>;
+
   /** Determine the next phase and what action to perform */
   getNextPhase(
     currentPhase: string,

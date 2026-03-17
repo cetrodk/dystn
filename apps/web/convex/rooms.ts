@@ -1,6 +1,13 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { generateRoomCode } from "./lib/roomCodes";
+import { getGameHandlers } from "./gameHandlers";
+
+// Ensure game handlers are registered
+import "./games/duel";
+import "./games/bluff";
+import "./games/tegn";
+import "./games/telefon";
 
 export const createRoom = mutation({
   args: {
@@ -137,168 +144,14 @@ export const getRoomForPlayer = query({
         : Promise.resolve([]),
     ]);
 
-    // Filter phaseData based on current phase
+    // Delegate data filtering to the game handler
     let filteredPhaseData = room.phaseData;
-    const phase = room.currentPhase ?? "";
-    const basePhase = phase.split("_")[0];
-
-    if (phase === "write") {
-      // Telefon write phase: only show submission status
-      const mySubmission = submissions.find(
-        (s) => currentPlayer && s.playerId === currentPlayer._id,
-      );
-      filteredPhaseData = {
-        submittedCount: submissions.length,
-        totalPlayers: players.length,
-        mySubmission: mySubmission?.content ?? null,
-      };
-    } else if (basePhase === "draw" && phase !== "draw" && room.gameType === "telefon") {
-      // Telefon draw phase: show only this player's assigned prompt
-      const pd = room.phaseData as any;
-      const myPrompt = currentPlayer
-        ? pd?.assignments?.[currentPlayer._id]?.myPrompt ?? null
-        : null;
-      const mySubmission = submissions.find(
-        (s) => currentPlayer && s.playerId === currentPlayer._id,
-      );
-      filteredPhaseData = {
-        stepIndex: pd?.currentStep ?? 0,
-        totalSteps: pd?.stepCount ?? 1,
-        myPrompt,
-        mySubmission: mySubmission ? true : null,
-        submittedCount: submissions.length,
-        totalPlayers: players.length,
-      };
-    } else if (basePhase === "guess" && phase !== "guess" && room.gameType === "telefon") {
-      // Telefon guess phase: show only this player's assigned drawing
-      const pd = room.phaseData as any;
-      const myDrawingData = currentPlayer
-        ? pd?.assignments?.[currentPlayer._id]?.myDrawingData ?? null
-        : null;
-      const mySubmission = submissions.find(
-        (s) => currentPlayer && s.playerId === currentPlayer._id,
-      );
-      filteredPhaseData = {
-        stepIndex: pd?.currentStep ?? 0,
-        totalSteps: pd?.stepCount ?? 1,
-        myDrawingData,
-        mySubmission: mySubmission?.content ?? null,
-        submittedCount: submissions.length,
-        totalPlayers: players.length,
-      };
-    } else if (phase === "reveal" && room.gameType === "telefon") {
-      // Telefon reveal: all chain data shown
-      filteredPhaseData = room.phaseData;
-    } else if (phase === "submit") {
-      // Duel/Bluff: During submit: show prompt but hide all answers
-      const mySubmission = submissions.find(
-        (s) => currentPlayer && s.playerId === currentPlayer._id,
-      );
-      filteredPhaseData = {
-        ...room.phaseData,
-        mySubmission: mySubmission?.content ?? null,
-        submittedCount: submissions.length,
-        totalPlayers: players.length,
-      };
-    } else if (phase === "vote") {
-      // Duel/Bluff: During vote: show anonymized answers, strip authorship
-      const myVote = submissions.find(
-        (s) =>
-          currentPlayer &&
-          s.playerId === currentPlayer._id &&
-          s.phase === "vote",
-      );
-      const answers = (room.phaseData?.answersAnonymized ?? []) as Array<{
-        id: string;
-        text: string;
-      }>;
-      const myAnswerId = currentPlayer
-        ? (room.phaseData?.answers ?? []).find(
-            (a: any) => a.playerId === currentPlayer._id,
-          )?.id
-        : undefined;
-      filteredPhaseData = {
-        ...room.phaseData,
-        answersAnonymized: answers.map((a) => ({
-          ...a,
-          isOwn: a.id === myAnswerId,
-        })),
-        myVote: myVote?.content ?? null,
-      };
-    } else if (phase === "draw") {
-      // Tegn: During draw: only show this player's word, hide all others
-      const phaseData = room.phaseData as any;
-      const myWord = currentPlayer
-        ? phaseData?.drawingWords?.[currentPlayer._id] ?? null
-        : null;
-      const mySubmission = submissions.find(
-        (s) => currentPlayer && s.playerId === currentPlayer._id,
-      );
-      filteredPhaseData = {
-        totalDrawings: phaseData?.totalDrawings,
-        drawingIndex: phaseData?.drawingIndex,
-        myWord,
-        mySubmission: mySubmission ? true : null,
-        submittedCount: submissions.length,
-        totalPlayers: players.length,
-      };
-    } else if (basePhase === "guess") {
-      // Tegn: During guess: artist sees waiting, others see input
-      const phaseData = room.phaseData as any;
-      const isArtist = currentPlayer?._id === phaseData?.currentArtistId;
-      const mySubmission = submissions.find(
-        (s) => currentPlayer && s.playerId === currentPlayer._id,
-      );
-      filteredPhaseData = {
-        drawingIndex: phaseData?.drawingIndex,
-        totalDrawings: phaseData?.totalDrawings,
-        currentArtistId: phaseData?.currentArtistId,
-        currentArtistName: phaseData?.currentArtistName,
-        isArtist,
-        mySubmission: mySubmission?.content ?? null,
-        submittedCount: submissions.length,
-        totalGuessers: players.length - 1,
-      };
-    } else if (basePhase === "vote" && phase !== "vote") {
-      // Tegn: During vote_K: same pattern as Duel/Bluff vote
-      const phaseData = room.phaseData as any;
-      const votePhase = phase; // e.g. "vote_0"
-      const myVote = submissions.find(
-        (s) =>
-          currentPlayer &&
-          s.playerId === currentPlayer._id &&
-          s.phase === votePhase,
-      );
-      const answers = (phaseData?.answersAnonymized ?? []) as Array<{
-        id: string;
-        text: string;
-      }>;
-      // Find this player's guess in the answers (from the guess phase)
-      const myAnswerId = currentPlayer
-        ? (phaseData?.answers ?? []).find(
-            (a: any) => a.playerId === currentPlayer._id,
-          )?.id
-        : undefined;
-      filteredPhaseData = {
-        drawingIndex: phaseData?.drawingIndex,
-        totalDrawings: phaseData?.totalDrawings,
-        currentArtistId: phaseData?.currentArtistId,
-        currentArtistName: phaseData?.currentArtistName,
-        drawingData: phaseData?.drawingData,
-        answersAnonymized: answers.map((a) => ({
-          ...a,
-          isOwn: a.id === myAnswerId,
-        })),
-        myVote: myVote?.content ?? null,
-        isArtist: currentPlayer?._id === phaseData?.currentArtistId,
-      };
-    }
-    // During reveal/scores: return everything (but strip drawingWords for Tegn)
-    else if (basePhase === "reveal" || phase === "scores") {
-      const phaseData = room.phaseData as any;
-      if (phaseData?.drawingWords) {
-        const { drawingWords, ...rest } = phaseData;
-        filteredPhaseData = rest;
+    if (room.gameType && room.currentPhase) {
+      try {
+        const handlers = getGameHandlers(room.gameType);
+        filteredPhaseData = handlers.filterForPlayer(room, currentPlayer, submissions, players);
+      } catch {
+        // No handler registered (e.g., lobby state) — return raw phaseData
       }
     }
 

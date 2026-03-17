@@ -189,6 +189,38 @@ registerGameHandlers("duel", {
     };
   },
 
+  filterForPlayer(room, currentPlayer, submissions) {
+    const phase = room.currentPhase ?? "";
+    const pd = (room.phaseData ?? {}) as any;
+
+    if (phase === "submit") {
+      const mySubmission = submissions.find(
+        (s) => currentPlayer && s.playerId === currentPlayer._id,
+      );
+      return {
+        ...pd,
+        mySubmission: mySubmission?.content ?? null,
+        submittedCount: submissions.length,
+      };
+    }
+    if (phase === "vote") {
+      const myVote = submissions.find(
+        (s) => currentPlayer && s.playerId === currentPlayer._id && s.phase === "vote",
+      );
+      const answers = (pd.answersAnonymized ?? []) as Array<{ id: string; text: string }>;
+      const myAnswerId = currentPlayer
+        ? (pd.answers ?? []).find((a: any) => a.playerId === currentPlayer._id)?.id
+        : undefined;
+      return {
+        ...pd,
+        answersAnonymized: answers.map((a) => ({ ...a, isOwn: a.id === myAnswerId })),
+        myVote: myVote?.content ?? null,
+      };
+    }
+    // reveal/scores: return as-is
+    return pd ?? {};
+  },
+
   getNextPhase(currentPhase, _event, room): PhaseTransition {
     const roundNumber = room.roundNumber ?? 1;
     const totalRounds = room.totalRounds ?? 1;

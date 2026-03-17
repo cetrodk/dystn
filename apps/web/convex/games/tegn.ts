@@ -370,6 +370,68 @@ registerGameHandlers("tegn", {
     };
   },
 
+  filterForPlayer(room, currentPlayer, submissions, players) {
+    const phase = room.currentPhase ?? "";
+    const basePhase = phase.split("_")[0];
+    const pd = (room.phaseData ?? {}) as any;
+
+    if (phase === "draw") {
+      const myWord = currentPlayer ? pd?.drawingWords?.[currentPlayer._id] ?? null : null;
+      const mySubmission = submissions.find(
+        (s) => currentPlayer && s.playerId === currentPlayer._id,
+      );
+      return {
+        totalDrawings: pd?.totalDrawings,
+        drawingIndex: pd?.drawingIndex,
+        myWord,
+        mySubmission: mySubmission ? true : null,
+        submittedCount: submissions.length,
+        totalPlayers: players.length,
+      };
+    }
+    if (basePhase === "guess") {
+      const isArtist = currentPlayer?._id === pd?.currentArtistId;
+      const mySubmission = submissions.find(
+        (s) => currentPlayer && s.playerId === currentPlayer._id,
+      );
+      return {
+        drawingIndex: pd?.drawingIndex,
+        totalDrawings: pd?.totalDrawings,
+        currentArtistId: pd?.currentArtistId,
+        currentArtistName: pd?.currentArtistName,
+        isArtist,
+        mySubmission: mySubmission?.content ?? null,
+        submittedCount: submissions.length,
+        totalGuessers: players.length - 1,
+      };
+    }
+    if (basePhase === "vote" && phase !== "vote") {
+      const myVote = submissions.find(
+        (s) => currentPlayer && s.playerId === currentPlayer._id && s.phase === phase,
+      );
+      const answers = (pd?.answersAnonymized ?? []) as Array<{ id: string; text: string }>;
+      const myAnswerId = currentPlayer
+        ? (pd?.answers ?? []).find((a: any) => a.playerId === currentPlayer._id)?.id
+        : undefined;
+      return {
+        drawingIndex: pd?.drawingIndex,
+        totalDrawings: pd?.totalDrawings,
+        currentArtistId: pd?.currentArtistId,
+        currentArtistName: pd?.currentArtistName,
+        drawingData: pd?.drawingData,
+        answersAnonymized: answers.map((a) => ({ ...a, isOwn: a.id === myAnswerId })),
+        myVote: myVote?.content ?? null,
+        isArtist: currentPlayer?._id === pd?.currentArtistId,
+      };
+    }
+    // reveal/scores: strip drawingWords
+    if (pd?.drawingWords) {
+      const { drawingWords, ...rest } = pd;
+      return rest;
+    }
+    return pd ?? {};
+  },
+
   getExpectedSubmitterCount(room, players) {
     const basePhase = room.currentPhase?.split("_")[0];
     if (basePhase === "guess" || basePhase === "vote") {
