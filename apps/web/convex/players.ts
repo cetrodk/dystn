@@ -213,13 +213,19 @@ export const heartbeat = mutation({
         ),
     );
 
-    // Schedule a sweep for each active room to mark stale players
+    // Schedule a sweep for each active room (deduplicated: max 1 per 30s per room)
+    const roomMap = new Map(rooms.map((r, i) => [players[i].roomId, r]));
     for (const roomId of activeRoomIds) {
-      await ctx.scheduler.runAfter(
-        60_000, // 60s from now
-        internal.players.sweepDisconnected,
-        { roomId },
-      );
+      const room = roomMap.get(roomId);
+      const lastSweep = room?.lastSweepScheduled ?? 0;
+      if (now - lastSweep > 30_000) {
+        await ctx.db.patch(roomId, { lastSweepScheduled: now });
+        await ctx.scheduler.runAfter(
+          60_000,
+          internal.players.sweepDisconnected,
+          { roomId },
+        );
+      }
     }
   },
 });

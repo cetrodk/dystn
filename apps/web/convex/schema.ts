@@ -18,6 +18,7 @@ export default defineSchema({
     totalRounds: v.optional(v.float64()),
     settings: v.optional(v.any()),
     phaseVersion: v.optional(v.float64()),
+    lastSweepScheduled: v.optional(v.float64()),
     createdAt: v.float64(),
   })
     .index("by_code", ["code"])

@@ -66,30 +66,40 @@ export function PlayerView() {
 
     if (PhaseComponent) {
       return (
-        <Suspense
-          fallback={
-            <div className="flex min-h-screen items-center justify-center text-[var(--color-text-muted)] animate-gentle-pulse">
-              Indlæser...
-            </div>
-          }
-        >
-          <PhaseComponent room={room} sessionId={sessionId} />
-        </Suspense>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={room.currentPhase + "-" + room.roundNumber}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -16 }}
+            transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <Suspense
+              fallback={
+                <div className="flex min-h-screen items-center justify-center text-[var(--color-text-muted)] animate-gentle-pulse">
+                  Indlæser...
+                </div>
+              }
+            >
+              <PhaseComponent room={room} sessionId={sessionId} />
+            </Suspense>
+          </motion.div>
+        </AnimatePresence>
       );
     }
   }
 
   const currentPlayer = room.players?.find(
-    (p: any) => p._id === room.currentPlayerId,
+    (p) => p._id === room.currentPlayerId,
   );
 
   // ── Finished ──
   if (room.status === "finished") {
     const sorted = [...(room.players ?? [])].sort(
-      (a: any, b: any) => b.score - a.score,
+      (a, b) => b.score - a.score,
     );
     const rank = sorted.findIndex(
-      (p: any) => p._id === room.currentPlayerId,
+      (p) => p._id === room.currentPlayerId,
     ) + 1;
 
     return (
@@ -154,7 +164,7 @@ export function PlayerView() {
         </p>
         <ul className="flex flex-col gap-2">
           <AnimatePresence>
-            {room.players.map((player: any) => {
+            {room.players.map((player) => {
               const isMe = player._id === room.currentPlayerId;
               return (
                 <motion.li

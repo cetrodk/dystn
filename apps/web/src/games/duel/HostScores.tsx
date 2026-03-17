@@ -18,7 +18,7 @@ export default function HostScores({ room, sessionId }: PhaseComponentProps) {
 
   useEffect(() => {
     const ids = players.map((_, i) =>
-      window.setTimeout(sfxScore, i * 150 + 100),
+      window.setTimeout(sfxScore, Math.min(i * 150, 1200) + 100),
     );
     return () => ids.forEach(window.clearTimeout);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -38,13 +38,13 @@ export default function HostScores({ room, sessionId }: PhaseComponentProps) {
       </p>
 
       <div className="w-full max-w-3xl flex flex-col gap-4">
-        {players.map((player: any, i: number) => (
+        {players.map((player, i) => (
           <motion.div
             key={player._id}
             layout
             initial={{ opacity: 0, x: -30 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: i * 0.15, type: "spring", stiffness: 200 }}
+            transition={{ delay: Math.min(i * 0.15, 1.2), type: "spring", stiffness: 200 }}
             className={`flex items-center gap-5 rounded-2xl p-5 ${
               i === 0
                 ? "bg-[var(--color-primary)]/10 ring-1 ring-[var(--color-primary)]/30"
@@ -54,7 +54,7 @@ export default function HostScores({ room, sessionId }: PhaseComponentProps) {
             <motion.span
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
-              transition={{ delay: i * 0.15 + 0.1, type: "spring" }}
+              transition={{ delay: Math.min(i * 0.15, 1.2) + 0.1, type: "spring" }}
               className={`font-display text-3xl font-bold w-10 ${
                 i === 0 ? "text-[var(--color-primary)]" : "text-[var(--color-text-muted)]"
               }`}
@@ -84,7 +84,7 @@ export default function HostScores({ room, sessionId }: PhaseComponentProps) {
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: players.length * 0.15 + 0.3 }}
+        transition={{ delay: Math.min(players.length * 0.15, 1.2) + 0.3 }}
         className="flex items-center gap-4"
       >
         <button

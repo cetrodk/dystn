@@ -94,7 +94,10 @@ registerGameHandlers("duel", {
       .withIndex("by_player_round", (q) =>
         q.eq("playerId", player._id).eq("round", room.roundNumber!),
       )
-      .filter((q) => q.eq(q.field("phase"), "vote"))
+      .filter((q) => q.and(
+        q.eq(q.field("roomId"), room._id),
+        q.eq(q.field("phase"), "vote"),
+      ))
       .first();
 
     if (existing) {
