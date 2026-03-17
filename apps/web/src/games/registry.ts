@@ -1,7 +1,35 @@
 import { lazy, type ComponentType } from "react";
+import type { Id } from "../../convex/_generated/dataModel";
+
+export interface PlayerSnapshot {
+  _id: Id<"players">;
+  name: string;
+  avatarColor: string;
+  avatarImage?: string;
+  score: number;
+  isConnected: boolean;
+  hasSubmitted: boolean;
+}
+
+export interface RoomSnapshot {
+  _id: Id<"rooms">;
+  code: string;
+  gameType?: string;
+  status: "lobby" | "playing" | "finished";
+  currentPhase?: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  phaseData: Record<string, any>;
+  phaseDeadline?: number;
+  roundNumber?: number;
+  totalRounds?: number;
+  players: PlayerSnapshot[];
+  currentPlayerId?: Id<"players"> | null;
+  settings?: Record<string, unknown>;
+  hostId?: string;
+}
 
 export interface PhaseComponentProps {
-  room: any;
+  room: RoomSnapshot;
   sessionId: string;
 }
 

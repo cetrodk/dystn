@@ -11,7 +11,7 @@ import type { PhaseComponentProps } from "../registry";
 export default function HostScores({ room, sessionId }: PhaseComponentProps) {
   const hostAdvance = useMutation(api.game.hostAdvance);
   const players = [...(room.players ?? [])].sort(
-    (a: any, b: any) => b.score - a.score,
+    (a, b) => b.score - a.score,
   );
 
   const isLastRound = (room.roundNumber ?? 1) >= (room.totalRounds ?? 1);

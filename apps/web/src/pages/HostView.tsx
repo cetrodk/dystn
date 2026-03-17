@@ -7,7 +7,7 @@ import { Settings, SkipForward } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { api } from "../../convex/_generated/api";
 import { useSessionId } from "@/providers/SessionProvider";
-import { gameComponents } from "@/games/registry";
+import { gameComponents, type RoomSnapshot } from "@/games/registry";
 import { sfxFanfare } from "@/lib/sounds";
 import { GameAvatar } from "@/components/GameAvatar";
 import { GamePicker, GAME_ICONS } from "@/components/GamePicker";
@@ -43,7 +43,7 @@ function HostSettingsOverlay({
   sessionId,
   onClose,
 }: {
-  room: any;
+  room: RoomSnapshot;
   sessionId: string;
   onClose: () => void;
 }) {
@@ -126,7 +126,7 @@ function HostToolbar({
   sessionId,
   onSettings,
 }: {
-  room: any;
+  room: RoomSnapshot;
   sessionId: string;
   onSettings: () => void;
 }) {
@@ -216,7 +216,7 @@ function GameInfoCard({ gameType, onChangeGame }: { gameType: string; onChangeGa
 
 /* ── Player List ───────────────────────────────────────── */
 
-function PlayerList({ room, sessionId }: { room: any; sessionId: string }) {
+function PlayerList({ room, sessionId }: { room: RoomSnapshot; sessionId: string }) {
   const kickPlayer = useMutation(api.players.kickPlayer);
 
   return (
@@ -266,7 +266,8 @@ function PlayerList({ room, sessionId }: { room: any; sessionId: string }) {
 export function HostView() {
   const { code } = useParams<{ code: string }>();
   const sessionId = useSessionId();
-  const room = useQuery(api.rooms.getRoom, code ? { code } : "skip");
+  const roomData = useQuery(api.rooms.getRoom, code ? { code } : "skip");
+  const room = roomData as RoomSnapshot | null | undefined;
   const startGame = useMutation(api.game.startGame);
   const changeGameType = useMutation(api.rooms.changeGameType);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -463,17 +464,17 @@ export function HostView() {
 
 /* ── Finished Screen ───────────────────────────────────── */
 
-function FinishedScreen({ room, sessionId }: { room: any; sessionId: string }) {
+function FinishedScreen({ room, sessionId }: { room: RoomSnapshot; sessionId: string }) {
   const restartGame = useMutation(api.game.restartGame);
   const backToLobby = useMutation(api.game.backToLobby);
   const players = [...(room.players ?? [])].sort(
-    (a: any, b: any) => b.score - a.score,
+    (a, b) => b.score - a.score,
   );
 
   const topScore = players[0]?.score ?? 0;
-  const winners = players.filter((p: any) => p.score === topScore);
+  const winners = players.filter((p) => p.score === topScore);
   const isTie = winners.length > 1;
-  const rest = players.filter((p: any) => p.score < topScore);
+  const rest = players.filter((p) => p.score < topScore);
 
   useEffect(() => {
     const end = Date.now() + 3000;
@@ -521,7 +522,7 @@ function FinishedScreen({ room, sessionId }: { room: any; sessionId: string }) {
         >
           <p className="mb-4 text-lg text-[var(--color-text-muted)]">Uafgjort!</p>
           <div className="flex justify-center gap-6">
-            {winners.map((w: any) => (
+            {winners.map((w) => (
               <div key={w._id} className="text-center">
                 <div className="mx-auto">
                   <GameAvatar name={w.name} avatarColor={w.avatarColor} avatarImage={w.avatarImage} className="h-20 w-20" />
