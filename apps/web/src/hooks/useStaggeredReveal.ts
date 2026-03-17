@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 /** Timing constants for staggered reveals (ms) */
 export const REVEAL_TIMING = {
@@ -29,6 +29,7 @@ interface UseStaggeredRevealOptions {
  * intro → items (one by one) → drumroll → final → done
  *
  * All timeouts are tracked and cleaned up on unmount.
+ * Callbacks are stored in refs to avoid stale closures.
  */
 export function useStaggeredReveal({
   itemCount,
@@ -41,11 +42,21 @@ export function useStaggeredReveal({
   const [visibleItems, setVisibleItems] = useState(0);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
-  const schedule = (fn: () => void, delay: number) => {
+  // Keep callbacks in refs so the timeline always calls the latest version
+  const onItemRevealRef = useRef(onItemReveal);
+  const onDrumrollRef = useRef(onDrumroll);
+  const onFinalRevealRef = useRef(onFinalReveal);
+  const onDoneRef = useRef(onDone);
+  onItemRevealRef.current = onItemReveal;
+  onDrumrollRef.current = onDrumroll;
+  onFinalRevealRef.current = onFinalReveal;
+  onDoneRef.current = onDone;
+
+  const schedule = useCallback((fn: () => void, delay: number) => {
     const id = setTimeout(fn, delay);
     timers.current.push(id);
     return id;
-  };
+  }, []);
 
   useEffect(() => {
     schedule(() => {
@@ -56,17 +67,17 @@ export function useStaggeredReveal({
         if (shown < itemCount) {
           shown++;
           setVisibleItems(shown);
-          onItemReveal?.(shown - 1);
+          onItemRevealRef.current?.(shown - 1);
           schedule(revealNext, REVEAL_TIMING.itemInterval);
         } else {
           setStage("drumroll");
-          onDrumroll?.();
+          onDrumrollRef.current?.();
           schedule(() => {
             setStage("final");
-            onFinalReveal?.();
+            onFinalRevealRef.current?.();
             schedule(() => {
               setStage("done");
-              onDone?.();
+              onDoneRef.current?.();
             }, REVEAL_TIMING.doneDelay);
           }, REVEAL_TIMING.finalRevealDelay);
         }
@@ -79,6 +90,8 @@ export function useStaggeredReveal({
       timers.current.forEach(clearTimeout);
       timers.current = [];
     };
+    // The timeline runs once on mount — itemCount is captured at start
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return { stage, visibleItems, schedule };

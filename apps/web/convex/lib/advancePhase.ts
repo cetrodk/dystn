@@ -50,6 +50,11 @@ export async function advancePhaseInternal(
   const currentPhase = room.currentPhase;
   if (!currentPhase) return;
 
+  // Guard against double-advancement: re-read room and check phase version
+  const freshRoom = await ctx.db.get(room._id);
+  if (!freshRoom || freshRoom.currentPhase !== currentPhase) return;
+  if ((freshRoom.phaseVersion ?? 0) !== (room.phaseVersion ?? 0)) return;
+
   const players = await ctx.db
     .query("players")
     .withIndex("by_room", (q) => q.eq("roomId", room._id))
@@ -91,6 +96,7 @@ export async function advancePhaseInternal(
       currentPhase: "finished",
       status: "finished",
       phaseDeadline: undefined,
+      phaseVersion: (room.phaseVersion ?? 0) + 1,
     });
     return;
   } else if (currentPhase === "reveal") {
@@ -104,6 +110,7 @@ export async function advancePhaseInternal(
         currentPhase: "finished",
         status: "finished",
         phaseDeadline: undefined,
+        phaseVersion: (room.phaseVersion ?? 0) + 1,
       });
       return;
     }
@@ -207,6 +214,7 @@ export async function advancePhaseInternal(
         currentPhase: "finished",
         status: "finished",
         phaseDeadline: undefined,
+        phaseVersion: (room.phaseVersion ?? 0) + 1,
       });
       return;
     }
@@ -231,10 +239,12 @@ export async function advancePhaseInternal(
     : getPhaseDuration(nextPhase, room.settings as Record<string, unknown> | undefined);
   const deadline = duration > 0 ? Date.now() + duration : undefined;
 
+  const nextVersion = (room.phaseVersion ?? 0) + 1;
   await ctx.db.patch(room._id, {
     currentPhase: nextPhase,
     phaseData: nextPhaseData,
     phaseDeadline: deadline,
+    phaseVersion: nextVersion,
   });
 
   if (deadline) {

@@ -1,11 +1,11 @@
 import { useConvex } from "convex/react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { da } from "@/lib/da";
 
 export function ConnectionBanner() {
   const convex = useConvex();
   const [show, setShow] = useState(false);
-  const hasConnected = useState({ current: false })[0];
+  const hasConnected = useRef(false);
 
   useEffect(() => {
     return convex.subscribeToConnectionState((state) => {
@@ -16,7 +16,7 @@ export function ConnectionBanner() {
         setShow(true);
       }
     });
-  }, [convex, hasConnected]);
+  }, [convex]);
 
   if (!show) return null;
 

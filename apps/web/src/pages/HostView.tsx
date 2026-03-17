@@ -4,6 +4,7 @@ import { useQuery, useMutation } from "convex/react";
 import { AnimatePresence, motion } from "framer-motion";
 import confetti from "canvas-confetti";
 import { Settings, SkipForward } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 import { api } from "../../convex/_generated/api";
 import { useSessionId } from "@/providers/SessionProvider";
 import { gameComponents } from "@/games/registry";
@@ -383,9 +384,19 @@ export function HostView() {
         <div className="mt-2 font-display text-8xl font-bold tracking-[0.2em] glow-text">
           {room.code}
         </div>
-        <p className="mt-3 text-lg text-[var(--color-text-muted)]">
-          Gå til <span className="font-bold text-[var(--color-text)]">/play</span>{" "}
-          og indtast koden
+        <div className="mt-4 inline-block rounded-2xl bg-white p-3">
+          <QRCodeSVG
+            value={`${window.location.origin}/join/${room.code}`}
+            size={140}
+            fgColor="#0d0b1a"
+            bgColor="white"
+          />
+        </div>
+        <p className="mt-2 text-sm text-[var(--color-text-muted)]">
+          Scan eller gå til{" "}
+          <span className="font-bold text-[var(--color-text)]">
+            {window.location.host}/join/{room.code}
+          </span>
         </p>
       </motion.div>
 
@@ -468,6 +479,7 @@ function FinishedScreen({ room, sessionId }: { room: any; sessionId: string }) {
     const end = Date.now() + 3000;
     sfxFanfare();
     const colors = ["#8b6eff", "#f472b6", "#fbbf24", "#34d399", "#60a5fa"];
+    let rafId: number;
 
     function frame() {
       confetti({
@@ -484,9 +496,10 @@ function FinishedScreen({ room, sessionId }: { room: any; sessionId: string }) {
         origin: { x: 1, y: 0.7 },
         colors,
       });
-      if (Date.now() < end) requestAnimationFrame(frame);
+      if (Date.now() < end) rafId = requestAnimationFrame(frame);
     }
-    frame();
+    rafId = requestAnimationFrame(frame);
+    return () => cancelAnimationFrame(rafId);
   }, []);
 
   return (

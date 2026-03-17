@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { api } from "../../convex/_generated/api";
 import { useSessionId } from "@/providers/SessionProvider";
@@ -10,10 +10,11 @@ import { da } from "@/lib/da";
 
 export function JoinPage() {
   const navigate = useNavigate();
+  const { code: codeParam } = useParams<{ code?: string }>();
   const sessionId = useSessionId();
   const joinRoom = useMutation(api.players.joinRoom);
 
-  const [code, setCode] = useState("");
+  const [code, setCode] = useState(codeParam?.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 4) ?? "");
   const [name, setName] = useState("");
   const [error, setError] = useState("");
   const [joining, setJoining] = useState(false);

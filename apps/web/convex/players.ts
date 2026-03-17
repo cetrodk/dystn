@@ -3,6 +3,7 @@ import { internal } from "./_generated/api";
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { getAvatarColor } from "./lib/colors";
+import { MAX_PLAYERS } from "./lib/gameConfig";
 
 const AVATAR_IMAGES = [
   "alien", "bits", "book", "cat", "clock", "cyberpunk", "cyborg",
@@ -59,6 +60,10 @@ export const joinRoom = mutation({
       .query("players")
       .withIndex("by_room", (q) => q.eq("roomId", room._id))
       .collect();
+
+    if (playersInRoom.length >= MAX_PLAYERS) {
+      throw new Error(`Rummet er fuldt (max ${MAX_PLAYERS} spillere)`);
+    }
 
     const nameTaken = playersInRoom.some(
       (p) => p.name.toLowerCase() === trimmedName.toLowerCase(),

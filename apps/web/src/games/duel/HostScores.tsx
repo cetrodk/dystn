@@ -17,9 +17,11 @@ export default function HostScores({ room, sessionId }: PhaseComponentProps) {
   const isLastRound = (room.roundNumber ?? 1) >= (room.totalRounds ?? 1);
 
   useEffect(() => {
-    players.forEach((_, i) => {
-      setTimeout(sfxScore, i * 150 + 100);
-    });
+    const ids = players.map((_, i) =>
+      window.setTimeout(sfxScore, i * 150 + 100),
+    );
+    return () => ids.forEach(window.clearTimeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

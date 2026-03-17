@@ -17,6 +17,7 @@ export default defineSchema({
     roundNumber: v.optional(v.float64()),
     totalRounds: v.optional(v.float64()),
     settings: v.optional(v.any()),
+    phaseVersion: v.optional(v.float64()),
     createdAt: v.float64(),
   })
     .index("by_code", ["code"])

@@ -264,6 +264,12 @@ export const submitAnswer = mutation({
       return; // silently drop late submissions
     }
 
+    // Guard against oversized submissions (e.g. drawing data)
+    const contentSize = JSON.stringify(content).length;
+    if (contentSize > 200_000) {
+      throw new Error("Indhold er for stort");
+    }
+
     const handlers = getGameHandlers(room.gameType);
 
     if (isVotePhase(phase)) {

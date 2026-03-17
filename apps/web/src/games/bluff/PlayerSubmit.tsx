@@ -4,6 +4,7 @@ import { ConvexError } from "convex/values";
 import { motion } from "framer-motion";
 import { api } from "../../../convex/_generated/api";
 import { CountdownTimer } from "@festspil/ui/CountdownTimer";
+import { WaitingScreen } from "@/components/WaitingScreen";
 import { sfxWhoosh, sfxUrgent } from "@/lib/sounds";
 import { da } from "@/lib/da";
 import type { PhaseComponentProps } from "../registry";
@@ -33,7 +34,7 @@ export default function PlayerSubmit({ room, sessionId }: PhaseComponentProps) {
       });
       setSubmitted(true);
       setError("");
-    } catch (err: any) {
+    } catch (err) {
       const msg = err instanceof ConvexError ? String(err.data) : "Fejl";
       setError(msg);
     }
@@ -42,16 +43,7 @@ export default function PlayerSubmit({ room, sessionId }: PhaseComponentProps) {
   if (submitted || phaseData.mySubmission) {
     const myAnswer = phaseData.mySubmission ?? answer;
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 p-4">
-        <motion.div
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ type: "spring", stiffness: 200 }}
-          className="text-6xl"
-        >
-          ✓
-        </motion.div>
-        <p className="font-display text-2xl font-bold">{da.waiting}</p>
+      <WaitingScreen deadline={room.phaseDeadline} players={room.players}>
         {myAnswer ? (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
@@ -65,10 +57,7 @@ export default function PlayerSubmit({ room, sessionId }: PhaseComponentProps) {
             <p className="text-lg font-semibold">{myAnswer}</p>
           </motion.div>
         ) : null}
-        <div className="text-4xl font-mono font-bold text-[var(--color-primary)]">
-          <CountdownTimer deadline={room.phaseDeadline ?? null} />
-        </div>
-      </div>
+      </WaitingScreen>
     );
   }
 
