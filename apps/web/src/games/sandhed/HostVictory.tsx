@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { sfxFanfare } from "@/lib/sounds";
 import { GameAvatar } from "@/components/GameAvatar";
+import { ConfettiBackground } from "@/components/ConfettiBackground";
 import { da } from "@/lib/da";
 import { Racetrack } from "./Racetrack";
 import type { PhaseComponentProps } from "../registry";
@@ -21,6 +22,8 @@ export default function HostVictory({ room }: PhaseComponentProps) {
 
   return (
     <div className="flex flex-col items-center gap-10">
+      <ConfettiBackground />
+
       {/* Trophy */}
       <motion.div
         initial={{ scale: 0, rotate: -10 }}

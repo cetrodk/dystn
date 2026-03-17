@@ -3,7 +3,7 @@ import { useMutation } from "convex/react";
 import { motion } from "framer-motion";
 import { api } from "../../../convex/_generated/api";
 import { CountdownTimer } from "@festspil/ui/CountdownTimer";
-import { sfxUrgent } from "@/lib/sounds";
+import { sfxUrgent, sfxTick, sfxClick } from "@/lib/sounds";
 import { da } from "@/lib/da";
 import type { PhaseComponentProps } from "../registry";
 
@@ -60,6 +60,8 @@ export default function PlayerCommit({ room, sessionId }: PhaseComponentProps) {
             : null;
 
       // Start transit
+      sfxClick();
+      if (navigator.vibrate) navigator.vibrate(50);
       setState({ type: "transit", from, to: side, startedAt: Date.now() });
       sendChoice("transit");
 
@@ -82,6 +84,7 @@ export default function PlayerCommit({ room, sessionId }: PhaseComponentProps) {
 
   const handleTick = useCallback((s: number) => {
     if (s <= 3 && s > 0) sfxUrgent();
+    else if (s <= 5 && s > 3) sfxTick();
   }, []);
 
   const isTransiting = state.type === "transit";

@@ -196,8 +196,8 @@ Both are treated identically: avatar gets a "confused" animation (spinning quest
 - Player phone: "Du nåede ikke at vælge!" (You didn't choose in time!).
 - `phaseData.results` includes `{ playerId, choice: null, correct: false, noAnswer: true }`.
 
-### 4. Timer Duration: 10 Seconds
-**DECIDED:** 10 seconds for the commit phase. Last 3 seconds get dramatic audio cues. The full 10 seconds always plays out — no auto-advance when all players have picked a side, because the bluffing/switching IS the game.
+### 4. Timer Duration: 20 Seconds
+**DECIDED:** 20 seconds for the commit phase. Last 3 seconds get dramatic audio cues. The full 20 seconds always plays out — no auto-advance when all players have picked a side, because the bluffing/switching IS the game. 20 seconds gives enough time to: read the statement (~3s), pick a side (~2s), observe others (~5s), consider switching (~3s), and potentially execute a bluff-switch cycle (~3s). With a 1.5s transit time, this allows 2-3 meaningful switches per round.
 
 ### 5. Statement Visible on Phone: Yes
 **DECIDED:** Show the statement on the player's phone too (secondary to TV). Some players might be far from the screen. The social dynamics come from watching the SANDT/FALSK choices on TV, not from where you read the statement.

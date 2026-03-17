@@ -1,7 +1,7 @@
-import { memo, useCallback } from "react";
+import { memo, useCallback, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CountdownTimer } from "@festspil/ui/CountdownTimer";
-import { sfxUrgent } from "@/lib/sounds";
+import { sfxUrgent, sfxTick, sfxSwitch } from "@/lib/sounds";
 import { GameAvatar } from "@/components/GameAvatar";
 import { da } from "@/lib/da";
 import { Racetrack } from "./Racetrack";
@@ -13,8 +13,20 @@ export default function HostCommit({ room }: PhaseComponentProps) {
   const currentChoices = (pd.currentChoices ?? {}) as Record<string, string>;
   const trackPositions = (pd.trackPositions ?? {}) as Record<string, number>;
 
+  // Play whoosh when any player switches sides
+  const prevChoicesRef = useRef(currentChoices);
+  useEffect(() => {
+    const prev = prevChoicesRef.current;
+    const changed = Object.keys(currentChoices).some(
+      (id) => currentChoices[id] !== prev[id] && currentChoices[id] === "transit",
+    );
+    if (changed) sfxSwitch();
+    prevChoicesRef.current = currentChoices;
+  }, [currentChoices]);
+
   const handleTick = useCallback((s: number) => {
     if (s <= 3 && s > 0) sfxUrgent();
+    else if (s <= 10 && s > 3) sfxTick();
   }, []);
 
   // Group players by their current choice

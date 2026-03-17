@@ -1,9 +1,10 @@
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import { useMutation } from "convex/react";
 import { motion } from "framer-motion";
 import { Check, X, HelpCircle } from "lucide-react";
 import { api } from "../../../convex/_generated/api";
 import { CountdownTimer } from "@festspil/ui/CountdownTimer";
+import { sfxReveal, sfxCorrect, sfxWrong, sfxShame, sfxHop } from "@/lib/sounds";
 import { GameAvatar } from "@/components/GameAvatar";
 import { da } from "@/lib/da";
 import { Racetrack } from "./Racetrack";
@@ -29,6 +30,25 @@ export default function HostReveal({ room, sessionId }: PhaseComponentProps) {
   const players = room.players ?? [];
 
   const isCorrectTrue = correctAnswer === "true";
+
+  // Play staggered sounds: reveal → per-player results → track hops
+  useEffect(() => {
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    // Answer reveal sound
+    timers.push(setTimeout(sfxReveal, 300));
+    // Per-player result sounds
+    results.forEach((r, i) => {
+      timers.push(setTimeout(() => {
+        if (r.noAnswer) sfxShame();
+        else if (r.correct) sfxCorrect();
+        else sfxWrong();
+      }, 600 + i * 150));
+    });
+    // Track hop sound
+    timers.push(setTimeout(sfxHop, 800 + results.length * 150));
+    return () => timers.forEach(clearTimeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleAdvance = useCallback(() => {
     hostAdvance({ roomId: room._id, hostId: sessionId });

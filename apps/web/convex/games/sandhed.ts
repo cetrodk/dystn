@@ -160,7 +160,7 @@ registerGameHandlers("sandhed", {
       }
 
       const currentPos = trackPositions[player._id] ?? 0;
-      const newPosition = Math.max(0, currentPos + delta);
+      const newPosition = Math.max(0, Math.min(FINISH_LINE, currentPos + delta));
       trackPositions[player._id] = newPosition;
 
       // Also give score points for the leaderboard (100 per correct)

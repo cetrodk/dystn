@@ -176,6 +176,93 @@ export function sfxAnswerPop() {
   });
 }
 
+/** Sandhed: side switch whoosh — quick swooping pitch slide */
+export function sfxSwitch() {
+  play((ac) => {
+    const osc = ac.createOscillator();
+    const gain = ac.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(600, ac.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(300, ac.currentTime + 0.12);
+    osc.frequency.exponentialRampToValueAtTime(800, ac.currentTime + 0.25);
+    gain.gain.setValueAtTime(0.1, ac.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.3);
+    osc.connect(gain).connect(ac.destination);
+    osc.start();
+    osc.stop(ac.currentTime + 0.3);
+  });
+}
+
+/** Sandhed: correct answer — bright ascending ding */
+export function sfxCorrect() {
+  play((ac) => {
+    const osc = ac.createOscillator();
+    const gain = ac.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(523, ac.currentTime); // C5
+    osc.frequency.setValueAtTime(659, ac.currentTime + 0.1); // E5
+    gain.gain.setValueAtTime(0.15, ac.currentTime);
+    gain.gain.setValueAtTime(0.15, ac.currentTime + 0.15);
+    gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.35);
+    osc.connect(gain).connect(ac.destination);
+    osc.start();
+    osc.stop(ac.currentTime + 0.35);
+  });
+}
+
+/** Sandhed: wrong answer — descending buzz */
+export function sfxWrong() {
+  play((ac) => {
+    const osc = ac.createOscillator();
+    const gain = ac.createGain();
+    osc.type = "sawtooth";
+    osc.frequency.setValueAtTime(300, ac.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(150, ac.currentTime + 0.25);
+    gain.gain.setValueAtTime(0.08, ac.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.3);
+    osc.connect(gain).connect(ac.destination);
+    osc.start();
+    osc.stop(ac.currentTime + 0.3);
+  });
+}
+
+/** Sandhed: no-answer shame — descending wah-wah */
+export function sfxShame() {
+  play((ac) => {
+    const t = ac.currentTime;
+    [400, 350, 300].forEach((freq, i) => {
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+      osc.type = "triangle";
+      const start = t + i * 0.2;
+      osc.frequency.setValueAtTime(freq, start);
+      osc.frequency.exponentialRampToValueAtTime(freq * 0.7, start + 0.18);
+      gain.gain.setValueAtTime(0.1, start);
+      gain.gain.exponentialRampToValueAtTime(0.001, start + 0.2);
+      osc.connect(gain).connect(ac.destination);
+      osc.start(start);
+      osc.stop(start + 0.2);
+    });
+  });
+}
+
+/** Sandhed: avatar hops forward on track */
+export function sfxHop() {
+  play((ac) => {
+    const osc = ac.createOscillator();
+    const gain = ac.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(400, ac.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(700, ac.currentTime + 0.08);
+    osc.frequency.exponentialRampToValueAtTime(500, ac.currentTime + 0.15);
+    gain.gain.setValueAtTime(0.12, ac.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.18);
+    osc.connect(gain).connect(ac.destination);
+    osc.start();
+    osc.stop(ac.currentTime + 0.18);
+  });
+}
+
 /** Crowd reaction — warm layered "ooh" shimmer */
 export function sfxCrowdReact() {
   play((ac) => {

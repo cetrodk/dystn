@@ -5,15 +5,15 @@ export const seedSandhedPrompts = mutation({
     const prompts: Array<{ text: string; answer: "true" | "false"; category: string }> = [
       // Geografi
       { text: "Mount Everest er det højeste bjerg i verden", answer: "true", category: "geografi" },
-      { text: "Sahara er verdens største ørken", answer: "false", category: "geografi" },
+      { text: "Sahara er verdens største varme ørken", answer: "true", category: "geografi" },
       { text: "Australien er både et land og et kontinent", answer: "true", category: "geografi" },
-      { text: "Island ligger på den nordamerikanske plade", answer: "false", category: "geografi" },
+      { text: "Island ligger delvist på den nordamerikanske plade", answer: "true", category: "geografi" },
       { text: "Amazonfloden er verdens længste flod", answer: "false", category: "geografi" },
       { text: "Rusland grænser op til 14 lande", answer: "true", category: "geografi" },
       { text: "Storebæltsbroen er længere end Øresundsbroen", answer: "true", category: "geografi" },
       { text: "Finland har over 180.000 søer", answer: "true", category: "geografi" },
       { text: "Grønland er verdens største ø", answer: "true", category: "geografi" },
-      { text: "Tokyo er verdens mest befolkede by", answer: "true", category: "geografi" },
+      { text: "Canada er det næststørste land i verden", answer: "true", category: "geografi" },
       { text: "Afrika har flere lande end Asien", answer: "true", category: "geografi" },
       { text: "Antarktis er ejet af Norge", answer: "false", category: "geografi" },
 
@@ -27,7 +27,7 @@ export const seedSandhedPrompts = mutation({
       { text: "Titanic var det største skib nogensinde bygget da det sank", answer: "true", category: "historie" },
       { text: "Romerriget eksisterede i over 1000 år", answer: "true", category: "historie" },
       { text: "Anden verdenskrig startede i 1941", answer: "false", category: "historie" },
-      { text: "De første Olympiske Lege blev holdt i Athen", answer: "false", category: "historie" },
+      { text: "De første moderne Olympiske Lege blev holdt i Athen", answer: "true", category: "historie" },
       { text: "Albert Einstein dumpede matematik i skolen", answer: "false", category: "historie" },
       { text: "Den franske revolution begyndte i 1789", answer: "true", category: "historie" },
 
@@ -57,10 +57,10 @@ export const seedSandhedPrompts = mutation({
       { text: "James Bond drikker kun martini", answer: "false", category: "popkultur" },
       { text: "Walt Disney blev fyret fra en avis for manglende kreativitet", answer: "true", category: "popkultur" },
       { text: "Titanic vandt 11 Oscars", answer: "true", category: "popkultur" },
-      { text: "LEGO er det mest producerede legetøj i verden", answer: "false", category: "popkultur" },
+      { text: "LEGO er verdens største legetøjsproducent", answer: "true", category: "popkultur" },
 
       // Danmark
-      { text: "Danmark har over 7.000 øer", answer: "true", category: "danmark" },
+      { text: "Danmark har over 400 navngivne øer", answer: "true", category: "danmark" },
       { text: "Christiania er et officielt uafhængigt land", answer: "false", category: "danmark" },
       { text: "Den lille havfrue-statuen er over 100 år gammel", answer: "true", category: "danmark" },
       { text: "Danmark er det ældste monarki i Europa", answer: "true", category: "danmark" },
@@ -82,14 +82,14 @@ export const seedSandhedPrompts = mutation({
       { text: "Det tager 8 minutter for sollys at nå Jorden", answer: "true", category: "sjove-fakta" },
       { text: "Giraffer har samme antal halshvirvler som mennesker", answer: "true", category: "sjove-fakta" },
       { text: "Et år på Venus er kortere end en dag på Venus", answer: "true", category: "sjove-fakta" },
-      { text: "Hummere er biologisk set udødelige", answer: "true", category: "sjove-fakta" },
+      { text: "Hummere er biologisk set udødelige", answer: "false", category: "sjove-fakta" },
       { text: "Guldfisk har en hukommelse på kun 3 sekunder", answer: "false", category: "sjove-fakta" },
       { text: "Elefanter er det eneste dyr der ikke kan hoppe", answer: "false", category: "sjove-fakta" },
       { text: "Der er flere mulige skak-spil end atomer i universet", answer: "true", category: "sjove-fakta" },
       { text: "Isbjørnes hud er sort under pelsen", answer: "true", category: "sjove-fakta" },
       { text: "En dag på Mars er næsten lige så lang som en dag på Jorden", answer: "true", category: "sjove-fakta" },
       { text: "Verdens korteste krig varede 38 minutter", answer: "true", category: "sjove-fakta" },
-      { text: "Søheste er det eneste dyr hvor hannen føder", answer: "true", category: "sjove-fakta" },
+      { text: "Søheste er det eneste dyr med en ægte yngelpung hos hannen", answer: "true", category: "sjove-fakta" },
     ];
 
     for (const p of prompts) {

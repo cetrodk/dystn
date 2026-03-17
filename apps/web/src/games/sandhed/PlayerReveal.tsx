@@ -1,5 +1,7 @@
+import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { Check, X, HelpCircle } from "lucide-react";
+import { sfxCorrect, sfxWrong, sfxShame } from "@/lib/sounds";
 import { da } from "@/lib/da";
 import type { PhaseComponentProps } from "../registry";
 
@@ -16,6 +18,20 @@ export default function PlayerReveal({ room }: PhaseComponentProps) {
   const pd = room.phaseData ?? {};
   const results = (pd.results ?? []) as ResultEntry[];
   const myResult = results.find((r) => r.playerId === room.currentPlayerId);
+
+  // Play personal result sound + haptic
+  useEffect(() => {
+    if (!myResult) return;
+    if (myResult.noAnswer) {
+      sfxShame();
+    } else if (myResult.correct) {
+      sfxCorrect();
+      if (navigator.vibrate) navigator.vibrate([50, 30, 50]);
+    } else {
+      sfxWrong();
+      if (navigator.vibrate) navigator.vibrate(200);
+    }
+  }, [myResult]);
 
   if (!myResult) {
     return (

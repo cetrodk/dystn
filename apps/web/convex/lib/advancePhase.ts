@@ -21,7 +21,7 @@ export const DEFAULT_DURATIONS: Record<string, number> = {
   guess: 45_000,
   write: 60_000,
   countdown: 4_000,
-  commit: 10_000,
+  commit: 20_000,
   victory: 15_000,
 };
 
