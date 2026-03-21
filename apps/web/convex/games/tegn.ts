@@ -9,11 +9,22 @@ registerGameHandlers("tegn", {
     initialPhase: "draw",
     totalRoundsForPlayerCount: () => 1,
   },
-  async setupRound(ctx, _room, players) {
+  async setupRound(ctx, room, players) {
+    const settings = (room.settings ?? {}) as Record<string, unknown>;
+    const difficulty = typeof settings.tegnDifficulty === "number" ? settings.tegnDifficulty : 3;
+
     let allPrompts = await ctx.db
       .query("prompts")
       .withIndex("by_game", (q) => q.eq("gameType", "tegn"))
       .collect();
+
+    // Filter by difficulty: level N includes prompts from levels 1..N
+    if (difficulty < 3) {
+      const allowed = allPrompts.filter(
+        (p) => p.category && parseInt(p.category, 10) <= difficulty,
+      );
+      if (allowed.length > 0) allPrompts = allowed;
+    }
 
     // Shuffle players to determine drawing order
     const drawingOrder = players

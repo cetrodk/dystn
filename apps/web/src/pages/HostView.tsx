@@ -65,6 +65,19 @@ function HostSettingsOverlay({
     [room._id, sessionId, updateSettings],
   );
 
+  const handleDifficulty = useCallback(
+    (level: number) => {
+      updateSettings({
+        roomId: room._id,
+        hostId: sessionId,
+        settings: { tegnDifficulty: level },
+      });
+    },
+    [room._id, sessionId, updateSettings],
+  );
+
+  const tegnDifficulty = typeof settings.tegnDifficulty === "number" ? (settings.tegnDifficulty as number) : 3;
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -78,7 +91,7 @@ function HostSettingsOverlay({
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
         onClick={(e) => e.stopPropagation()}
-        className="card-glow w-full max-w-sm rounded-2xl bg-[var(--color-bg-warm)] p-6 shadow-2xl"
+        className="card-glow w-full max-w-sm max-h-[80vh] overflow-y-auto rounded-2xl bg-[var(--color-bg-warm)] p-6 shadow-2xl"
       >
         <div className="flex items-center justify-between mb-6">
           <h3 className="font-display text-2xl font-bold">Indstillinger</h3>
@@ -91,6 +104,42 @@ function HostSettingsOverlay({
         </div>
 
         <div className="flex flex-col gap-5">
+          {/* Tegn difficulty selector */}
+          {(room.gameType === "tegn" || !room.gameType) && (
+            <div>
+              <span className="text-base font-semibold block mb-2">
+                {da.tegn.difficulty}
+              </span>
+              <div className="flex gap-2">
+                {[1, 2, 3].map((level) => (
+                  <button
+                    key={level}
+                    onClick={() => handleDifficulty(level)}
+                    className="flex-1 rounded-xl p-3 text-center transition-all cursor-pointer border-2"
+                    style={{
+                      backgroundColor: tegnDifficulty === level
+                        ? "var(--color-tegn)"
+                        : "var(--color-surface)",
+                      borderColor: tegnDifficulty === level
+                        ? "var(--color-tegn)"
+                        : "transparent",
+                      color: tegnDifficulty === level
+                        ? "#fff"
+                        : "var(--color-text-muted)",
+                    }}
+                  >
+                    <span className="block text-sm font-bold">
+                      {da.tegn.difficultyLevels[level - 1]}
+                    </span>
+                    <span className="block text-xs mt-1 opacity-80">
+                      {da.tegn.difficultyDescriptions[level - 1]}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {TIMER_OPTIONS.map(({ key, label, defaultMs, min, max }) => {
             const currentMs = typeof settings[key] === "number" ? settings[key] : defaultMs;
             const currentSec = Math.round(currentMs / 1000);
@@ -216,7 +265,58 @@ function getGameInfo(gameType: string) {
   return GAMES[0];
 }
 
-function GameInfoCard({ gameType, onChangeGame }: { gameType: string; onChangeGame: () => void }) {
+function TegnDifficultyPicker({ room, sessionId }: { room: RoomSnapshot; sessionId: string }) {
+  const updateSettings = useMutation(api.game.updateSettings);
+  const settings = room.settings ?? {};
+  const current = typeof settings.tegnDifficulty === "number" ? (settings.tegnDifficulty as number) : 3;
+
+  return (
+    <div className="mt-4">
+      <span className="text-sm font-semibold block mb-2">
+        {da.tegn.difficulty}
+      </span>
+      <div className="flex gap-2">
+        {[1, 2, 3].map((level) => (
+          <button
+            key={level}
+            onClick={() =>
+              updateSettings({
+                roomId: room._id,
+                hostId: sessionId,
+                settings: { tegnDifficulty: level },
+              })
+            }
+            className="flex-1 rounded-xl p-3 text-center transition-all cursor-pointer border-2"
+            style={{
+              backgroundColor: current === level ? "var(--color-tegn)" : "var(--color-surface-light)",
+              borderColor: current === level ? "var(--color-tegn)" : "transparent",
+              color: current === level ? "#fff" : "var(--color-text-muted)",
+            }}
+          >
+            <span className="block text-sm font-bold">
+              {da.tegn.difficultyLevels[level - 1]}
+            </span>
+            <span className="block text-xs mt-1 opacity-80">
+              {da.tegn.difficultyDescriptions[level - 1]}
+            </span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function GameInfoCard({
+  gameType,
+  onChangeGame,
+  room,
+  sessionId,
+}: {
+  gameType: string;
+  onChangeGame: () => void;
+  room: RoomSnapshot;
+  sessionId: string;
+}) {
   const game = getGameInfo(gameType);
 
   return (
@@ -244,6 +344,9 @@ function GameInfoCard({ gameType, onChangeGame }: { gameType: string; onChangeGa
           ← {da.changeGame}
         </button>
       </div>
+      {gameType === "tegn" && (
+        <TegnDifficultyPicker room={room} sessionId={sessionId} />
+      )}
     </div>
   );
 }
@@ -453,6 +556,8 @@ export function HostView() {
               onChangeGame={() =>
                 changeGameType({ roomId: room._id, hostId: sessionId, gameType: "" })
               }
+              room={room}
+              sessionId={sessionId}
             />
           </motion.div>
 

@@ -113,6 +113,13 @@ export const da = {
     guessReal: "Gæt det rigtige ord",
     artistWaiting: "De andre stemmer nu — vent her",
     drawingSecretWords: "Alle tegner deres hemmelige ord...",
+    difficulty: "Sværhedsgrad",
+    difficultyLevels: ["Let", "Medium", "Svær"] as readonly string[],
+    difficultyDescriptions: [
+      "Enkle ting (hest, hus, sol)",
+      "Scener (en kat der sover i solen)",
+      "Absurde situationer (en vampyr der er vegetar)",
+    ] as readonly string[],
   },
 
   telefon: {

@@ -104,6 +104,7 @@ export const updateSettings = mutation({
       guessTime: v.optional(v.float64()),
       writeTime: v.optional(v.float64()),
       commitTime: v.optional(v.float64()),
+      tegnDifficulty: v.optional(v.float64()),
     }),
   },
   handler: async (ctx, { roomId, hostId, settings }) => {
