@@ -11,6 +11,7 @@ import type { PhaseComponentProps } from "../registry";
 export default function PlayerVote({ room, sessionId }: PhaseComponentProps) {
   const submitAnswer = useMutation(api.game.submitAnswer);
   const [voted, setVoted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const phaseData = room.phaseData ?? {};
   const answers = [...(phaseData.answersAnonymized ?? [])].sort(
@@ -18,6 +19,8 @@ export default function PlayerVote({ room, sessionId }: PhaseComponentProps) {
   );
 
   async function handleVote(answerId: string) {
+    if (submitting) return;
+    setSubmitting(true);
     sfxClick();
     await submitAnswer({
       roomId: room._id,
@@ -47,7 +50,7 @@ export default function PlayerVote({ room, sessionId }: PhaseComponentProps) {
             animate={{ opacity: answer.isOwn ? 0.4 : 1, y: 0 }}
             transition={{ delay: i * 0.1 }}
             onClick={() => !answer.isOwn && handleVote(answer.id)}
-            disabled={answer.isOwn}
+            disabled={answer.isOwn || submitting}
             className={`rounded-xl bg-[var(--color-surface)] p-4 text-lg font-medium text-left ${
               answer.isOwn
                 ? "cursor-not-allowed"

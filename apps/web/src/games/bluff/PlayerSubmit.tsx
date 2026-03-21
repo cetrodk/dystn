@@ -1,7 +1,8 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useMutation } from "convex/react";
 import { ConvexError } from "convex/values";
 import { motion } from "framer-motion";
+import { Pencil } from "lucide-react";
 import { api } from "../../../convex/_generated/api";
 import { CountdownTimer } from "@festspil/ui/CountdownTimer";
 import { WaitingScreen } from "@/components/WaitingScreen";
@@ -11,11 +12,17 @@ import type { PhaseComponentProps } from "../registry";
 
 export default function PlayerSubmit({ room, sessionId }: PhaseComponentProps) {
   const submitAnswer = useMutation(api.game.submitAnswer);
+  const phaseData = room.phaseData ?? {};
+  const myPrev = phaseData.mySubmission as string | null;
+
   const [answer, setAnswer] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  const phaseData = room.phaseData ?? {};
+  useEffect(() => {
+    if (myPrev && !submitted) setAnswer(myPrev);
+  }, [myPrev, submitted]);
 
   const handleTick = useCallback((s: number) => {
     if (s <= 5 && s > 0) sfxUrgent();
@@ -23,7 +30,8 @@ export default function PlayerSubmit({ room, sessionId }: PhaseComponentProps) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!answer.trim()) return;
+    if (!answer.trim() || submitting) return;
+    setSubmitting(true);
 
     try {
       sfxWhoosh();
@@ -34,14 +42,16 @@ export default function PlayerSubmit({ room, sessionId }: PhaseComponentProps) {
       });
       setSubmitted(true);
       setError("");
+      setSubmitting(false);
     } catch (err) {
       const msg = err instanceof ConvexError ? String(err.data) : "Fejl";
       setError(msg);
+      setSubmitting(false);
     }
   }
 
-  if (submitted || phaseData.mySubmission) {
-    const myAnswer = phaseData.mySubmission ?? answer;
+  if (submitted || myPrev) {
+    const myAnswer = myPrev ?? answer;
     return (
       <WaitingScreen deadline={room.phaseDeadline} players={room.players}>
         {myAnswer ? (
@@ -57,6 +67,16 @@ export default function PlayerSubmit({ room, sessionId }: PhaseComponentProps) {
             <p className="text-lg font-semibold">{myAnswer}</p>
           </motion.div>
         ) : null}
+        <motion.button
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+          onClick={() => { setSubmitted(false); setSubmitting(false); }}
+          className="flex items-center gap-2 rounded-xl bg-[var(--color-surface)] px-5 py-3 text-sm font-semibold text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors cursor-pointer"
+        >
+          <Pencil className="h-4 w-4" />
+          {da.editAnswer}
+        </motion.button>
       </WaitingScreen>
     );
   }
@@ -101,7 +121,7 @@ export default function PlayerSubmit({ room, sessionId }: PhaseComponentProps) {
         ) : null}
         <button
           type="submit"
-          disabled={!answer.trim()}
+          disabled={!answer.trim() || submitting}
           className="rounded-xl bg-[var(--color-primary)] p-4 text-xl font-bold transition-transform hover:scale-105 active:scale-95 disabled:opacity-40 cursor-pointer"
         >
           {da.submit}

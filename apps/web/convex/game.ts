@@ -105,6 +105,7 @@ export const updateSettings = mutation({
       writeTime: v.optional(v.float64()),
       commitTime: v.optional(v.float64()),
       tegnDifficulty: v.optional(v.float64()),
+      sandhedDifficulty: v.optional(v.float64()),
     }),
   },
   handler: async (ctx, { roomId, hostId, settings }) => {
@@ -197,6 +198,41 @@ export const backToLobby = mutation({
   },
 });
 
+export const continueGame = mutation({
+  args: {
+    roomId: v.id("rooms"),
+    hostId: v.string(),
+  },
+  handler: async (ctx, { roomId, hostId }) => {
+    const room = await ctx.db.get(roomId);
+    if (!room) throw new Error("Room not found");
+    if (room.hostId !== hostId) throw new Error("Only the host can continue");
+    if (room.status !== "playing") return;
+
+    const settings = (room.settings ?? {}) as Record<string, unknown>;
+    if (!settings.paused) return;
+
+    const remaining = (settings.pausedRemaining as number) ?? 0;
+    const deadline = remaining > 0 ? Date.now() + remaining : undefined;
+
+    // Clear pause state and set new deadline
+    const { paused: _, pausedAt: __, pausedRemaining: ___, ...cleanSettings } = settings;
+    await ctx.db.patch(roomId, {
+      settings: cleanSettings,
+      phaseDeadline: deadline,
+    });
+
+    // Schedule timer for the remaining time
+    if (deadline) {
+      await ctx.scheduler.runAt(
+        deadline,
+        internal.timers.onTimerExpired,
+        { roomId, expectedDeadline: deadline },
+      );
+    }
+  },
+});
+
 export const telefonAdvanceReveal = mutation({
   args: {
     roomId: v.id("rooms"),
@@ -263,8 +299,9 @@ export const submitAnswer = mutation({
       throw new Error("Not accepting submissions");
     }
 
-    // Check deadline (2s grace for network latency)
-    if (room.phaseDeadline && Date.now() > room.phaseDeadline + 2000) {
+    // Check deadline (2s grace for network latency), skip check if paused
+    const settings = (room.settings ?? {}) as Record<string, unknown>;
+    if (!settings.paused && room.phaseDeadline && Date.now() > room.phaseDeadline + 2000) {
       return; // silently drop late submissions
     }
 

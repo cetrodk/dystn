@@ -13,6 +13,7 @@ export default function PlayerDraw({ room, sessionId }: PhaseComponentProps) {
   const submitAnswer = useMutation(api.game.submitAnswer);
   const canvasRef = useRef<DrawingCanvasRef>(null);
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const phaseData = room.phaseData ?? {};
   const myWord = phaseData.myWord ?? "???";
@@ -21,9 +22,11 @@ export default function PlayerDraw({ room, sessionId }: PhaseComponentProps) {
     if (s <= 5 && s > 0) sfxUrgent();
   }, []);
 
-  async function handleSubmit() {
+  async function doSubmit() {
+    if (submitting || submitted) return;
     const strokes = canvasRef.current?.getStrokes();
     if (!strokes || strokes.length === 0) return;
+    setSubmitting(true);
     const viewBoxHeight = canvasRef.current?.getViewBoxHeight() ?? 300;
 
     sfxWhoosh();
@@ -34,6 +37,11 @@ export default function PlayerDraw({ room, sessionId }: PhaseComponentProps) {
     });
     setSubmitted(true);
   }
+
+  // Auto-submit drawing when timer expires (ref avoids stale closure)
+  const doSubmitRef = useRef(doSubmit);
+  doSubmitRef.current = doSubmit;
+  const handleExpired = useCallback(() => { doSubmitRef.current(); }, []);
 
   if (submitted || phaseData.mySubmission) {
     return <WaitingScreen deadline={room.phaseDeadline} players={room.players} />;
@@ -53,6 +61,7 @@ export default function PlayerDraw({ room, sessionId }: PhaseComponentProps) {
           <CountdownTimer
             deadline={room.phaseDeadline ?? null}
             onTick={handleTick}
+            onExpired={handleExpired}
           />
         </div>
       </div>
@@ -77,8 +86,9 @@ export default function PlayerDraw({ room, sessionId }: PhaseComponentProps) {
           {da.tegn.clear}
         </button>
         <button
-          onClick={handleSubmit}
-          className="flex-[2] rounded-xl bg-[var(--color-primary)] p-3 text-lg font-bold transition-opacity active:opacity-80 cursor-pointer"
+          onClick={doSubmit}
+          disabled={submitting}
+          className={`flex-[2] rounded-xl bg-[var(--color-primary)] p-3 text-lg font-bold ${submitting ? "opacity-60 cursor-not-allowed" : "transition-opacity active:opacity-80 cursor-pointer"}`}
         >
           {da.submit}
         </button>

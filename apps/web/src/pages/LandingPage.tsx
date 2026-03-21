@@ -1,6 +1,6 @@
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { api } from "../../convex/_generated/api";
 import { useSessionId } from "@/providers/SessionProvider";
 import { da } from "@/lib/da";
@@ -9,6 +9,7 @@ export function LandingPage() {
   const navigate = useNavigate();
   const sessionId = useSessionId();
   const createRoom = useMutation(api.rooms.createRoom);
+  const existingSession = useQuery(api.players.rejoinRoom, { sessionId });
 
   async function handleCreateRoom() {
     const { code } = await createRoom({ hostId: sessionId });
@@ -48,6 +49,31 @@ export function LandingPage() {
             {da.subtitle}
           </p>
         </motion.div>
+
+        {/* Rejoin banner */}
+        <AnimatePresence>
+          {existingSession ? (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="card-glow w-full max-w-sm rounded-2xl bg-[var(--color-surface)] p-5"
+            >
+              <p className="mb-3 text-center text-sm">
+                Du er i et spil som{" "}
+                <strong className="text-[var(--color-primary-light)]">
+                  {existingSession.playerName}
+                </strong>
+              </p>
+              <button
+                onClick={() => navigate(`/play/${existingSession.roomCode}`)}
+                className="w-full rounded-xl bg-[var(--color-primary)] p-3 font-bold transition-transform hover:scale-[1.03] active:scale-95 cursor-pointer"
+              >
+                Vend tilbage ({existingSession.roomCode})
+              </button>
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
 
         {/* Two equal action cards */}
         <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2">

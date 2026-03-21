@@ -91,8 +91,10 @@ registerGameHandlers("tegn", {
         throw new ConvexError("Kunstnere gætter ikke");
       }
 
-      const text = String(content).trim().slice(0, 80);
+      let text = String(content).trim().slice(0, 80);
       if (!text) throw new ConvexError("Tomt gæt");
+      // Lowercase first char to match prompt word casing
+      text = text[0].toLowerCase() + text.slice(1);
 
       // Check if matches real word (case-insensitive)
       const artistId = phaseData?.currentArtistId;
@@ -154,12 +156,22 @@ registerGameHandlers("tegn", {
     const drawingWords = phaseData?.drawingWords ?? {};
     const realWord = drawingWords[artistId] ?? "???";
 
-    // Build options: all guesses + real word
-    const options = submissions.map((s) => ({
-      id: s._id as string,
-      text: String(s.content),
-      playerId: s.playerId,
-    }));
+    // Build options: merge duplicate guesses (case-insensitive), then add real word
+    const seen = new Map<string, { id: string; text: string; playerId: any; mergedPlayerIds?: string[] }>();
+    const options: Array<{ id: string; text: string; playerId: any; mergedPlayerIds?: string[] }> = [];
+
+    for (const s of submissions) {
+      const key = String(s.content).toLowerCase();
+      const existing = seen.get(key);
+      if (existing) {
+        existing.mergedPlayerIds = existing.mergedPlayerIds ?? [existing.playerId];
+        existing.mergedPlayerIds.push(s.playerId);
+      } else {
+        const entry = { id: s._id as string, text: String(s.content), playerId: s.playerId };
+        options.push(entry);
+        seen.set(key, entry);
+      }
+    }
 
     options.push({
       id: TRUTH_ID,
@@ -174,6 +186,7 @@ registerGameHandlers("tegn", {
       id: o.id,
       text: o.text,
       playerId: o.playerId,
+      mergedPlayerIds: o.mergedPlayerIds,
     }));
 
     return {
@@ -426,7 +439,10 @@ registerGameHandlers("tegn", {
       );
       const answers = (pd?.answersAnonymized ?? []) as Array<{ id: string; text: string }>;
       const myAnswerId = currentPlayer
-        ? (pd?.answers ?? []).find((a: any) => a.playerId === currentPlayer._id)?.id
+        ? (pd?.answers ?? []).find((a: any) =>
+            a.playerId === currentPlayer._id ||
+            (a.mergedPlayerIds ?? []).includes(currentPlayer._id),
+          )?.id
         : undefined;
       return {
         drawingIndex: pd?.drawingIndex,

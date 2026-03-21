@@ -230,7 +230,8 @@ export const heartbeat = mutation({
   },
 });
 
-/** Mark players as disconnected if their lastSeen is older than 60s. */
+/** Mark players as disconnected if their lastSeen is older than 60s.
+ *  If room is playing, auto-pause to wait for them. */
 export const sweepDisconnected = internalMutation({
   args: { roomId: v.id("rooms") },
   handler: async (ctx, { roomId }) => {
@@ -243,11 +244,30 @@ export const sweepDisconnected = internalMutation({
       .collect();
 
     const staleThreshold = Date.now() - 60_000;
+    const newlyDisconnected = players.filter(
+      (p) => p.isConnected && p.lastSeen < staleThreshold,
+    );
+
+    if (newlyDisconnected.length === 0) return;
 
     await Promise.all(
-      players
-        .filter((p) => p.isConnected && p.lastSeen < staleThreshold)
-        .map((p) => ctx.db.patch(p._id, { isConnected: false })),
+      newlyDisconnected.map((p) => ctx.db.patch(p._id, { isConnected: false })),
     );
+
+    // Auto-pause during play if a player disconnects
+    const settings = (room.settings ?? {}) as Record<string, unknown>;
+    if (room.status === "playing" && !settings.paused && room.phaseDeadline) {
+      const now = Date.now();
+      const remaining = Math.max(0, room.phaseDeadline - now);
+      await ctx.db.patch(roomId, {
+        settings: {
+          ...settings,
+          paused: true,
+          pausedAt: now,
+          pausedRemaining: remaining,
+        },
+        phaseDeadline: undefined,
+      });
+    }
   },
 });

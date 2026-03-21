@@ -44,8 +44,10 @@ registerGameHandlers("bluff", {
   },
 
   async onSubmission(ctx, room, player, content) {
-    const text = String(content).trim().slice(0, 80);
+    let text = String(content).trim().slice(0, 80);
     if (!text) throw new Error("Tomt svar");
+    // Lowercase first char so answers fit mid-sentence blanks
+    text = text[0].toLowerCase() + text.slice(1);
 
     // Reject if it matches the real answer (case-insensitive)
     const promptId = (room.phaseData as any)?.promptId;
@@ -107,14 +109,24 @@ registerGameHandlers("bluff", {
       if (prompt?.answer) realAnswer = prompt.answer;
     }
 
-    // Build options: all fakes + the real answer
-    const options = submissions.map((s) => ({
-      id: s._id as string,
-      text: String(s.content),
-      playerId: s.playerId,
-    }));
+    // Build options: merge duplicate fakes (case-insensitive), then add truth
+    const seen = new Map<string, { id: string; text: string; playerId: any; mergedPlayerIds?: string[] }>();
+    const options: Array<{ id: string; text: string; playerId: any; mergedPlayerIds?: string[] }> = [];
 
-    // Add the real answer as a synthetic option
+    for (const s of submissions) {
+      const key = String(s.content).toLowerCase();
+      const existing = seen.get(key);
+      if (existing) {
+        existing.mergedPlayerIds = existing.mergedPlayerIds ?? [existing.playerId];
+        existing.mergedPlayerIds.push(s.playerId);
+      } else {
+        const entry = { id: s._id as string, text: String(s.content), playerId: s.playerId };
+        options.push(entry);
+        seen.set(key, entry);
+      }
+    }
+
+    // Also check if any fake matches the real answer (shouldn't happen due to onSubmission guard, but just in case)
     options.push({
       id: TRUTH_ID,
       text: realAnswer,
@@ -128,6 +140,7 @@ registerGameHandlers("bluff", {
       id: o.id,
       text: o.text,
       playerId: o.playerId,
+      mergedPlayerIds: o.mergedPlayerIds,
     }));
 
     return {
@@ -307,7 +320,10 @@ registerGameHandlers("bluff", {
       );
       const answers = (pd.answersAnonymized ?? []) as Array<{ id: string; text: string }>;
       const myAnswerId = currentPlayer
-        ? (pd.answers ?? []).find((a: any) => a.playerId === currentPlayer._id)?.id
+        ? (pd.answers ?? []).find((a: any) =>
+            a.playerId === currentPlayer._id ||
+            (a.mergedPlayerIds ?? []).includes(currentPlayer._id),
+          )?.id
         : undefined;
       return {
         ...pd,

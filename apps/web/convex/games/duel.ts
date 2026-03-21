@@ -69,18 +69,36 @@ registerGameHandlers("duel", {
       )
       .collect();
 
-    // All answers compete in a single pool — everyone votes for their favorite
+    // Merge duplicate answers (case-insensitive)
+    const seen = new Map<string, typeof answers[number]>();
+    const answers: Array<{
+      id: string;
+      text: string;
+      playerId: string;
+      mergedIds?: string[];
+      mergedPlayerIds?: string[];
+    }> = [];
+
     const shuffled = [...submissions].sort(() => Math.random() - 0.5);
-    const answers = shuffled.map((s) => ({
-      id: s._id,
-      text: String(s.content),
-      playerId: s.playerId,
-    }));
+    for (const s of shuffled) {
+      const key = String(s.content).toLowerCase();
+      const existing = seen.get(key);
+      if (existing) {
+        // Merge: track additional authors
+        existing.mergedIds = existing.mergedIds ?? [existing.id];
+        existing.mergedIds.push(s._id);
+        existing.mergedPlayerIds = existing.mergedPlayerIds ?? [existing.playerId];
+        existing.mergedPlayerIds.push(s.playerId);
+      } else {
+        const entry = { id: s._id as string, text: String(s.content), playerId: s.playerId as string };
+        answers.push(entry);
+        seen.set(key, entry);
+      }
+    }
 
     return {
       ...room.phaseData,
       answers,
-      // Anonymized version for players (strip playerIds)
       answersAnonymized: answers.map((a) => ({ id: a.id, text: a.text })),
     };
   },
@@ -144,8 +162,14 @@ registerGameHandlers("duel", {
       voteCounts.set(answerId, (voteCounts.get(answerId) ?? 0) + 1);
     }
 
-    // Calculate scores: 1000 points per vote received
+    // Calculate scores using the merged answer map from buildVoteData
     const scoreDeltas = new Map<Id<"players">, number>();
+    const pdAnswers = ((room.phaseData as any)?.answers ?? []) as Array<{
+      id: string;
+      playerId: string;
+      mergedPlayerIds?: string[];
+      text: string;
+    }>;
     const results: Array<{
       answerId: string;
       text: string;
@@ -154,28 +178,41 @@ registerGameHandlers("duel", {
       avatarColor: string;
       avatarImage?: string;
       votes: number;
+      coAuthors?: Array<{ name: string; avatarColor: string; avatarImage?: string }>;
     }> = [];
 
-    for (const sub of submissions) {
-      const voteCount = voteCounts.get(sub._id) ?? 0;
+    for (const answer of pdAnswers) {
+      const voteCount = voteCounts.get(answer.id) ?? 0;
       const delta = voteCount * 1000;
-      const player = players.find((p) => p._id === sub.playerId);
 
-      if (delta > 0) {
-        scoreDeltas.set(
-          sub.playerId,
-          (scoreDeltas.get(sub.playerId) ?? 0) + delta,
-        );
+      // Credit all merged authors equally
+      const authorIds = answer.mergedPlayerIds ?? [answer.playerId];
+      for (const pid of authorIds) {
+        if (delta > 0) {
+          scoreDeltas.set(
+            pid as Id<"players">,
+            (scoreDeltas.get(pid as Id<"players">) ?? 0) + delta,
+          );
+        }
       }
 
+      const primaryPlayer = players.find((p) => p._id === answer.playerId);
+      const coAuthors = authorIds.length > 1
+        ? authorIds.slice(1).map((pid) => {
+            const p = players.find((pl) => pl._id === pid);
+            return { name: p?.name ?? "???", avatarColor: p?.avatarColor ?? "#888", avatarImage: p?.avatarImage };
+          })
+        : undefined;
+
       results.push({
-        answerId: sub._id,
-        text: String(sub.content),
-        playerId: sub.playerId,
-        playerName: player?.name ?? "???",
-        avatarColor: player?.avatarColor ?? "#888",
-        avatarImage: player?.avatarImage,
+        answerId: answer.id,
+        text: answer.text,
+        playerId: answer.playerId,
+        playerName: primaryPlayer?.name ?? "???",
+        avatarColor: primaryPlayer?.avatarColor ?? "#888",
+        avatarImage: primaryPlayer?.avatarImage,
         votes: voteCount,
+        coAuthors,
       });
     }
 
@@ -215,8 +252,12 @@ registerGameHandlers("duel", {
         (s) => currentPlayer && s.playerId === currentPlayer._id && s.phase === "vote",
       );
       const answers = (pd.answersAnonymized ?? []) as Array<{ id: string; text: string }>;
+      // Check both primary and merged player IDs for "isOwn"
       const myAnswerId = currentPlayer
-        ? (pd.answers ?? []).find((a: any) => a.playerId === currentPlayer._id)?.id
+        ? (pd.answers ?? []).find((a: any) =>
+            a.playerId === currentPlayer._id ||
+            (a.mergedPlayerIds ?? []).includes(currentPlayer._id),
+          )?.id
         : undefined;
       return {
         ...pd,

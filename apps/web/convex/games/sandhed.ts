@@ -23,11 +23,21 @@ registerGameHandlers("sandhed", {
     const usedPromptIds =
       ((room.phaseData as Record<string, unknown>)?.usedPromptIds as string[]) ?? [];
 
-    // Pick an unused statement
-    const allPrompts = await ctx.db
+    // Difficulty filtering (same pattern as Tegn)
+    const settings = (room.settings ?? {}) as Record<string, unknown>;
+    const difficulty = typeof settings.sandhedDifficulty === "number" ? settings.sandhedDifficulty : 3;
+
+    let allPrompts = await ctx.db
       .query("prompts")
       .withIndex("by_game", (q) => q.eq("gameType", "sandhed"))
       .collect();
+
+    if (difficulty < 3) {
+      const allowed = allPrompts.filter(
+        (p) => p.category && parseInt(p.category, 10) <= difficulty,
+      );
+      if (allowed.length > 0) allPrompts = allowed;
+    }
 
     const unused = allPrompts.filter((p) => !usedPromptIds.includes(p._id));
     const pool = unused.length > 0 ? unused : allPrompts; // recycle if exhausted

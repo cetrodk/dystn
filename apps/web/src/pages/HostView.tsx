@@ -2,7 +2,7 @@ import { Suspense, lazy, useEffect, useState, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery, useMutation } from "convex/react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Settings, SkipForward, Square } from "lucide-react";
+import { Settings, SkipForward, Square, WifiOff } from "lucide-react";
 
 // Lazy-load QR code (only used in lobby)
 const QRCodeSVG = lazy(() =>
@@ -40,6 +40,47 @@ function getGameMeta(gameType: string | undefined) {
   return GAME_OPTIONS.find((g) => g.id === gameType) ?? GAME_OPTIONS[0];
 }
 
+/* ── Difficulty Selector ───────────────────────────────── */
+
+function DifficultySelector({
+  label,
+  levels,
+  descriptions,
+  current,
+  color,
+  onChange,
+}: {
+  label: string;
+  levels: readonly string[];
+  descriptions: readonly string[];
+  current: number;
+  color: string;
+  onChange: (level: number) => void;
+}) {
+  return (
+    <div>
+      <span className="text-base font-semibold block mb-2">{label}</span>
+      <div className="flex gap-2">
+        {[1, 2, 3].map((level) => (
+          <button
+            key={level}
+            onClick={() => onChange(level)}
+            className="flex-1 rounded-xl p-3 text-center transition-all cursor-pointer border-2"
+            style={{
+              backgroundColor: current === level ? color : "var(--color-surface)",
+              borderColor: current === level ? color : "transparent",
+              color: current === level ? "#fff" : "var(--color-text-muted)",
+            }}
+          >
+            <span className="block text-sm font-bold">{levels[level - 1]}</span>
+            <span className="block text-xs mt-1 opacity-80">{descriptions[level - 1]}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /* ── Settings Overlay ──────────────────────────────────── */
 
 function HostSettingsOverlay({
@@ -66,17 +107,18 @@ function HostSettingsOverlay({
   );
 
   const handleDifficulty = useCallback(
-    (level: number) => {
+    (key: string, level: number) => {
       updateSettings({
         roomId: room._id,
         hostId: sessionId,
-        settings: { tegnDifficulty: level },
+        settings: { [key]: level },
       });
     },
     [room._id, sessionId, updateSettings],
   );
 
   const tegnDifficulty = typeof settings.tegnDifficulty === "number" ? (settings.tegnDifficulty as number) : 3;
+  const sandhedDifficulty = typeof settings.sandhedDifficulty === "number" ? (settings.sandhedDifficulty as number) : 3;
 
   return (
     <motion.div
@@ -106,38 +148,25 @@ function HostSettingsOverlay({
         <div className="flex flex-col gap-5">
           {/* Tegn difficulty selector */}
           {(room.gameType === "tegn" || !room.gameType) && (
-            <div>
-              <span className="text-base font-semibold block mb-2">
-                {da.tegn.difficulty}
-              </span>
-              <div className="flex gap-2">
-                {[1, 2, 3].map((level) => (
-                  <button
-                    key={level}
-                    onClick={() => handleDifficulty(level)}
-                    className="flex-1 rounded-xl p-3 text-center transition-all cursor-pointer border-2"
-                    style={{
-                      backgroundColor: tegnDifficulty === level
-                        ? "var(--color-tegn)"
-                        : "var(--color-surface)",
-                      borderColor: tegnDifficulty === level
-                        ? "var(--color-tegn)"
-                        : "transparent",
-                      color: tegnDifficulty === level
-                        ? "#fff"
-                        : "var(--color-text-muted)",
-                    }}
-                  >
-                    <span className="block text-sm font-bold">
-                      {da.tegn.difficultyLevels[level - 1]}
-                    </span>
-                    <span className="block text-xs mt-1 opacity-80">
-                      {da.tegn.difficultyDescriptions[level - 1]}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
+            <DifficultySelector
+              label={da.tegn.difficulty}
+              levels={da.tegn.difficultyLevels}
+              descriptions={da.tegn.difficultyDescriptions}
+              current={tegnDifficulty}
+              color="var(--color-tegn)"
+              onChange={(level) => handleDifficulty("tegnDifficulty", level)}
+            />
+          )}
+          {/* Sandhed difficulty selector */}
+          {(room.gameType === "sandhed" || !room.gameType) && (
+            <DifficultySelector
+              label={da.sandhed.difficulty}
+              levels={da.sandhed.difficultyLevels}
+              descriptions={da.sandhed.difficultyDescriptions}
+              current={sandhedDifficulty}
+              color="var(--color-sandhed)"
+              onChange={(level) => handleDifficulty("sandhedDifficulty", level)}
+            />
           )}
 
           {TIMER_OPTIONS.map(({ key, label, defaultMs, min, max }) => {
@@ -257,6 +286,56 @@ function HostToolbar({
   );
 }
 
+/* ── Pause Banner (shown when game is paused due to disconnect) ── */
+
+function PauseBanner({
+  room,
+  sessionId,
+  disconnectedPlayers,
+}: {
+  room: RoomSnapshot;
+  sessionId: string;
+  disconnectedPlayers: any[];
+}) {
+  const continueGame = useMutation(api.game.continueGame);
+  const kickPlayer = useMutation(api.players.kickPlayer);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      className="fixed top-12 left-0 right-0 z-40 flex flex-col items-center gap-3 px-4 py-4 bg-[var(--color-danger)]/10 backdrop-blur-md border-b border-[var(--color-danger)]/20"
+    >
+      <div className="flex items-center gap-2 text-[var(--color-danger)]">
+        <WifiOff className="h-5 w-5" />
+        <span className="font-bold text-sm">Spillet er sat på pause</span>
+      </div>
+
+      {disconnectedPlayers.length > 0 && (
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          {disconnectedPlayers.map((p: any) => (
+            <div key={p._id} className="flex items-center gap-2 rounded-lg bg-[var(--color-surface)] px-3 py-1.5">
+              <GameAvatar name={p.name} avatarColor={p.avatarColor} avatarImage={p.avatarImage} className="h-6 w-6" />
+              <span className="text-sm font-semibold">{p.name}</span>
+              <span className="text-xs text-[var(--color-danger)]">afbrudt</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="flex items-center gap-3">
+        <button
+          onClick={() => continueGame({ roomId: room._id, hostId: sessionId })}
+          className="rounded-xl bg-[var(--color-primary)] px-6 py-2 text-sm font-bold transition-transform hover:scale-105 active:scale-95 cursor-pointer"
+        >
+          Fortsæt alligevel
+        </button>
+      </div>
+    </motion.div>
+  );
+}
+
 /* ── Game Info Card (lobby, game selected) ─────────────── */
 
 function getGameInfo(gameType: string) {
@@ -265,43 +344,35 @@ function getGameInfo(gameType: string) {
   return GAMES[0];
 }
 
-function TegnDifficultyPicker({ room, sessionId }: { room: RoomSnapshot; sessionId: string }) {
+function LobbyDifficultyPicker({ room, sessionId, settingKey, label, levels, descriptions, color }: {
+  room: RoomSnapshot;
+  sessionId: string;
+  settingKey: string;
+  label: string;
+  levels: readonly string[];
+  descriptions: readonly string[];
+  color: string;
+}) {
   const updateSettings = useMutation(api.game.updateSettings);
   const settings = room.settings ?? {};
-  const current = typeof settings.tegnDifficulty === "number" ? (settings.tegnDifficulty as number) : 3;
+  const current = typeof settings[settingKey] === "number" ? (settings[settingKey] as number) : 3;
 
   return (
     <div className="mt-4">
-      <span className="text-sm font-semibold block mb-2">
-        {da.tegn.difficulty}
-      </span>
-      <div className="flex gap-2">
-        {[1, 2, 3].map((level) => (
-          <button
-            key={level}
-            onClick={() =>
-              updateSettings({
-                roomId: room._id,
-                hostId: sessionId,
-                settings: { tegnDifficulty: level },
-              })
-            }
-            className="flex-1 rounded-xl p-3 text-center transition-all cursor-pointer border-2"
-            style={{
-              backgroundColor: current === level ? "var(--color-tegn)" : "var(--color-surface-light)",
-              borderColor: current === level ? "var(--color-tegn)" : "transparent",
-              color: current === level ? "#fff" : "var(--color-text-muted)",
-            }}
-          >
-            <span className="block text-sm font-bold">
-              {da.tegn.difficultyLevels[level - 1]}
-            </span>
-            <span className="block text-xs mt-1 opacity-80">
-              {da.tegn.difficultyDescriptions[level - 1]}
-            </span>
-          </button>
-        ))}
-      </div>
+      <DifficultySelector
+        label={label}
+        levels={levels}
+        descriptions={descriptions}
+        current={current}
+        color={color}
+        onChange={(level) =>
+          updateSettings({
+            roomId: room._id,
+            hostId: sessionId,
+            settings: { [settingKey]: level },
+          })
+        }
+      />
     </div>
   );
 }
@@ -345,7 +416,20 @@ function GameInfoCard({
         </button>
       </div>
       {gameType === "tegn" && (
-        <TegnDifficultyPicker room={room} sessionId={sessionId} />
+        <LobbyDifficultyPicker
+          room={room} sessionId={sessionId}
+          settingKey="tegnDifficulty" label={da.tegn.difficulty}
+          levels={da.tegn.difficultyLevels} descriptions={da.tegn.difficultyDescriptions}
+          color="var(--color-tegn)"
+        />
+      )}
+      {gameType === "sandhed" && (
+        <LobbyDifficultyPicker
+          room={room} sessionId={sessionId}
+          settingKey="sandhedDifficulty" label={da.sandhed.difficulty}
+          levels={da.sandhed.difficultyLevels} descriptions={da.sandhed.difficultyDescriptions}
+          color="var(--color-sandhed)"
+        />
       )}
     </div>
   );
@@ -363,7 +447,7 @@ function PlayerList({ room, sessionId }: { room: RoomSnapshot; sessionId: string
       transition={{ delay: 0.15 }}
       className="w-full max-w-md"
     >
-      <p className="mb-4 text-center text-sm text-[var(--color-text-muted)]">
+      <p className="mb-4 text-center text-base text-[var(--color-text-muted)]">
         {room.players.length} {da.playersJoined}
       </p>
       <ul className="flex flex-col gap-2">
@@ -374,10 +458,10 @@ function PlayerList({ room, sessionId }: { room: RoomSnapshot; sessionId: string
               initial={{ opacity: 0, x: -20, scale: 0.9 }}
               animate={{ opacity: 1, x: 0, scale: 1 }}
               transition={{ delay: i * 0.05, type: "spring", stiffness: 300 }}
-              className="flex items-center gap-3 rounded-xl bg-[var(--color-surface)] p-3"
+              className="flex items-center gap-3 rounded-xl bg-[var(--color-surface)] p-4"
             >
-              <GameAvatar name={player.name} avatarColor={player.avatarColor} avatarImage={player.avatarImage} />
-              <span className="font-semibold">{player.name}</span>
+              <GameAvatar name={player.name} avatarColor={player.avatarColor} avatarImage={player.avatarImage} className="h-10 w-10" />
+              <span className="text-lg font-semibold">{player.name}</span>
               {!player.isConnected ? (
                 <span className="ml-auto text-xs text-[var(--color-text-muted)]">
                   afbrudt
@@ -429,6 +513,9 @@ export function HostView() {
     const basePhase = room.currentPhase.split("_")[0];
     const PhaseComponent = components?.host[basePhase];
 
+    const isPaused = !!(room.settings as Record<string, unknown> | undefined)?.paused;
+    const disconnectedPlayers = room.players.filter((p: any) => !p.isConnected);
+
     if (PhaseComponent) {
       return (
         <div className="flex min-h-screen flex-col items-center justify-center gap-8 p-8 pt-16">
@@ -437,6 +524,15 @@ export function HostView() {
             sessionId={sessionId}
             onSettings={() => setSettingsOpen(true)}
           />
+          <AnimatePresence>
+            {isPaused ? (
+              <PauseBanner
+                room={room}
+                sessionId={sessionId}
+                disconnectedPlayers={disconnectedPlayers}
+              />
+            ) : null}
+          </AnimatePresence>
           <AnimatePresence>
             {settingsOpen ? (
               <HostSettingsOverlay
@@ -482,7 +578,7 @@ export function HostView() {
   const canStart = hasGame && room.players.length >= MIN_PLAYERS;
 
   return (
-    <div className="relative flex min-h-screen flex-col items-center justify-center gap-8 p-8">
+    <div className="relative flex min-h-screen flex-col p-8 pt-16">
       {/* Top bar */}
       <div className="absolute top-4 left-4 right-4 flex items-center justify-between">
         <a
@@ -509,99 +605,105 @@ export function HostView() {
         ) : null}
       </AnimatePresence>
 
-      {/* Room code */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ type: "spring", stiffness: 200 }}
-        className="text-center"
-      >
-        <p className="text-sm font-semibold uppercase tracking-widest text-[var(--color-text-muted)]">
-          {da.roomCode}
-        </p>
-        <div className="mt-2 font-display text-8xl font-bold tracking-[0.2em] glow-text">
-          {room.code}
-        </div>
-        <Suspense fallback={<div className="mt-4 h-[164px] w-[164px] rounded-2xl bg-white/10" />}>
-          <div className="mt-4 inline-block rounded-2xl bg-white p-3">
-            <QRCodeSVG
-              value={`${window.location.origin}/join/${room.code}`}
-              size={140}
-              fgColor="#0d0b1a"
-              bgColor="white"
-            />
-          </div>
-        </Suspense>
-        <p className="mt-2 text-sm text-[var(--color-text-muted)]">
-          Scan eller gå til{" "}
-          <span className="font-bold text-[var(--color-text)]">
-            {window.location.host}/join/{room.code}
-          </span>
-        </p>
-      </motion.div>
-
-      {/* Player list */}
-      <PlayerList room={room} sessionId={sessionId} />
-
-      {/* Game selection or game info */}
-      {hasGame ? (
-        <>
+      {/* Two-column lobby: left (code+game) / right (players) */}
+      <div className="flex flex-1 flex-col lg:flex-row lg:items-center lg:justify-center gap-8 lg:gap-16">
+        {/* Left column: Room code + QR + game info */}
+        <div className="flex flex-col items-center gap-6 lg:flex-1 lg:max-w-lg">
           <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="w-full flex justify-center"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ type: "spring", stiffness: 200 }}
+            className="text-center"
           >
-            <GameInfoCard
-              gameType={room.gameType!}
-              onChangeGame={() =>
-                changeGameType({ roomId: room._id, hostId: sessionId, gameType: "" })
-              }
-              room={room}
-              sessionId={sessionId}
-            />
+            <p className="text-sm font-semibold uppercase tracking-widest text-[var(--color-text-muted)]">
+              {da.roomCode}
+            </p>
+            <div className="mt-2 font-display text-7xl lg:text-8xl font-bold tracking-[0.2em] glow-text">
+              {room.code}
+            </div>
+            <Suspense fallback={<div className="mt-4 h-[164px] w-[164px] rounded-2xl bg-white/10" />}>
+              <div className="mt-4 inline-block rounded-2xl bg-white p-3">
+                <QRCodeSVG
+                  value={`${window.location.origin}/join/${room.code}`}
+                  size={140}
+                  fgColor="#0d0b1a"
+                  bgColor="white"
+                />
+              </div>
+            </Suspense>
+            <p className="mt-2 text-sm text-[var(--color-text-muted)]">
+              Scan eller gå til{" "}
+              <span className="font-bold text-[var(--color-text)]">
+                {window.location.host}/join/{room.code}
+              </span>
+            </p>
           </motion.div>
 
-          {/* Start button */}
-          <motion.button
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, type: "spring" }}
-            whileHover={canStart ? { scale: 1.05 } : undefined}
-            whileTap={canStart ? { scale: 0.95 } : undefined}
-            disabled={!canStart}
-            onClick={() => startGame({ roomId: room._id, hostId: sessionId })}
-            className="rounded-2xl px-14 py-5 text-2xl font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-            style={{
-              backgroundColor: gameMeta.color,
-              color: gameMeta.textColor,
-              boxShadow: canStart
-                ? `0 0 30px ${gameMeta.color}40, 0 4px 20px ${gameMeta.color}20`
-                : undefined,
-            }}
-          >
-            {room.players.length < MIN_PLAYERS
-              ? `${da.needMorePlayers} (${room.players.length}/${MIN_PLAYERS})`
-              : da.startGame}
-          </motion.button>
-        </>
-      ) : (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="w-full flex justify-center"
-        >
-          <GamePicker
-            onSelect={async (gameId) => {
-              await changeGameType({ roomId: room._id, hostId: sessionId, gameType: gameId });
-              if (room.players.length >= MIN_PLAYERS) {
-                await startGame({ roomId: room._id, hostId: sessionId });
-              }
-            }}
-            showExternalGames
-          />
-        </motion.div>
-      )}
+          {/* Game selection or game info */}
+          {hasGame ? (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="w-full flex justify-center"
+            >
+              <GameInfoCard
+                gameType={room.gameType!}
+                onChangeGame={() =>
+                  changeGameType({ roomId: room._id, hostId: sessionId, gameType: "" })
+                }
+                room={room}
+                sessionId={sessionId}
+              />
+            </motion.div>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="w-full flex justify-center"
+            >
+              <GamePicker
+                onSelect={async (gameId) => {
+                  await changeGameType({ roomId: room._id, hostId: sessionId, gameType: gameId });
+                  if (room.players.length >= MIN_PLAYERS) {
+                    await startGame({ roomId: room._id, hostId: sessionId });
+                  }
+                }}
+                showExternalGames
+              />
+            </motion.div>
+          )}
+        </div>
+
+        {/* Right column: Player list + start button */}
+        <div className="flex flex-col items-center gap-6 lg:flex-1 lg:max-w-md">
+          <PlayerList room={room} sessionId={sessionId} />
+
+          {hasGame && (
+            <motion.button
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2, type: "spring" }}
+              whileHover={canStart ? { scale: 1.05 } : undefined}
+              whileTap={canStart ? { scale: 0.95 } : undefined}
+              disabled={!canStart}
+              onClick={() => startGame({ roomId: room._id, hostId: sessionId })}
+              className="rounded-2xl px-14 py-5 text-2xl font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+              style={{
+                backgroundColor: gameMeta.color,
+                color: gameMeta.textColor,
+                boxShadow: canStart
+                  ? `0 0 30px ${gameMeta.color}40, 0 4px 20px ${gameMeta.color}20`
+                  : undefined,
+              }}
+            >
+              {room.players.length < MIN_PLAYERS
+                ? `${da.needMorePlayers} (${room.players.length}/${MIN_PLAYERS})`
+                : da.startGame}
+            </motion.button>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

@@ -41,6 +41,7 @@ export const da = {
   yourAnswer: "Dit svar",
   lookAtScreen: "Se op på skærmen!",
   waiting: "Venter på andre...",
+  editAnswer: "Redigér svar",
   changeGame: "Skift spil",
   chooseNewGame: "Vælg nyt spil",
   noGameSelected: "Værten vælger spil...",
@@ -160,6 +161,13 @@ export const da = {
     getReady: "Gør jer klar!",
     statement: "Påstand",
     lookAtScreenForChoices: "Se op — hvem skifter side?",
+    difficulty: "Sværhedsgrad",
+    difficultyLevels: ["Let", "Medium", "Svær"] as readonly string[],
+    difficultyDescriptions: [
+      "Simpelt (LEGO, dyr, popkultur)",
+      "Almenviden (geografi, historie)",
+      "Tricky myter og fakta",
+    ] as readonly string[],
   },
 
   // External games
