@@ -73,20 +73,6 @@ function PlayerViewInner() {
   const hasJoined = useRef(false);
   const prevConnected = useRef(false);
 
-  // Read name once on mount (before any effects can clear it)
-  const pendingJoin = useRef<{ name: string; avatar?: string } | null>(null);
-  if (pendingJoin.current === null) {
-    const name = sessionStorage.getItem(PLAYER_NAME_KEY);
-    const avatar = sessionStorage.getItem(PLAYER_AVATAR_KEY);
-    if (name) {
-      pendingJoin.current = { name, avatar: avatar ?? undefined };
-      sessionStorage.removeItem(PLAYER_NAME_KEY);
-      sessionStorage.removeItem(PLAYER_AVATAR_KEY);
-    } else {
-      pendingJoin.current = undefined as any;
-    }
-  }
-
   const [avatarModalOpen, setAvatarModalOpen] = useState(false);
 
   // Send join on first connect, rejoin on reconnect
@@ -95,16 +81,22 @@ function PlayerViewInner() {
       prevConnected.current = false;
       return;
     }
-    if (prevConnected.current) return; // already connected, no action
+    if (prevConnected.current) return;
     prevConnected.current = true;
 
-    if (!hasJoined.current && pendingJoin.current) {
+    // Read name from sessionStorage (set by JoinPage) — only clear AFTER reading
+    const storedName = sessionStorage.getItem(PLAYER_NAME_KEY);
+    const storedAvatar = sessionStorage.getItem(PLAYER_AVATAR_KEY);
+
+    if (!hasJoined.current && storedName) {
       hasJoined.current = true;
+      sessionStorage.removeItem(PLAYER_NAME_KEY);
+      sessionStorage.removeItem(PLAYER_AVATAR_KEY);
       send({
         type: "join",
-        name: pendingJoin.current.name,
+        name: storedName,
         sessionId,
-        ...(pendingJoin.current.avatar ? { avatarImage: pendingJoin.current.avatar } : {}),
+        ...(storedAvatar ? { avatarImage: storedAvatar } : {}),
       });
     } else {
       hasJoined.current = true;
