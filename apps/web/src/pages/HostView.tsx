@@ -1,5 +1,5 @@
 import { Suspense, lazy, useEffect, useState, useCallback, useRef } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { Settings, SkipForward, Square, WifiOff } from "lucide-react";
 
@@ -485,6 +485,7 @@ function PlayerList({ room, sessionId }: { room: RoomSnapshot; sessionId: string
 
 function HostViewInner() {
   const sessionId = useSessionId();
+  const navigate = useNavigate();
   const room = useRoom();
   const send = useSend();
   const { connected } = usePartyConnection();
@@ -503,9 +504,11 @@ function HostViewInner() {
     }
   }, [connected, send, sessionId]);
 
-  // Warn before closing/refreshing
+  // Warn before closing/refreshing — ref lets us remove it for intentional navigation
+  const beforeUnloadRef = useRef<((e: BeforeUnloadEvent) => void) | null>(null);
   useEffect(() => {
     const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); };
+    beforeUnloadRef.current = handler;
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
   }, []);
@@ -601,7 +604,11 @@ function HostViewInner() {
         {confirmLeave ? (
           <div className="flex items-center gap-2">
             <span className="text-xs text-[var(--color-text-muted)]">{da.leaveRoomConfirm}</span>
-            <button onClick={() => { clearHostSession(); window.location.href = "/"; }} className="rounded-lg bg-[var(--color-danger)]/20 px-3 py-1.5 text-xs font-bold text-[var(--color-danger)] cursor-pointer">
+            <button onClick={() => {
+              if (beforeUnloadRef.current) window.removeEventListener("beforeunload", beforeUnloadRef.current);
+              clearHostSession();
+              navigate("/");
+            }} className="rounded-lg bg-[var(--color-danger)]/20 px-3 py-1.5 text-xs font-bold text-[var(--color-danger)] cursor-pointer">
               {da.leaveAnyway}
             </button>
             <button onClick={() => setConfirmLeave(false)} className="rounded-lg bg-[var(--color-surface-light)] px-3 py-1.5 text-xs font-bold text-[var(--color-text-muted)] cursor-pointer">
