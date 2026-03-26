@@ -1,8 +1,9 @@
 import { Suspense, useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { WifiOff } from "lucide-react";
 import { useSessionId } from "@/providers/SessionProvider";
-import { PartyProvider, useRoom, useSend, usePartyConnection } from "@/providers/PartyProvider";
+import { PartyProvider, useRoom, useSend, usePartyConnection, useRoomClosed } from "@/providers/PartyProvider";
 import { gameComponents } from "@/games/registry";
 import { GameAvatar } from "@/components/GameAvatar";
 import { AvatarPickerModal } from "@/components/AvatarPickerModal";
@@ -36,11 +37,39 @@ function PlayerNav({ sessionId }: { sessionId: string }) {
   );
 }
 
+function HostDisconnectedBanner() {
+  const navigate = useNavigate();
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      className="fixed top-0 left-0 right-0 z-50 flex flex-col items-center gap-2 px-4 py-4 bg-[var(--color-warning)]/10 backdrop-blur-md border-b border-[var(--color-warning)]/20"
+    >
+      <div className="flex items-center gap-2 text-[var(--color-warning)]">
+        <WifiOff className="h-5 w-5" />
+        <span className="font-bold text-sm">{da.hostDisconnected}</span>
+      </div>
+      <p className="text-xs text-[var(--color-text-muted)] animate-gentle-pulse">
+        {da.waitingForHostReturn}
+      </p>
+      <button
+        onClick={() => navigate("/play")}
+        className="rounded-xl bg-[var(--color-surface)] px-4 py-2 text-xs font-semibold text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors cursor-pointer"
+      >
+        {da.leaveGame}
+      </button>
+    </motion.div>
+  );
+}
+
 function PlayerViewInner() {
   const sessionId = useSessionId();
   const room = useRoom();
   const send = useSend();
+  const navigate = useNavigate();
   const { connected } = usePartyConnection();
+  const roomClosed = useRoomClosed();
   const hasJoined = useRef(false);
   const prevConnected = useRef(false);
 
@@ -91,6 +120,20 @@ function PlayerViewInner() {
     );
   }
 
+  if (roomClosed) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-6 p-4">
+        <p className="font-display text-3xl font-bold">{da.roomClosed}</p>
+        <p className="text-[var(--color-text-muted)]">{roomClosed}</p>
+        <button onClick={() => navigate("/play")} className="rounded-xl bg-[var(--color-primary)] px-8 py-3 font-bold cursor-pointer">
+          {da.back}
+        </button>
+      </div>
+    );
+  }
+
+  const hostGone = room.hostConnected === false;
+
   // Phase routing
   if (room.status === "playing" && room.currentPhase && room.gameType) {
     const components = gameComponents[room.gameType];
@@ -99,25 +142,30 @@ function PlayerViewInner() {
 
     if (PhaseComponent) {
       return (
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={room.currentPhase + "-" + room.roundNumber}
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -16 }}
-            transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-          >
-            <Suspense
-              fallback={
-                <div className="flex min-h-screen items-center justify-center text-[var(--color-text-muted)] animate-gentle-pulse">
-                  Indlæser...
-                </div>
-              }
+        <>
+          <AnimatePresence>
+            {hostGone && <HostDisconnectedBanner />}
+          </AnimatePresence>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={room.currentPhase + "-" + room.roundNumber}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -16 }}
+              transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
             >
-              <PhaseComponent room={room} sessionId={sessionId} />
-            </Suspense>
-          </motion.div>
-        </AnimatePresence>
+              <Suspense
+                fallback={
+                  <div className="flex min-h-screen items-center justify-center text-[var(--color-text-muted)] animate-gentle-pulse">
+                    Indlæser...
+                  </div>
+                }
+              >
+                <PhaseComponent room={room} sessionId={sessionId} />
+              </Suspense>
+            </motion.div>
+          </AnimatePresence>
+        </>
       );
     }
   }
@@ -170,6 +218,9 @@ function PlayerViewInner() {
   // -- Lobby --
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-6 p-4">
+      <AnimatePresence>
+        {hostGone && <HostDisconnectedBanner />}
+      </AnimatePresence>
       <motion.h2
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}

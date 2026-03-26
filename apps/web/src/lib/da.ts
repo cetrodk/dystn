@@ -61,6 +61,18 @@ export const da = {
   // Connection
   connectionLost: "Forbindelse mistet — genopretter...",
 
+  // Host disconnect
+  hostDisconnected: "Værten er midlertidigt frakoblet",
+  waitingForHostReturn: "Venter på at værten vender tilbage...",
+  leaveGame: "Forlad spil",
+  roomClosed: "Spillet er lukket",
+  hostLeft: "Værten har forladt spillet",
+  returnToRoom: "Vend tilbage til dit rum",
+  createNewRoom: "Opret nyt rum",
+  leaveRoomConfirm: "Du er vært — vil du virkelig forlade rummet?",
+  stayHere: "Bliv her",
+  leaveAnyway: "Forlad",
+
   // Games
   duel: {
     name: "Duel",

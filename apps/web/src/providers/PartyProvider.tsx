@@ -26,19 +26,23 @@ export type ClientMessage =
   | { type: "heartbeat"; sessionId: string }
   | { type: "telefonAdvanceReveal"; hostId: string }
   | { type: "changeAvatar"; sessionId: string; avatarImage: string }
-  | { type: "leaveRoom"; sessionId: string };
+  | { type: "leaveRoom"; sessionId: string }
+  | { type: "hostConnect"; sessionId: string; hostSecret: string };
 
 type ServerMessage =
   | { type: "room"; data: RoomSnapshot }
   | { type: "error"; message: string }
   | { type: "joined"; playerId: string; roomCode: string }
-  | { type: "kicked" };
+  | { type: "kicked" }
+  | { type: "roomClosed"; reason: string }
+  | { type: "hostClaimed"; success: boolean };
 
 interface PartyContextValue {
   room: RoomSnapshot | null;
   send: (msg: ClientMessage) => void;
   error: string | null;
   connected: boolean;
+  roomClosed: string | null;
 }
 
 const PartyContext = createContext<PartyContextValue | null>(null);
@@ -58,6 +62,7 @@ export function PartyProvider({
   const [room, setRoom] = useState<RoomSnapshot | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [connected, setConnected] = useState(false);
+  const [roomClosed, setRoomClosed] = useState<string | null>(null);
   const wsRef = useRef<PartySocket | null>(null);
 
   useEffect(() => {
@@ -91,6 +96,12 @@ export function PartyProvider({
           case "kicked":
             setError("Du er blevet fjernet fra spillet");
             break;
+          case "roomClosed":
+            setRoomClosed(msg.reason);
+            break;
+          case "hostClaimed":
+            // Handled by components directly if needed
+            break;
         }
       } catch {
         // ignore parse errors
@@ -110,7 +121,7 @@ export function PartyProvider({
   }, []);
 
   return (
-    <PartyContext.Provider value={{ room, send, error, connected }}>
+    <PartyContext.Provider value={{ room, send, error, connected, roomClosed }}>
       {children}
     </PartyContext.Provider>
   );
@@ -135,4 +146,11 @@ export function usePartyConnection(): { connected: boolean; error: string | null
   const ctx = useContext(PartyContext);
   if (!ctx) throw new Error("usePartyConnection must be used within PartyProvider");
   return { connected: ctx.connected, error: ctx.error };
+}
+
+/** Get roomClosed reason (null if room is still open) */
+export function useRoomClosed(): string | null {
+  const ctx = useContext(PartyContext);
+  if (!ctx) throw new Error("useRoomClosed must be used within PartyProvider");
+  return ctx.roomClosed;
 }

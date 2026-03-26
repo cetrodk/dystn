@@ -25,6 +25,7 @@ export interface RoomSnapshot {
   currentPlayerId?: string | null;
   settings?: Record<string, unknown>;
   hostId?: string;
+  hostConnected?: boolean;
 }
 
 export interface PhaseComponentProps {

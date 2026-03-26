@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useState, useCallback } from "react";
+import { Suspense, lazy, useEffect, useState, useCallback, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { Settings, SkipForward, Square, WifiOff } from "lucide-react";
@@ -8,12 +8,13 @@ const QRCodeSVG = lazy(() =>
   import("qrcode.react").then((m) => ({ default: m.QRCodeSVG })),
 );
 import { useSessionId } from "@/providers/SessionProvider";
-import { PartyProvider, useRoom, useSend } from "@/providers/PartyProvider";
+import { PartyProvider, useRoom, useSend, usePartyConnection } from "@/providers/PartyProvider";
 import { gameComponents, type RoomSnapshot } from "@/games/registry";
 import { sfxFanfare } from "@/lib/sounds";
 import { GameAvatar } from "@/components/GameAvatar";
 import { GamePicker, GAMES, GAME_ICONS } from "@/components/GamePicker";
 import { da } from "@/lib/da";
+import { getHostSession, clearHostSession } from "@/lib/session";
 
 const MIN_PLAYERS = 1;
 
@@ -486,7 +487,28 @@ function HostViewInner() {
   const sessionId = useSessionId();
   const room = useRoom();
   const send = useSend();
+  const { connected } = usePartyConnection();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [confirmLeave, setConfirmLeave] = useState(false);
+  const hostConnectSent = useRef(false);
+
+  // Send hostConnect when websocket connects
+  useEffect(() => {
+    if (!connected || hostConnectSent.current) return;
+    hostConnectSent.current = true;
+
+    const session = getHostSession();
+    if (session) {
+      send({ type: "hostConnect", sessionId, hostSecret: session.secret });
+    }
+  }, [connected, send, sessionId]);
+
+  // Warn before closing/refreshing
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, []);
 
   if (!room) {
     return (
@@ -576,12 +598,21 @@ function HostViewInner() {
     <div className="relative flex min-h-screen flex-col p-8 pt-16">
       {/* Top bar */}
       <div className="absolute top-4 left-4 right-4 flex items-center justify-between">
-        <a
-          href="/"
-          className="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors"
-        >
-          ← {da.back}
-        </a>
+        {confirmLeave ? (
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-[var(--color-text-muted)]">{da.leaveRoomConfirm}</span>
+            <button onClick={() => { clearHostSession(); window.location.href = "/"; }} className="rounded-lg bg-[var(--color-danger)]/20 px-3 py-1.5 text-xs font-bold text-[var(--color-danger)] cursor-pointer">
+              {da.leaveAnyway}
+            </button>
+            <button onClick={() => setConfirmLeave(false)} className="rounded-lg bg-[var(--color-surface-light)] px-3 py-1.5 text-xs font-bold text-[var(--color-text-muted)] cursor-pointer">
+              {da.stayHere}
+            </button>
+          </div>
+        ) : (
+          <button onClick={() => setConfirmLeave(true)} className="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors cursor-pointer">
+            ← {da.back}
+          </button>
+        )}
         <button
           onClick={() => setSettingsOpen(true)}
           className="rounded-xl bg-[var(--color-surface)] p-2 text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface-light)] transition-all cursor-pointer"

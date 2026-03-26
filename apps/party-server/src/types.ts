@@ -25,6 +25,10 @@ export interface Submission {
 export interface RoomState {
   code: string;
   hostId: string;
+  hostSecret: string;
+  hostConnected: boolean;
+  hostLastSeen: number;
+  hostDisconnectDeadline?: number;
   gameType?: string;
   status: RoomStatus;
   currentPhase?: string;
@@ -108,14 +112,17 @@ export type ClientMessage =
   | { type: "kickPlayer"; hostId: string; playerId: string }
   | { type: "changeAvatar"; sessionId: string; avatarImage: string }
   | { type: "leaveRoom"; sessionId: string }
-  | { type: "telefonAdvanceReveal"; hostId: string };
+  | { type: "telefonAdvanceReveal"; hostId: string }
+  | { type: "hostConnect"; sessionId: string; hostSecret: string };
 
 /** Server → Client */
 export type ServerMessage =
   | { type: "room"; data: RoomSnapshot }
   | { type: "error"; message: string }
   | { type: "joined"; playerId: string; roomCode: string }
-  | { type: "kicked" };
+  | { type: "kicked" }
+  | { type: "hostClaimed"; success: boolean }
+  | { type: "roomClosed"; reason: string };
 
 /** The filtered room state sent to each client */
 export interface RoomSnapshot {
@@ -139,5 +146,6 @@ export interface RoomSnapshot {
     isConnected: boolean;
     hasSubmitted?: boolean;
   }>;
+  hostConnected: boolean;
   currentPlayerId?: string;
 }
