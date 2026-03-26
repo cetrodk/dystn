@@ -1,4 +1,5 @@
-import { MIN_PLAYERS, MAX_PLAYERS } from "../../convex/lib/gameConfig";
+const MIN_PLAYERS = 1;
+const MAX_PLAYERS = 8;
 
 export const da = {
   // App

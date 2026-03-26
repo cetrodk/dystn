@@ -1,15 +1,14 @@
 import { useEffect } from "react";
-import { useMutation } from "convex/react";
 import { motion, AnimatePresence } from "framer-motion";
-import { api } from "../../../convex/_generated/api";
 import { sfxReveal, sfxScore } from "@/lib/sounds";
 import { GameAvatar } from "@/components/GameAvatar";
+import { useSend } from "@/providers/PartyProvider";
 import { da } from "@/lib/da";
 import { DrawingDisplay } from "../tegn/DrawingDisplay";
 import type { PhaseComponentProps } from "../registry";
 
 export default function HostReveal({ room, sessionId }: PhaseComponentProps) {
-  const advanceReveal = useMutation(api.game.telefonAdvanceReveal);
+  const send = useSend();
   const phaseData = room.phaseData ?? {};
   const chains: any[] = phaseData.chains ?? [];
   const chainIndex: number = phaseData.revealChainIndex ?? 0;
@@ -29,7 +28,7 @@ export default function HostReveal({ room, sessionId }: PhaseComponentProps) {
   }, [chainIndex, stepIndex]);
 
   function handleNext() {
-    advanceReveal({ roomId: room._id, hostId: sessionId });
+    send({ type: "telefonAdvanceReveal", hostId: sessionId });
   }
 
   if (!currentStep) return null;

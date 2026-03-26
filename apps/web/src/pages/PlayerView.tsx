@@ -1,21 +1,20 @@
-import { Suspense, useState } from "react";
+import { Suspense, useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery, useMutation } from "convex/react";
 import { motion, AnimatePresence } from "framer-motion";
-import { api } from "../../convex/_generated/api";
 import { useSessionId } from "@/providers/SessionProvider";
-import { useHeartbeat } from "@/hooks/useHeartbeat";
+import { PartyProvider, useRoom, useSend, usePartyConnection } from "@/providers/PartyProvider";
 import { gameComponents } from "@/games/registry";
 import { GameAvatar } from "@/components/GameAvatar";
 import { AvatarPickerModal } from "@/components/AvatarPickerModal";
 import { da } from "@/lib/da";
+import { PLAYER_NAME_KEY, PLAYER_AVATAR_KEY } from "@/lib/session";
 
-function PlayerNav({ roomId, sessionId }: { roomId: any; sessionId: string }) {
-  const leaveRoom = useMutation(api.players.leaveRoom);
+function PlayerNav({ sessionId }: { sessionId: string }) {
+  const send = useSend();
   const navigate = useNavigate();
 
-  async function handleLeave() {
-    await leaveRoom({ roomId, sessionId });
+  function handleLeave() {
+    send({ type: "leaveRoom", sessionId });
     navigate("/play");
   }
 
@@ -37,18 +36,52 @@ function PlayerNav({ roomId, sessionId }: { roomId: any; sessionId: string }) {
   );
 }
 
-export function PlayerView() {
-  const { code } = useParams<{ code: string }>();
+function PlayerViewInner() {
   const sessionId = useSessionId();
-  const room = useQuery(
-    api.rooms.getRoomForPlayer,
-    code ? { code, sessionId } : "skip",
-  );
+  const room = useRoom();
+  const send = useSend();
+  const { connected } = usePartyConnection();
+  const hasJoined = useRef(false);
+  const prevConnected = useRef(false);
+
+  // Read name once on mount (before any effects can clear it)
+  const pendingJoin = useRef<{ name: string; avatar?: string } | null>(null);
+  if (pendingJoin.current === null) {
+    const name = sessionStorage.getItem(PLAYER_NAME_KEY);
+    const avatar = sessionStorage.getItem(PLAYER_AVATAR_KEY);
+    if (name) {
+      pendingJoin.current = { name, avatar: avatar ?? undefined };
+      sessionStorage.removeItem(PLAYER_NAME_KEY);
+      sessionStorage.removeItem(PLAYER_AVATAR_KEY);
+    } else {
+      pendingJoin.current = undefined as any;
+    }
+  }
 
   const [avatarModalOpen, setAvatarModalOpen] = useState(false);
-  const changeAvatar = useMutation(api.players.changeAvatar);
 
-  useHeartbeat(sessionId);
+  // Send join on first connect, rejoin on reconnect
+  useEffect(() => {
+    if (!connected) {
+      prevConnected.current = false;
+      return;
+    }
+    if (prevConnected.current) return; // already connected, no action
+    prevConnected.current = true;
+
+    if (!hasJoined.current && pendingJoin.current) {
+      hasJoined.current = true;
+      send({
+        type: "join",
+        name: pendingJoin.current.name,
+        sessionId,
+        ...(pendingJoin.current.avatar ? { avatarImage: pendingJoin.current.avatar } : {}),
+      });
+    } else {
+      hasJoined.current = true;
+      send({ type: "rejoin", sessionId });
+    }
+  }, [connected, send, sessionId]);
 
   if (!room) {
     return (
@@ -93,7 +126,7 @@ export function PlayerView() {
     (p) => p._id === room.currentPlayerId,
   );
 
-  // ── Finished ──
+  // -- Finished --
   if (room.status === "finished") {
     const sorted = [...(room.players ?? [])].sort(
       (a, b) => b.score - a.score,
@@ -129,12 +162,12 @@ export function PlayerView() {
         <p className="text-sm text-[var(--color-text-muted)] animate-gentle-pulse">
           {da.waitingForHost}
         </p>
-        <PlayerNav roomId={room._id} sessionId={sessionId} />
+        <PlayerNav sessionId={sessionId} />
       </div>
     );
   }
 
-  // ── Lobby ──
+  // -- Lobby --
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-6 p-4">
       <motion.h2
@@ -199,7 +232,7 @@ export function PlayerView() {
           <AvatarPickerModal
             selected={currentPlayer?.avatarImage ?? null}
             onSelect={(name) => {
-              changeAvatar({ roomId: room._id, sessionId, avatarImage: name ?? "" });
+              send({ type: "changeAvatar", sessionId, avatarImage: name ?? "" });
             }}
             onClose={() => setAvatarModalOpen(false)}
           />
@@ -209,7 +242,26 @@ export function PlayerView() {
       <p className="text-sm text-[var(--color-text-muted)] animate-gentle-pulse">
         {room.gameType ? da.waitingForHost : da.noGameSelected}
       </p>
-      <PlayerNav roomId={room._id} sessionId={sessionId} />
+      <PlayerNav sessionId={sessionId} />
     </div>
+  );
+}
+
+export function PlayerView() {
+  const { code } = useParams<{ code: string }>();
+  const sessionId = useSessionId();
+
+  if (!code) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <p className="text-[var(--color-text-muted)]">Intet rumkode angivet.</p>
+      </div>
+    );
+  }
+
+  return (
+    <PartyProvider roomCode={code} sessionId={sessionId}>
+      <PlayerViewInner />
+    </PartyProvider>
   );
 }

@@ -1,16 +1,15 @@
 import { useEffect, useRef } from "react";
-import { useMutation } from "convex/react";
 import { motion, AnimatePresence } from "framer-motion";
-import { api } from "../../../convex/_generated/api";
 import { sfxAnswerPop } from "@/lib/sounds";
 import { da } from "@/lib/da";
+import { useSend } from "@/providers/PartyProvider";
 import { useStaggeredReveal } from "@/hooks/useStaggeredReveal";
 import type { PhaseComponentProps } from "../registry";
 
 const AUTO_ADVANCE_DELAY = 2_000;
 
 export default function HostPresent({ room, sessionId }: PhaseComponentProps) {
-  const hostAdvance = useMutation(api.game.hostAdvance);
+  const send = useSend();
   const advancedRef = useRef(false);
   const phaseData = room.phaseData ?? {};
   const answers = phaseData.answersAnonymized ?? [];
@@ -27,10 +26,10 @@ export default function HostPresent({ room, sessionId }: PhaseComponentProps) {
     if (!allRevealed || advancedRef.current) return;
     advancedRef.current = true;
     const timer = setTimeout(() => {
-      hostAdvance({ roomId: room._id, hostId: sessionId });
+      send({ type: "hostAdvance", hostId: sessionId });
     }, AUTO_ADVANCE_DELAY);
     return () => clearTimeout(timer);
-  }, [allRevealed, hostAdvance, room._id, sessionId]);
+  }, [allRevealed, send, sessionId]);
 
   return (
     <div className="flex flex-col items-center gap-8">

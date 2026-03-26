@@ -1,6 +1,4 @@
-import { useMutation } from "convex/react";
 import { motion, AnimatePresence } from "framer-motion";
-import { api } from "../../../convex/_generated/api";
 import { CountdownTimer } from "@festspil/ui/CountdownTimer";
 import {
   sfxDrumroll,
@@ -9,13 +7,14 @@ import {
   sfxFanfare,
 } from "@/lib/sounds";
 import { GameAvatar } from "@/components/GameAvatar";
+import { useSend } from "@/providers/PartyProvider";
 import { da } from "@/lib/da";
 import { DrawingDisplay } from "./DrawingDisplay";
 import { useStaggeredReveal } from "@/hooks/useStaggeredReveal";
 import type { PhaseComponentProps } from "../registry";
 
 export default function HostReveal({ room, sessionId }: PhaseComponentProps) {
-  const hostAdvance = useMutation(api.game.hostAdvance);
+  const send = useSend();
   const phaseData = room.phaseData ?? {};
   const results = phaseData.results ?? [];
   const drawingData = phaseData.drawingData ?? [];
@@ -191,7 +190,7 @@ export default function HostReveal({ room, sessionId }: PhaseComponentProps) {
               className="flex items-center justify-center gap-4"
             >
               <button
-                onClick={() => hostAdvance({ roomId: room._id, hostId: sessionId })}
+                onClick={() => send({ type: "hostAdvance", hostId: sessionId })}
                 className="rounded-2xl bg-[var(--color-primary)] px-10 py-4 text-xl font-bold transition-transform hover:scale-105 active:scale-95 cursor-pointer"
               >
                 {isLastDrawing ? da.scores : da.tegn.nextDrawing}

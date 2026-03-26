@@ -1,4 +1,6 @@
 const SESSION_KEY = "festspil_session_id";
+export const PLAYER_NAME_KEY = "festspil-player-name";
+export const PLAYER_AVATAR_KEY = "festspil-player-avatar";
 
 /** Cached in module scope — only reads sessionStorage once */
 let cachedSessionId: string | null = null;

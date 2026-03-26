@@ -1,16 +1,15 @@
 import { useRef, useState, useCallback } from "react";
-import { useMutation } from "convex/react";
 import { motion } from "framer-motion";
-import { api } from "../../../convex/_generated/api";
 import { CountdownTimer } from "@festspil/ui/CountdownTimer";
 import { WaitingScreen } from "@/components/WaitingScreen";
+import { useSend } from "@/providers/PartyProvider";
 import { sfxWhoosh, sfxUrgent } from "@/lib/sounds";
 import { da } from "@/lib/da";
 import { DrawingCanvas, type DrawingCanvasRef } from "../tegn/DrawingCanvas";
 import type { PhaseComponentProps } from "../registry";
 
 export default function PlayerDraw({ room, sessionId }: PhaseComponentProps) {
-  const submitAnswer = useMutation(api.game.submitAnswer);
+  const send = useSend();
   const canvasRef = useRef<DrawingCanvasRef>(null);
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -22,7 +21,7 @@ export default function PlayerDraw({ room, sessionId }: PhaseComponentProps) {
     if (s <= 5 && s > 0) sfxUrgent();
   }, []);
 
-  async function doSubmit() {
+  function doSubmit() {
     if (submitting || submitted) return;
     const strokes = canvasRef.current?.getStrokes();
     if (!strokes || strokes.length === 0) return;
@@ -30,11 +29,7 @@ export default function PlayerDraw({ room, sessionId }: PhaseComponentProps) {
     const viewBoxHeight = canvasRef.current?.getViewBoxHeight() ?? 300;
 
     sfxWhoosh();
-    await submitAnswer({
-      roomId: room._id,
-      sessionId,
-      content: { strokes, viewBoxHeight },
-    });
+    send({ type: "submitAnswer", sessionId, content: { strokes, viewBoxHeight } });
     setSubmitted(true);
   }
 

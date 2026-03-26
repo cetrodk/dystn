@@ -1,16 +1,15 @@
 import { useState } from "react";
-import { useMutation } from "convex/react";
 import { motion } from "framer-motion";
 import { Paintbrush } from "lucide-react";
-import { api } from "../../../convex/_generated/api";
 import { CountdownTimer } from "@festspil/ui/CountdownTimer";
 import { WaitingScreen } from "@/components/WaitingScreen";
+import { useSend } from "@/providers/PartyProvider";
 import { sfxClick } from "@/lib/sounds";
 import { da } from "@/lib/da";
 import type { PhaseComponentProps } from "../registry";
 
 export default function PlayerVote({ room, sessionId }: PhaseComponentProps) {
-  const submitAnswer = useMutation(api.game.submitAnswer);
+  const send = useSend();
   const [voted, setVoted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -24,15 +23,11 @@ export default function PlayerVote({ room, sessionId }: PhaseComponentProps) {
     else voteableAnswers.push(a);
   }
 
-  async function handleVote(answerId: string) {
+  function handleVote(answerId: string) {
     if (submitting) return;
     setSubmitting(true);
     sfxClick();
-    await submitAnswer({
-      roomId: room._id,
-      sessionId,
-      content: answerId,
-    });
+    send({ type: "submitAnswer", sessionId, content: answerId });
     setVoted(true);
   }
 

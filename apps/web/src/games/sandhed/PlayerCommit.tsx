@@ -1,8 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { useMutation } from "convex/react";
 import { motion } from "framer-motion";
-import { api } from "../../../convex/_generated/api";
 import { CountdownTimer } from "@festspil/ui/CountdownTimer";
+import { useSend } from "@/providers/PartyProvider";
 import { sfxUrgent, sfxTick, sfxClick } from "@/lib/sounds";
 import { da } from "@/lib/da";
 import type { PhaseComponentProps } from "../registry";
@@ -15,7 +14,7 @@ type PlayerState =
   | { type: "transit"; from: "true" | "false" | null; to: "true" | "false"; startedAt: number };
 
 export default function PlayerCommit({ room, sessionId }: PhaseComponentProps) {
-  const submitAnswer = useMutation(api.game.submitAnswer);
+  const send = useSend();
   const pd = room.phaseData ?? {};
 
   const [state, setState] = useState<PlayerState>({ type: "idle" });
@@ -27,13 +26,9 @@ export default function PlayerCommit({ room, sessionId }: PhaseComponentProps) {
 
   const sendChoice = useCallback(
     (choice: "true" | "false" | "transit") => {
-      submitAnswer({
-        roomId: room._id,
-        sessionId,
-        content: { choice },
-      }).catch(() => {});
+      send({ type: "submitAnswer", sessionId, content: { choice } });
     },
-    [submitAnswer, room._id, sessionId],
+    [send, sessionId],
   );
 
   const handleTap = useCallback(

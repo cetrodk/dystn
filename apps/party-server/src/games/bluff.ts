@@ -1,0 +1,279 @@
+import { registerGameHandlers } from "../registry";
+import { getSubmissions, upsertSubmission } from "../submissions";
+import type { RoomState, Player, PhaseTransition } from "../types";
+import prompts from "./prompts/bluff.json";
+import { TRUTH_ID } from "../constants";
+
+const allPrompts = prompts.filter((p) => !!p.answer);
+
+registerGameHandlers("bluff", {
+  setupRound(room: RoomState): Record<string, unknown> {
+    // Track which prompts have been used across all rounds in this game
+    const usedPromptIds: number[] = ((room.phaseData as any)?.usedPromptIds ?? []);
+
+    if (allPrompts.length === 0) {
+      // Fallback prompt
+      return {
+        promptText: "Verdens største ___ blev fundet i 2019",
+        realAnswer: "trøffel",
+        usedPromptIds: [],
+      };
+    }
+
+    // Filter out already-used prompts; if all used, reset
+    let candidates = allPrompts.filter((_, i) => !usedPromptIds.includes(i));
+    if (candidates.length === 0) candidates = [...allPrompts];
+
+    const chosenIndex = allPrompts.indexOf(
+      candidates[Math.floor(Math.random() * candidates.length)],
+    );
+    const prompt = allPrompts[chosenIndex];
+
+    return {
+      promptText: prompt.text,
+      realAnswer: prompt.answer,
+      usedPromptIds: [...usedPromptIds, chosenIndex],
+    };
+  },
+
+  onSubmission(room: RoomState, player: Player, content: unknown): void {
+    let text = String(content).trim().slice(0, 80);
+    if (!text) throw new Error("Tomt svar");
+    // Lowercase first char so answers fit mid-sentence blanks
+    text = text[0].toLowerCase() + text.slice(1);
+
+    // Reject if it matches the real answer (case-insensitive)
+    const realAnswer = (room.phaseData as any)?.realAnswer;
+    if (realAnswer && text.toLowerCase() === realAnswer.toLowerCase()) {
+      throw new Error("Prøv et andet svar");
+    }
+
+    upsertSubmission(room, player.id, "submit", text);
+  },
+
+  buildVoteData(room: RoomState): Record<string, unknown> {
+    const submissions = getSubmissions(room, "submit");
+
+    // Get the real answer from phaseData (stored by setupRound)
+    const realAnswer = (room.phaseData as any)?.realAnswer ?? "Ukendt svar";
+
+    // Build options: merge duplicate fakes (case-insensitive), then add truth
+    const seen = new Map<string, { id: string; text: string; playerId: string; mergedPlayerIds?: string[] }>();
+    const options: Array<{ id: string; text: string; playerId: string; mergedPlayerIds?: string[] }> = [];
+
+    for (const s of submissions) {
+      const key = String(s.content).toLowerCase();
+      const existing = seen.get(key);
+      if (existing) {
+        existing.mergedPlayerIds = existing.mergedPlayerIds ?? [existing.playerId];
+        existing.mergedPlayerIds.push(s.playerId);
+      } else {
+        const entry = { id: s.id, text: String(s.content), playerId: s.playerId };
+        options.push(entry);
+        seen.set(key, entry);
+      }
+    }
+
+    // Also check if any fake matches the real answer (shouldn't happen due to onSubmission guard, but just in case)
+    options.push({
+      id: TRUTH_ID,
+      text: realAnswer,
+      playerId: null as any,
+    });
+
+    // Shuffle
+    const shuffled = options.sort(() => Math.random() - 0.5);
+
+    const answers = shuffled.map((o) => ({
+      id: o.id,
+      text: o.text,
+      playerId: o.playerId,
+      mergedPlayerIds: o.mergedPlayerIds,
+    }));
+
+    return {
+      ...room.phaseData,
+      answers,
+      // Anonymized: strip playerIds so players can't tell which is theirs by ID
+      answersAnonymized: answers.map((a) => ({ id: a.id, text: a.text })),
+    };
+  },
+
+  onVote(room: RoomState, player: Player, content: unknown): void {
+    const vote = String(content);
+    upsertSubmission(room, player.id, "vote", vote);
+  },
+
+  computeResults(room: RoomState): {
+    phaseData: Record<string, unknown>;
+    scoreDeltas: Map<string, number>;
+  } {
+    const submissions = getSubmissions(room, "submit");
+    const votes = getSubmissions(room, "vote");
+    const players = room.players;
+
+    // Get real answer from phaseData
+    const realAnswer = (room.phaseData as any)?.realAnswer ?? "Ukendt svar";
+
+    // Tally votes per answer ID
+    const votesPerAnswer = new Map<string, string[]>();
+    for (const vote of votes) {
+      const answerId = String(vote.content);
+      const arr = votesPerAnswer.get(answerId) ?? [];
+      arr.push(vote.playerId);
+      votesPerAnswer.set(answerId, arr);
+    }
+
+    const scoreDeltas = new Map<string, number>();
+
+    // +1000 for guessing the real answer
+    const truthVoters = votesPerAnswer.get(TRUTH_ID) ?? [];
+    for (const playerId of truthVoters) {
+      scoreDeltas.set(playerId, (scoreDeltas.get(playerId) ?? 0) + 1000);
+    }
+
+    // Build results for each answer (fakes + truth)
+    const results: Array<{
+      answerId: string;
+      text: string;
+      isReal: boolean;
+      playerId: string | null;
+      playerName: string | null;
+      avatarColor: string | null;
+      avatarImage?: string;
+      voterNames: string[];
+      fooledCount: number;
+    }> = [];
+
+    // Process fakes using merged answers (not raw submissions) so co-authors get credit
+    const pdAnswers = ((room.phaseData as any)?.answers ?? []) as Array<{
+      id: string; text: string; playerId: string; mergedPlayerIds?: string[];
+    }>;
+    for (const answer of pdAnswers) {
+      if (answer.id === TRUTH_ID) continue;
+      const voterIds = votesPerAnswer.get(answer.id) ?? [];
+      const fooledCount = voterIds.length;
+      const player = players.find((p) => p.id === answer.playerId);
+
+      // Credit all merged authors equally
+      if (fooledCount > 0) {
+        const authorIds = answer.mergedPlayerIds ?? [answer.playerId];
+        for (const pid of authorIds) {
+          scoreDeltas.set(pid, (scoreDeltas.get(pid) ?? 0) + fooledCount * 500);
+        }
+      }
+
+      results.push({
+        answerId: answer.id,
+        text: answer.text,
+        isReal: false,
+        playerId: answer.playerId,
+        playerName: player?.name ?? "???",
+        avatarColor: player?.avatarColor ?? "#888",
+        avatarImage: player?.avatarImage,
+        voterNames: voterIds.map(
+          (vid) => players.find((p) => p.id === vid)?.name ?? "???",
+        ),
+        fooledCount,
+      });
+    }
+
+    // Add the truth entry
+    results.push({
+      answerId: TRUTH_ID,
+      text: realAnswer,
+      isReal: true,
+      playerId: null,
+      playerName: null,
+      avatarColor: null,
+      voterNames: truthVoters.map(
+        (vid) => players.find((p) => p.id === vid)?.name ?? "???",
+      ),
+      fooledCount: 0,
+    });
+
+    // Sort: fakes by fooledCount desc, truth last
+    results.sort((a, b) => {
+      if (a.isReal) return 1;
+      if (b.isReal) return -1;
+      return b.fooledCount - a.fooledCount;
+    });
+
+    return {
+      phaseData: {
+        ...room.phaseData,
+        results,
+        realAnswer,
+        totalVotes: votes.length,
+      },
+      scoreDeltas,
+    };
+  },
+
+  filterForPlayer(room: RoomState, currentPlayer: Player | null): Record<string, unknown> {
+    const phase = room.currentPhase ?? "";
+    const pd = (room.phaseData ?? {}) as any;
+
+    if (phase === "submit") {
+      const submissions = getSubmissions(room, "submit");
+      const mySubmission = submissions.find(
+        (s) => currentPlayer && s.playerId === currentPlayer.id,
+      );
+      return {
+        ...pd,
+        // Strip the real answer so it is never sent to clients
+        realAnswer: undefined,
+        mySubmission: mySubmission?.content ?? null,
+        submittedCount: submissions.length,
+      };
+    }
+    if (phase === "vote") {
+      const votes = getSubmissions(room, "vote");
+      const myVote = votes.find(
+        (s) => currentPlayer && s.playerId === currentPlayer.id,
+      );
+      const answers = (pd.answersAnonymized ?? []) as Array<{ id: string; text: string }>;
+      const myAnswerId = currentPlayer
+        ? (pd.answers ?? []).find((a: any) =>
+            a.playerId === currentPlayer.id ||
+            (a.mergedPlayerIds ?? []).includes(currentPlayer.id),
+          )?.id
+        : undefined;
+      return {
+        ...pd,
+        // Strip secrets from vote phase data
+        answers: undefined,
+        realAnswer: undefined,
+        answersAnonymized: answers.map((a) => ({ ...a, isOwn: a.id === myAnswerId })),
+        myVote: myVote?.content ?? null,
+      };
+    }
+    // reveal/scores: strip internal tracking
+    const { usedPromptIds: _, answers: __, ...visible } = pd ?? {};
+    return visible;
+  },
+
+  getNextPhase(currentPhase: string, _event: string, room: RoomState): PhaseTransition {
+    const roundNumber = room.roundNumber ?? 1;
+    const totalRounds = room.totalRounds ?? 1;
+
+    switch (currentPhase) {
+      case "submit":
+        return { nextPhase: "vote", action: { type: "buildVote" } };
+      case "vote":
+        return { nextPhase: "reveal", action: { type: "computeResults" } };
+      case "reveal":
+        if (roundNumber >= totalRounds) {
+          return { nextPhase: "finished", action: { type: "finish" } };
+        }
+        return { nextPhase: "scores", action: { type: "none" } };
+      case "scores":
+        if (roundNumber >= totalRounds) {
+          return { nextPhase: "finished", action: { type: "finish" } };
+        }
+        return { nextPhase: "submit", action: { type: "setup" }, advanceRound: true };
+      default:
+        return { nextPhase: "finished", action: { type: "finish" } };
+    }
+  },
+});

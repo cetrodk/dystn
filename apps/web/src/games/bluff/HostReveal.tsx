@@ -1,6 +1,4 @@
-import { useMutation } from "convex/react";
 import { motion, AnimatePresence } from "framer-motion";
-import { api } from "../../../convex/_generated/api";
 import { CountdownTimer } from "@festspil/ui/CountdownTimer";
 import {
   sfxDrumroll,
@@ -9,12 +7,13 @@ import {
   sfxFanfare,
 } from "@/lib/sounds";
 import { GameAvatar } from "@/components/GameAvatar";
+import { useSend } from "@/providers/PartyProvider";
 import { da } from "@/lib/da";
 import { useStaggeredReveal } from "@/hooks/useStaggeredReveal";
 import type { PhaseComponentProps } from "../registry";
 
 export default function HostReveal({ room, sessionId }: PhaseComponentProps) {
-  const hostAdvance = useMutation(api.game.hostAdvance);
+  const send = useSend();
   const phaseData = room.phaseData ?? {};
   const results = phaseData.results ?? [];
   const promptText = phaseData.promptText ?? "";
@@ -181,7 +180,7 @@ export default function HostReveal({ room, sessionId }: PhaseComponentProps) {
             className="flex items-center gap-4"
           >
             <button
-              onClick={() => hostAdvance({ roomId: room._id, hostId: sessionId })}
+              onClick={() => send({ type: "hostAdvance", hostId: sessionId })}
               className="rounded-2xl bg-[var(--color-primary)] px-12 py-5 text-2xl font-bold transition-transform hover:scale-105 active:scale-95 cursor-pointer"
             >
               {isLastRound ? da.scores : da.nextRound}

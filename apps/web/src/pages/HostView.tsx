@@ -1,6 +1,5 @@
 import { Suspense, lazy, useEffect, useState, useCallback } from "react";
 import { useParams } from "react-router-dom";
-import { useQuery, useMutation } from "convex/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Settings, SkipForward, Square, WifiOff } from "lucide-react";
 
@@ -8,14 +7,15 @@ import { Settings, SkipForward, Square, WifiOff } from "lucide-react";
 const QRCodeSVG = lazy(() =>
   import("qrcode.react").then((m) => ({ default: m.QRCodeSVG })),
 );
-import { api } from "../../convex/_generated/api";
 import { useSessionId } from "@/providers/SessionProvider";
+import { PartyProvider, useRoom, useSend } from "@/providers/PartyProvider";
 import { gameComponents, type RoomSnapshot } from "@/games/registry";
 import { sfxFanfare } from "@/lib/sounds";
 import { GameAvatar } from "@/components/GameAvatar";
 import { GamePicker, GAMES, GAME_ICONS } from "@/components/GamePicker";
 import { da } from "@/lib/da";
-import { MIN_PLAYERS } from "../../convex/lib/gameConfig";
+
+const MIN_PLAYERS = 1;
 
 const TIMER_OPTIONS = [
   { key: "submitTime", label: "Svartid", defaultMs: 60_000, min: 15, max: 180 },
@@ -40,7 +40,7 @@ function getGameMeta(gameType: string | undefined) {
   return GAME_OPTIONS.find((g) => g.id === gameType) ?? GAME_OPTIONS[0];
 }
 
-/* ── Difficulty Selector ───────────────────────────────── */
+/* -- Difficulty Selector ----------------------------------------- */
 
 function DifficultySelector({
   label,
@@ -81,7 +81,7 @@ function DifficultySelector({
   );
 }
 
-/* ── Settings Overlay ──────────────────────────────────── */
+/* -- Settings Overlay -------------------------------------------- */
 
 function HostSettingsOverlay({
   room,
@@ -92,29 +92,29 @@ function HostSettingsOverlay({
   sessionId: string;
   onClose: () => void;
 }) {
-  const updateSettings = useMutation(api.game.updateSettings);
+  const send = useSend();
   const settings = room.settings ?? {};
 
   const handleChange = useCallback(
     (key: string, seconds: number) => {
-      updateSettings({
-        roomId: room._id,
+      send({
+        type: "updateSettings",
         hostId: sessionId,
         settings: { [key]: seconds * 1000 },
       });
     },
-    [room._id, sessionId, updateSettings],
+    [sessionId, send],
   );
 
   const handleDifficulty = useCallback(
     (key: string, level: number) => {
-      updateSettings({
-        roomId: room._id,
+      send({
+        type: "updateSettings",
         hostId: sessionId,
         settings: { [key]: level },
       });
     },
-    [room._id, sessionId, updateSettings],
+    [sessionId, send],
   );
 
   const tegnDifficulty = typeof settings.tegnDifficulty === "number" ? (settings.tegnDifficulty as number) : 3;
@@ -201,7 +201,7 @@ function HostSettingsOverlay({
   );
 }
 
-/* ── Host Toolbar (persistent during gameplay) ─────────── */
+/* -- Host Toolbar (persistent during gameplay) ------------------- */
 
 function HostToolbar({
   room,
@@ -212,8 +212,7 @@ function HostToolbar({
   sessionId: string;
   onSettings: () => void;
 }) {
-  const hostAdvance = useMutation(api.game.hostAdvance);
-  const backToLobby = useMutation(api.game.backToLobby);
+  const send = useSend();
   const gameMeta = getGameMeta(room.gameType);
   const [confirmStop, setConfirmStop] = useState(false);
 
@@ -244,7 +243,7 @@ function HostToolbar({
             <span className="text-xs text-[var(--color-text-muted)]">Stop spillet?</span>
             <button
               onClick={() => {
-                backToLobby({ roomId: room._id, hostId: sessionId });
+                send({ type: "backToLobby", hostId: sessionId });
                 setConfirmStop(false);
               }}
               className="rounded-lg bg-[var(--color-danger)]/20 px-3 py-1.5 text-xs font-bold text-[var(--color-danger)] hover:bg-[var(--color-danger)]/30 transition-colors cursor-pointer"
@@ -268,7 +267,7 @@ function HostToolbar({
           </button>
         )}
         <button
-          onClick={() => hostAdvance({ roomId: room._id, hostId: sessionId })}
+          onClick={() => send({ type: "hostAdvance", hostId: sessionId })}
           className="rounded-lg bg-[var(--color-surface-light)] px-3 py-1.5 text-xs font-bold text-[var(--color-text)] hover:bg-[var(--color-primary)]/20 hover:text-[var(--color-primary-light)] transition-colors cursor-pointer"
           title="Spring videre"
         >
@@ -286,7 +285,7 @@ function HostToolbar({
   );
 }
 
-/* ── Pause Banner (shown when game is paused due to disconnect) ── */
+/* -- Pause Banner (shown when game is paused due to disconnect) -- */
 
 function PauseBanner({
   room,
@@ -297,8 +296,7 @@ function PauseBanner({
   sessionId: string;
   disconnectedPlayers: any[];
 }) {
-  const continueGame = useMutation(api.game.continueGame);
-  const kickPlayer = useMutation(api.players.kickPlayer);
+  const send = useSend();
 
   return (
     <motion.div
@@ -326,7 +324,7 @@ function PauseBanner({
 
       <div className="flex items-center gap-3">
         <button
-          onClick={() => continueGame({ roomId: room._id, hostId: sessionId })}
+          onClick={() => send({ type: "continueGame", hostId: sessionId })}
           className="rounded-xl bg-[var(--color-primary)] px-6 py-2 text-sm font-bold transition-transform hover:scale-105 active:scale-95 cursor-pointer"
         >
           Fortsæt alligevel
@@ -336,7 +334,7 @@ function PauseBanner({
   );
 }
 
-/* ── Game Info Card (lobby, game selected) ─────────────── */
+/* -- Game Info Card (lobby, game selected) ----------------------- */
 
 function getGameInfo(gameType: string) {
   const game = GAMES.find((g) => g.id === gameType);
@@ -353,7 +351,7 @@ function LobbyDifficultyPicker({ room, sessionId, settingKey, label, levels, des
   descriptions: readonly string[];
   color: string;
 }) {
-  const updateSettings = useMutation(api.game.updateSettings);
+  const send = useSend();
   const settings = room.settings ?? {};
   const current = typeof settings[settingKey] === "number" ? (settings[settingKey] as number) : 3;
 
@@ -366,8 +364,8 @@ function LobbyDifficultyPicker({ room, sessionId, settingKey, label, levels, des
         current={current}
         color={color}
         onChange={(level) =>
-          updateSettings({
-            roomId: room._id,
+          send({
+            type: "updateSettings",
             hostId: sessionId,
             settings: { [settingKey]: level },
           })
@@ -435,10 +433,10 @@ function GameInfoCard({
   );
 }
 
-/* ── Player List ───────────────────────────────────────── */
+/* -- Player List ------------------------------------------------- */
 
 function PlayerList({ room, sessionId }: { room: RoomSnapshot; sessionId: string }) {
-  const kickPlayer = useMutation(api.players.kickPlayer);
+  const send = useSend();
 
   return (
     <motion.div
@@ -468,7 +466,7 @@ function PlayerList({ room, sessionId }: { room: RoomSnapshot; sessionId: string
                 </span>
               ) : null}
               <button
-                onClick={() => kickPlayer({ roomId: room._id, hostId: sessionId, playerId: player._id })}
+                onClick={() => send({ type: "kickPlayer", hostId: sessionId, playerId: player._id })}
                 className="ml-auto rounded-lg p-1.5 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 transition-colors cursor-pointer"
                 title="Fjern spiller"
               >
@@ -482,15 +480,12 @@ function PlayerList({ room, sessionId }: { room: RoomSnapshot; sessionId: string
   );
 }
 
-/* ── Main Host View ────────────────────────────────────── */
+/* -- Main Host View (inner, inside PartyProvider) ---------------- */
 
-export function HostView() {
-  const { code } = useParams<{ code: string }>();
+function HostViewInner() {
   const sessionId = useSessionId();
-  const roomData = useQuery(api.rooms.getRoom, code ? { code } : "skip");
-  const room = roomData as RoomSnapshot | null | undefined;
-  const startGame = useMutation(api.game.startGame);
-  const changeGameType = useMutation(api.rooms.changeGameType);
+  const room = useRoom();
+  const send = useSend();
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   if (!room) {
@@ -507,7 +502,7 @@ export function HostView() {
     );
   }
 
-  // ── Playing ──
+  // -- Playing --
   if (room.status === "playing" && room.currentPhase && room.gameType) {
     const components = gameComponents[room.gameType];
     const basePhase = room.currentPhase.split("_")[0];
@@ -567,12 +562,12 @@ export function HostView() {
     }
   }
 
-  // ── Finished ──
+  // -- Finished --
   if (room.status === "finished") {
     return <FinishedScreen room={room} sessionId={sessionId} />;
   }
 
-  // ── Lobby ──
+  // -- Lobby --
   const gameMeta = getGameMeta(room.gameType);
   const hasGame = !!room.gameType;
   const canStart = hasGame && room.players.length >= MIN_PLAYERS;
@@ -649,7 +644,7 @@ export function HostView() {
               <GameInfoCard
                 gameType={room.gameType!}
                 onChangeGame={() =>
-                  changeGameType({ roomId: room._id, hostId: sessionId, gameType: "" })
+                  send({ type: "changeGameType", hostId: sessionId, gameType: "" })
                 }
                 room={room}
                 sessionId={sessionId}
@@ -663,10 +658,10 @@ export function HostView() {
               className="w-full flex justify-center"
             >
               <GamePicker
-                onSelect={async (gameId) => {
-                  await changeGameType({ roomId: room._id, hostId: sessionId, gameType: gameId });
+                onSelect={(gameId) => {
+                  send({ type: "changeGameType", hostId: sessionId, gameType: gameId });
                   if (room.players.length >= MIN_PLAYERS) {
-                    await startGame({ roomId: room._id, hostId: sessionId });
+                    send({ type: "startGame", hostId: sessionId });
                   }
                 }}
                 showExternalGames
@@ -687,7 +682,7 @@ export function HostView() {
               whileHover={canStart ? { scale: 1.05 } : undefined}
               whileTap={canStart ? { scale: 0.95 } : undefined}
               disabled={!canStart}
-              onClick={() => startGame({ roomId: room._id, hostId: sessionId })}
+              onClick={() => send({ type: "startGame", hostId: sessionId })}
               className="rounded-2xl px-14 py-5 text-2xl font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
               style={{
                 backgroundColor: gameMeta.color,
@@ -708,11 +703,31 @@ export function HostView() {
   );
 }
 
-/* ── Finished Screen ───────────────────────────────────── */
+/* -- Main Host View (outer, wraps in PartyProvider) -------------- */
+
+export function HostView() {
+  const { code } = useParams<{ code: string }>();
+  const sessionId = useSessionId();
+
+  if (!code) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <p className="text-[var(--color-text-muted)]">Intet rumkode angivet.</p>
+      </div>
+    );
+  }
+
+  return (
+    <PartyProvider roomCode={code} sessionId={sessionId}>
+      <HostViewInner />
+    </PartyProvider>
+  );
+}
+
+/* -- Finished Screen --------------------------------------------- */
 
 function FinishedScreen({ room, sessionId }: { room: RoomSnapshot; sessionId: string }) {
-  const restartGame = useMutation(api.game.restartGame);
-  const backToLobby = useMutation(api.game.backToLobby);
+  const send = useSend();
   const players = [...(room.players ?? [])].sort(
     (a, b) => b.score - a.score,
   );
@@ -838,14 +853,14 @@ function FinishedScreen({ room, sessionId }: { room: RoomSnapshot; sessionId: st
         className="flex flex-col items-center gap-3"
       >
         <button
-          onClick={() => restartGame({ roomId: room._id, hostId: sessionId })}
+          onClick={() => send({ type: "restartGame", hostId: sessionId })}
           className="rounded-2xl bg-[var(--color-primary)] px-10 py-4 text-xl font-bold cursor-pointer"
           style={{ boxShadow: "0 0 30px color-mix(in srgb, var(--color-primary) 25%, transparent)" }}
         >
           {da.playAgain}
         </button>
         <button
-          onClick={() => backToLobby({ roomId: room._id, hostId: sessionId })}
+          onClick={() => send({ type: "backToLobby", hostId: sessionId })}
           className="rounded-xl px-8 py-3 text-base font-semibold text-[var(--color-text-muted)] hover:text-[var(--color-text)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-light)] transition-all cursor-pointer"
         >
           {da.chooseNewGame}
