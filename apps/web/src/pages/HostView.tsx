@@ -289,11 +289,9 @@ function HostToolbar({
 /* -- Pause Banner (shown when game is paused due to disconnect) -- */
 
 function PauseBanner({
-  room,
   sessionId,
   disconnectedPlayers,
 }: {
-  room: RoomSnapshot;
   sessionId: string;
   disconnectedPlayers: any[];
 }) {
@@ -547,7 +545,6 @@ function HostViewInner() {
           <AnimatePresence>
             {isPaused ? (
               <PauseBanner
-                room={room}
                 sessionId={sessionId}
                 disconnectedPlayers={disconnectedPlayers}
               />
