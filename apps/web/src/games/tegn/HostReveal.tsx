@@ -46,8 +46,8 @@ export default function HostReveal({ room, sessionId }: PhaseComponentProps) {
   const showTruth = stage === "final" || stage === "done";
 
   return (
-    <div className="fixed inset-0 flex p-6 pt-14 gap-8">
-      <div className="flex-[3] flex flex-col min-h-0">
+    <div className="fixed inset-0 flex p-6 pt-14 gap-8 overflow-hidden">
+      <div className="flex-[3] flex flex-col min-h-0 min-w-0">
         <div className="text-sm uppercase tracking-widest text-[var(--color-text-muted)] mb-3">
           {da.tegn.drawing} {drawingIndex + 1} {da.of} {totalDrawings}
         </div>

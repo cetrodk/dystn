@@ -21,9 +21,9 @@ export default function HostVote({ room }: PhaseComponentProps) {
   }, []);
 
   return (
-    <div className="fixed inset-0 flex p-6 pt-14 gap-8">
+    <div className="fixed inset-0 flex p-6 pt-14 gap-8 overflow-hidden">
       {/* Left: drawing takes ~60% */}
-      <div className="flex-[3] flex flex-col min-h-0">
+      <div className="flex-[3] flex flex-col min-h-0 min-w-0">
         <div className="text-sm uppercase tracking-widest text-[var(--color-text-muted)] mb-3">
           {da.tegn.drawing} {drawingIndex} {da.of} {totalDrawings}
         </div>

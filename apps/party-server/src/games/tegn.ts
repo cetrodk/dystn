@@ -13,17 +13,13 @@ registerGameHandlers("tegn", {
   setupRound(room: RoomState): Record<string, unknown> {
     const settings = (room.settings ?? {}) as Record<string, unknown>;
     const difficulty =
-      typeof settings.tegnDifficulty === "number" ? settings.tegnDifficulty : 3;
+      typeof settings.tegnDifficulty === "number" ? settings.tegnDifficulty : 1;
 
-    let prompts = [...allPrompts];
-
-    // Filter by difficulty: level N includes prompts from levels 1..N
-    if (difficulty < 3) {
-      const allowed = prompts.filter(
-        (p) => p.category && parseInt(p.category, 10) <= difficulty,
-      );
-      if (allowed.length > 0) prompts = allowed;
-    }
+    // Filter to only the selected difficulty level so all players get equally hard prompts
+    const allowed = allPrompts.filter(
+      (p) => p.category && parseInt(p.category, 10) === difficulty,
+    );
+    const prompts = allowed.length > 0 ? [...allowed] : [...allPrompts];
 
     // Shuffle players to determine drawing order
     const drawingOrder = room.players
@@ -354,6 +350,7 @@ registerGameHandlers("tegn", {
         totalDrawings: pd?.totalDrawings,
         currentArtistId: pd?.currentArtistId,
         currentArtistName: pd?.currentArtistName,
+        drawingData: pd?.drawingData,
         isArtist,
         mySubmission: mySubmission?.content ?? null,
         submittedCount: submissions.length,

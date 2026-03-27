@@ -276,7 +276,7 @@ function HostSettingsInner() {
                 current={
                   typeof settings[currentTab.hasDifficulty.settingsKey] === "number"
                     ? (settings[currentTab.hasDifficulty.settingsKey] as number)
-                    : 3
+                    : 1
                 }
                 onChange={(level) => handleDifficulty(currentTab.hasDifficulty!.settingsKey, level)}
               />

@@ -20,7 +20,7 @@ export default function HostGuess({ room }: PhaseComponentProps) {
   }, []);
 
   return (
-    <div className="fixed inset-0 flex flex-col items-center p-6 pt-14">
+    <div className="fixed inset-0 flex flex-col items-center p-6 pt-14 overflow-hidden">
       {/* Top bar */}
       <div className="flex w-full items-center justify-between mb-4">
         <div className="text-sm uppercase tracking-widest text-[var(--color-text-muted)]">

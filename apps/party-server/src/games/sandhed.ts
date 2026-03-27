@@ -34,7 +34,7 @@ registerGameHandlers("sandhed", {
     const difficulty =
       typeof room.settings.sandhedDifficulty === "number"
         ? (room.settings.sandhedDifficulty as number)
-        : 3;
+        : 1;
 
     let pool: Array<SandhedPrompt & { idx: number }> = (allPrompts as SandhedPrompt[]).map(
       (p, idx) => ({ ...p, idx }),
