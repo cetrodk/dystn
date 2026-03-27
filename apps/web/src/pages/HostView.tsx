@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useState, useCallback, useRef } from "react";
+import { Suspense, lazy, useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { Settings, SkipForward, Square, WifiOff } from "lucide-react";
@@ -18,16 +18,6 @@ import { getHostSession, clearHostSession } from "@/lib/session";
 
 const MIN_PLAYERS = 1;
 
-const TIMER_OPTIONS = [
-  { key: "submitTime", label: "Svartid", defaultMs: 60_000, min: 15, max: 180, games: ["duel", "bluff"] },
-  { key: "voteTime", label: "Stemmetid", defaultMs: 15_000, min: 10, max: 60, games: ["duel", "bluff", "tegn"] },
-  { key: "revealTime", label: "Afsløring", defaultMs: 60_000, min: 15, max: 90, games: ["duel", "bluff", "tegn", "telefon"] },
-  { key: "scoresTime", label: "Pointvisning", defaultMs: 8_000, min: 3, max: 20, games: ["duel", "bluff", "tegn", "telefon", "sandhed"] },
-  { key: "drawTime", label: "Tegnetid", defaultMs: 90_000, min: 30, max: 180, games: ["tegn", "telefon"] },
-  { key: "guessTime", label: "Gættetid", defaultMs: 45_000, min: 15, max: 90, games: ["tegn", "telefon"] },
-  { key: "writeTime", label: "Skrivetid", defaultMs: 60_000, min: 15, max: 120, games: ["telefon"] },
-] as const;
-
 const GAME_OPTIONS = [
   { id: "duel", color: "var(--color-duel)", textColor: "#fff" },
   { id: "bluff", color: "var(--color-bluff)", textColor: "#0d0b1a" },
@@ -41,179 +31,17 @@ function getGameMeta(gameType: string | undefined) {
   return GAME_OPTIONS.find((g) => g.id === gameType) ?? GAME_OPTIONS[0];
 }
 
-/* -- Difficulty Selector ----------------------------------------- */
-
-function DifficultySelector({
-  label,
-  levels,
-  descriptions,
-  current,
-  color,
-  onChange,
-}: {
-  label: string;
-  levels: readonly string[];
-  descriptions: readonly string[];
-  current: number;
-  color: string;
-  onChange: (level: number) => void;
-}) {
-  return (
-    <div>
-      <span className="text-base font-semibold block mb-2">{label}</span>
-      <div className="flex gap-2">
-        {[1, 2, 3].map((level) => (
-          <button
-            key={level}
-            onClick={() => onChange(level)}
-            className="flex-1 rounded-xl p-3 text-center transition-all cursor-pointer border-2"
-            style={{
-              backgroundColor: current === level ? color : "var(--color-surface)",
-              borderColor: current === level ? color : "transparent",
-              color: current === level ? "#fff" : "var(--color-text-muted)",
-            }}
-          >
-            <span className="block text-sm font-bold">{levels[level - 1]}</span>
-            <span className="block text-xs mt-1 opacity-80">{descriptions[level - 1]}</span>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/* -- Settings Overlay -------------------------------------------- */
-
-function HostSettingsOverlay({
-  room,
-  sessionId,
-  onClose,
-}: {
-  room: RoomSnapshot;
-  sessionId: string;
-  onClose: () => void;
-}) {
-  const send = useSend();
-  const settings = room.settings ?? {};
-
-  const handleChange = useCallback(
-    (key: string, seconds: number) => {
-      send({
-        type: "updateSettings",
-        hostId: sessionId,
-        settings: { [key]: seconds * 1000 },
-      });
-    },
-    [sessionId, send],
-  );
-
-  const handleDifficulty = useCallback(
-    (key: string, level: number) => {
-      send({
-        type: "updateSettings",
-        hostId: sessionId,
-        settings: { [key]: level },
-      });
-    },
-    [sessionId, send],
-  );
-
-  const tegnDifficulty = typeof settings.tegnDifficulty === "number" ? (settings.tegnDifficulty as number) : 3;
-  const sandhedDifficulty = typeof settings.sandhedDifficulty === "number" ? (settings.sandhedDifficulty as number) : 3;
-
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-      onClick={onClose}
-    >
-      <motion.div
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.9, opacity: 0 }}
-        onClick={(e) => e.stopPropagation()}
-        className="card-glow w-full max-w-sm max-h-[80vh] overflow-y-auto rounded-2xl bg-[var(--color-bg-warm)] p-6 shadow-2xl"
-      >
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="font-display text-2xl font-bold">Indstillinger</h3>
-          <button
-            onClick={onClose}
-            className="text-[var(--color-text-muted)] hover:text-[var(--color-text)] text-2xl leading-none cursor-pointer"
-          >
-            &times;
-          </button>
-        </div>
-
-        <div className="flex flex-col gap-5">
-          {/* Tegn difficulty selector */}
-          {(room.gameType === "tegn" || !room.gameType) && (
-            <DifficultySelector
-              label={da.tegn.difficulty}
-              levels={da.tegn.difficultyLevels}
-              descriptions={da.tegn.difficultyDescriptions}
-              current={tegnDifficulty}
-              color="var(--color-tegn)"
-              onChange={(level) => handleDifficulty("tegnDifficulty", level)}
-            />
-          )}
-          {/* Sandhed difficulty selector */}
-          {(room.gameType === "sandhed" || !room.gameType) && (
-            <DifficultySelector
-              label={da.sandhed.difficulty}
-              levels={da.sandhed.difficultyLevels}
-              descriptions={da.sandhed.difficultyDescriptions}
-              current={sandhedDifficulty}
-              color="var(--color-sandhed)"
-              onChange={(level) => handleDifficulty("sandhedDifficulty", level)}
-            />
-          )}
-
-          {TIMER_OPTIONS.filter(({ games }) => !room.gameType || (games as readonly string[]).includes(room.gameType)).map(({ key, label, defaultMs, min, max }) => {
-            const currentMs = typeof settings[key] === "number" ? settings[key] : defaultMs;
-            const currentSec = Math.round(currentMs / 1000);
-            return (
-              <div key={key}>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-base font-semibold">{label}</span>
-                  <span className="text-base font-mono font-bold text-[var(--color-primary-light)]">
-                    {currentSec}s
-                  </span>
-                </div>
-                <input
-                  type="range"
-                  min={min}
-                  max={max}
-                  value={currentSec}
-                  onChange={(e) => handleChange(key, Number(e.target.value))}
-                  className="w-full cursor-pointer"
-                />
-                <div className="flex justify-between text-sm text-[var(--color-text-muted)]">
-                  <span>{min}s</span>
-                  <span>{max}s</span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </motion.div>
-    </motion.div>
-  );
-}
-
 /* -- Host Toolbar (persistent during gameplay) ------------------- */
 
 function HostToolbar({
   room,
   sessionId,
-  onSettings,
 }: {
   room: RoomSnapshot;
   sessionId: string;
-  onSettings: () => void;
 }) {
   const send = useSend();
+  const navigate = useNavigate();
   const gameMeta = getGameMeta(room.gameType);
   const [confirmStop, setConfirmStop] = useState(false);
 
@@ -283,7 +111,7 @@ function HostToolbar({
           <span className="flex items-center gap-1">Skip <SkipForward className="h-3.5 w-3.5" /></span>
         </button>
         <button
-          onClick={onSettings}
+          onClick={() => navigate(`/host/${room.code}/settings`)}
           className="rounded-lg bg-[var(--color-surface-light)] p-1.5 hover:bg-[var(--color-primary)]/20 transition-colors cursor-pointer"
           title="Indstillinger"
         >
@@ -349,49 +177,12 @@ function getGameInfo(gameType: string) {
   return GAMES[0];
 }
 
-function LobbyDifficultyPicker({ room, sessionId, settingKey, label, levels, descriptions, color }: {
-  room: RoomSnapshot;
-  sessionId: string;
-  settingKey: string;
-  label: string;
-  levels: readonly string[];
-  descriptions: readonly string[];
-  color: string;
-}) {
-  const send = useSend();
-  const settings = room.settings ?? {};
-  const current = typeof settings[settingKey] === "number" ? (settings[settingKey] as number) : 3;
-
-  return (
-    <div className="mt-4">
-      <DifficultySelector
-        label={label}
-        levels={levels}
-        descriptions={descriptions}
-        current={current}
-        color={color}
-        onChange={(level) =>
-          send({
-            type: "updateSettings",
-            hostId: sessionId,
-            settings: { [settingKey]: level },
-          })
-        }
-      />
-    </div>
-  );
-}
-
 function GameInfoCard({
   gameType,
   onChangeGame,
-  room,
-  sessionId,
 }: {
   gameType: string;
   onChangeGame: () => void;
-  room: RoomSnapshot;
-  sessionId: string;
 }) {
   const game = getGameInfo(gameType);
 
@@ -420,22 +211,6 @@ function GameInfoCard({
           ← {da.changeGame}
         </button>
       </div>
-      {gameType === "tegn" && (
-        <LobbyDifficultyPicker
-          room={room} sessionId={sessionId}
-          settingKey="tegnDifficulty" label={da.tegn.difficulty}
-          levels={da.tegn.difficultyLevels} descriptions={da.tegn.difficultyDescriptions}
-          color="var(--color-tegn)"
-        />
-      )}
-      {gameType === "sandhed" && (
-        <LobbyDifficultyPicker
-          room={room} sessionId={sessionId}
-          settingKey="sandhedDifficulty" label={da.sandhed.difficulty}
-          levels={da.sandhed.difficultyLevels} descriptions={da.sandhed.difficultyDescriptions}
-          color="var(--color-sandhed)"
-        />
-      )}
     </div>
   );
 }
@@ -533,7 +308,6 @@ function HostViewInner() {
   const room = useRoom();
   const send = useSend();
   const { connected } = usePartyConnection();
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [confirmLeave, setConfirmLeave] = useState(false);
   const hostConnectSent = useRef(false);
 
@@ -595,22 +369,12 @@ function HostViewInner() {
           <HostToolbar
             room={room}
             sessionId={sessionId}
-            onSettings={() => setSettingsOpen(true)}
           />
           <AnimatePresence>
             {isPaused ? (
               <PauseBanner
                 sessionId={sessionId}
                 disconnectedPlayers={disconnectedPlayers}
-              />
-            ) : null}
-          </AnimatePresence>
-          <AnimatePresence>
-            {settingsOpen ? (
-              <HostSettingsOverlay
-                room={room}
-                sessionId={sessionId}
-                onClose={() => setSettingsOpen(false)}
               />
             ) : null}
           </AnimatePresence>
@@ -673,22 +437,13 @@ function HostViewInner() {
           </button>
         )}
         <button
-          onClick={() => setSettingsOpen(true)}
+          onClick={() => navigate(`/host/${room.code}/settings`)}
           className="rounded-xl bg-[var(--color-surface)] p-2 text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface-light)] transition-all cursor-pointer"
           title="Indstillinger"
         >
           <Settings className="h-5 w-5" />
         </button>
       </div>
-      <AnimatePresence>
-        {settingsOpen ? (
-          <HostSettingsOverlay
-            room={room}
-            sessionId={sessionId}
-            onClose={() => setSettingsOpen(false)}
-          />
-        ) : null}
-      </AnimatePresence>
 
       {/* Two-column lobby: left (code+game) / right (players) */}
       <div className="flex flex-1 flex-col lg:flex-row lg:items-center lg:justify-center gap-8 lg:gap-16">
@@ -745,8 +500,6 @@ function HostViewInner() {
                 onChangeGame={() =>
                   send({ type: "changeGameType", hostId: sessionId, gameType: "" })
                 }
-                room={room}
-                sessionId={sessionId}
               />
             </motion.div>
           ) : (
