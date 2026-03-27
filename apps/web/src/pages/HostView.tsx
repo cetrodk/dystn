@@ -698,30 +698,39 @@ function HostViewInner() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ type: "spring", stiffness: 200 }}
-            className="text-center"
+            className="card-glow w-full max-w-md rounded-2xl bg-[var(--color-surface)] overflow-hidden"
           >
-            <p className="text-sm font-semibold uppercase tracking-widest text-[var(--color-text-muted)]">
-              {da.roomCode}
-            </p>
-            <div className="mt-2 font-display text-7xl lg:text-8xl font-bold tracking-[0.2em] glow-text">
-              {room.code}
-            </div>
-            <Suspense fallback={<div className="mt-4 h-[164px] w-[164px] rounded-2xl bg-white/10" />}>
-              <div className="mt-4 inline-block rounded-2xl bg-white p-3">
-                <QRCodeSVG
-                  value={`${window.location.origin}/join/${room.code}`}
-                  size={140}
-                  fgColor="#0d0b1a"
-                  bgColor="white"
-                />
+            {/* Room code — hero element, readable across the room */}
+            <div className="px-6 pt-6 pb-5 text-center">
+              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[var(--color-text-muted)]">
+                {da.roomCode}
+              </p>
+              <div className="mt-1 font-display text-6xl sm:text-7xl lg:text-8xl font-bold tracking-[0.2em] glow-text">
+                {room.code}
               </div>
-            </Suspense>
-            <p className="mt-2 text-sm text-[var(--color-text-muted)]">
-              Scan eller gå til{" "}
-              <span className="font-bold text-[var(--color-text)]">
-                {window.location.host}/join/{room.code}
-              </span>
-            </p>
+            </div>
+
+            {/* QR + join URL — compact row in darker inset strip */}
+            <div className="flex items-center gap-4 bg-[var(--color-bg)]/60 px-5 py-4 border-t border-white/5">
+              <Suspense fallback={<div className="h-[84px] w-[84px] shrink-0 rounded-xl bg-white/10" />}>
+                <div className="shrink-0 rounded-xl bg-white p-2 shadow-lg shadow-black/20">
+                  <QRCodeSVG
+                    value={`${window.location.origin}/join/${room.code}`}
+                    size={68}
+                    fgColor="#0d0b1a"
+                    bgColor="white"
+                  />
+                </div>
+              </Suspense>
+              <div className="min-w-0">
+                <p className="text-xs text-[var(--color-text-muted)]">
+                  Scan eller gå til
+                </p>
+                <p className="mt-0.5 text-sm font-bold text-[var(--color-primary-light)] break-all">
+                  {window.location.host}/join/{room.code}
+                </p>
+              </div>
+            </div>
           </motion.div>
 
           {/* Game selection or game info */}

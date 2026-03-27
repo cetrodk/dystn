@@ -11,7 +11,7 @@ export function LandingPage() {
 
   function handleCreateRoom() {
     const code = generateRoomCode();
-    const secret = crypto.randomUUID();
+    const secret = crypto.randomUUID?.() ?? Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, "0")).join("");
     setHostSession(code, secret);
     navigate(`/host/${code}`);
   }
