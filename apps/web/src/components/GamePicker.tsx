@@ -1,6 +1,7 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Swords, Drama, Paintbrush, Phone, Tag, ExternalLink, Scale } from "lucide-react";
+import useEmblaCarousel from "embla-carousel-react";
 import { da } from "@/lib/da";
 
 export const GAMES = [
@@ -83,7 +84,7 @@ export function GamePicker({
   );
 }
 
-/* ── Game Carousel ────────────────────────────────────── */
+/* ── Game Carousel (Embla) ────────────────────────────── */
 
 function GameGrid({
   onSelect,
@@ -92,36 +93,40 @@ function GameGrid({
   onSelect: (game: GameMeta) => void;
   showExternalGames: boolean;
 }) {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [activeIndex, setActiveIndex] = useState(0);
+  const [emblaRef, emblaApi] = useEmblaCarousel({
+    align: "center",
+    containScroll: false,
+    startIndex: 2,
+  });
+  const [activeIndex, setActiveIndex] = useState(2);
 
   const totalItems = showExternalGames ? GAMES.length + 1 : GAMES.length;
 
-  // Track which card is most visible via IntersectionObserver
+  const onSelectSlide = useCallback(() => {
+    if (!emblaApi) return;
+    setActiveIndex(emblaApi.selectedScrollSnap());
+  }, [emblaApi]);
+
   useEffect(() => {
-    const container = scrollRef.current;
-    if (!container) return;
+    if (!emblaApi) return;
+    emblaApi.on("select", onSelectSlide);
+    onSelectSlide();
+    return () => { emblaApi.off("select", onSelectSlide); };
+  }, [emblaApi, onSelectSlide]);
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            const idx = Number(entry.target.getAttribute("data-index"));
-            if (!isNaN(idx)) setActiveIndex(idx);
-          }
-        }
-      },
-      { root: container, threshold: 0.6 },
-    );
-
-    container.querySelectorAll("[data-index]").forEach((el) => observer.observe(el));
-    return () => observer.disconnect();
-  }, []);
-
-  function scrollTo(index: number) {
-    const el = scrollRef.current?.querySelector(`[data-index="${index}"]`);
-    el?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
-  }
+  // Vertical wheel → horizontal scroll
+  useEffect(() => {
+    if (!emblaApi) return;
+    const root = emblaApi.rootNode();
+    const onWheel = (e: WheelEvent) => {
+      if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+      e.preventDefault();
+      if (e.deltaY > 0) emblaApi.scrollNext();
+      else emblaApi.scrollPrev();
+    };
+    root.addEventListener("wheel", onWheel, { passive: false });
+    return () => root.removeEventListener("wheel", onWheel);
+  }, [emblaApi]);
 
   return (
     <motion.div
@@ -135,64 +140,56 @@ function GameGrid({
         {da.pickGame}
       </p>
 
-      {/* Horizontal scroll-snap carousel */}
       <div
-        ref={scrollRef}
-        className="flex w-full gap-3 overflow-x-auto snap-x snap-mandatory pb-2 no-scrollbar"
+        ref={emblaRef}
+        className="w-full overflow-hidden"
+        style={{ mask: "linear-gradient(to right, transparent, black 15%, black 85%, transparent)", WebkitMask: "linear-gradient(to right, transparent, black 15%, black 85%, transparent)" }}
       >
-        {/* Edge spacers so first/last cards can center */}
-        <div className="shrink-0 w-[max(1rem,calc((100%-200px)/2))]" />
-
-        {GAMES.map((game, i) => (
-          <motion.button
-            key={game.id}
-            data-index={i}
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.05 + i * 0.06, type: "spring", stiffness: 200 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => onSelect(game)}
-            className="card-glow snap-center shrink-0 w-[200px] flex flex-col items-center gap-3 rounded-2xl bg-[var(--color-surface)] p-5 cursor-pointer transition-shadow hover:shadow-lg"
-            style={{ "--tw-shadow-color": game.glow } as any}
-          >
-            <game.Icon className="h-10 w-10" style={{ color: game.color }} />
-            <span
-              className="font-display text-lg font-bold"
-              style={{ color: game.color }}
+        <div className="flex gap-3">
+          {GAMES.map((game, i) => (
+            <motion.button
+              key={game.id}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.05 + i * 0.06, type: "spring", stiffness: 200 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => onSelect(game)}
+              className="card-glow shrink-0 w-[200px] flex flex-col items-center gap-3 rounded-2xl bg-[var(--color-surface)] p-5 cursor-pointer transition-shadow hover:shadow-lg"
+              style={{ "--tw-shadow-color": game.glow } as any}
             >
-              {game.name}
-            </span>
-            <span className="text-xs text-[var(--color-text-muted)] leading-relaxed text-center">
-              {game.description}
-            </span>
-          </motion.button>
-        ))}
+              <game.Icon className="h-10 w-10" style={{ color: game.color }} />
+              <span className="font-display text-lg font-bold" style={{ color: game.color }}>
+                {game.name}
+              </span>
+              <span className="text-xs text-[var(--color-text-muted)] leading-relaxed text-center">
+                {game.description}
+              </span>
+            </motion.button>
+          ))}
 
-        {showExternalGames && (
-          <motion.a
-            href="https://quizmaster.cetropolis.dk/"
-            target="_blank"
-            rel="noopener noreferrer"
-            data-index={GAMES.length}
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.05 + GAMES.length * 0.06, type: "spring", stiffness: 200 }}
-            whileTap={{ scale: 0.95 }}
-            className="card-glow snap-center shrink-0 w-[200px] flex flex-col items-center gap-3 rounded-2xl bg-[var(--color-surface)] p-5 cursor-pointer transition-shadow hover:shadow-lg"
-            style={{ "--tw-shadow-color": "var(--color-pris-glow)" } as any}
-          >
-            <Tag className="h-10 w-10" style={{ color: "var(--color-pris)" }} />
-            <span className="font-display text-lg font-bold" style={{ color: "var(--color-pris)" }}>
-              {da.pris.name}
-            </span>
-            <span className="text-xs text-[var(--color-text-muted)] leading-relaxed text-center">
-              {da.pris.description}
-            </span>
-            <ExternalLink className="h-3.5 w-3.5 text-[var(--color-text-muted)]" />
-          </motion.a>
-        )}
-
-        <div className="shrink-0 w-[max(1rem,calc((100%-200px)/2))]" />
+          {showExternalGames && (
+            <motion.a
+              href="https://quizmaster.cetropolis.dk/"
+              target="_blank"
+              rel="noopener noreferrer"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.05 + GAMES.length * 0.06, type: "spring", stiffness: 200 }}
+              whileTap={{ scale: 0.95 }}
+              className="card-glow shrink-0 w-[200px] flex flex-col items-center gap-3 rounded-2xl bg-[var(--color-surface)] p-5 cursor-pointer transition-shadow hover:shadow-lg"
+              style={{ "--tw-shadow-color": "var(--color-pris-glow)" } as any}
+            >
+              <Tag className="h-10 w-10" style={{ color: "var(--color-pris)" }} />
+              <span className="font-display text-lg font-bold" style={{ color: "var(--color-pris)" }}>
+                {da.pris.name}
+              </span>
+              <span className="text-xs text-[var(--color-text-muted)] leading-relaxed text-center">
+                {da.pris.description}
+              </span>
+              <ExternalLink className="h-3.5 w-3.5 text-[var(--color-text-muted)]" />
+            </motion.a>
+          )}
+        </div>
       </div>
 
       {/* Dot indicators */}
@@ -200,7 +197,7 @@ function GameGrid({
         {Array.from({ length: totalItems }).map((_, i) => (
           <button
             key={i}
-            onClick={() => scrollTo(i)}
+            onClick={() => emblaApi?.scrollTo(i)}
             className="h-1.5 rounded-full transition-all duration-300 cursor-pointer"
             style={{
               width: i === activeIndex ? 16 : 6,

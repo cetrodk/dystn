@@ -14,6 +14,7 @@
     "@sentry/react": "^10.43.0",
     "@sentry/vite-plugin": "^5.1.1",
     "canvas-confetti": "^1.9.4",
+    "embla-carousel-react": "^8.6.0",
     "framer-motion": "^12",
     "lucide-react": "^0.577.0",
     "partysocket": "^1.1.16",
