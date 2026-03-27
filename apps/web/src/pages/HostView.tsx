@@ -170,7 +170,7 @@ function HostSettingsOverlay({
             />
           )}
 
-          {TIMER_OPTIONS.filter(({ games }) => !room.gameType || games.includes(room.gameType)).map(({ key, label, defaultMs, min, max }) => {
+          {TIMER_OPTIONS.filter(({ games }) => !room.gameType || (games as readonly string[]).includes(room.gameType)).map(({ key, label, defaultMs, min, max }) => {
             const currentMs = typeof settings[key] === "number" ? settings[key] : defaultMs;
             const currentSec = Math.round(currentMs / 1000);
             return (
