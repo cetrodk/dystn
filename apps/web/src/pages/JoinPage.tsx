@@ -1,50 +1,42 @@
 import { useState } from "react";
-import { useMutation, useQuery } from "convex/react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { api } from "../../convex/_generated/api";
-import { useSessionId } from "@/providers/SessionProvider";
 import { getAvatarSrc } from "@/lib/avatars";
 import { AvatarPickerModal } from "@/components/AvatarPickerModal";
 import { da } from "@/lib/da";
+import { PLAYER_NAME_KEY, PLAYER_AVATAR_KEY } from "@/lib/session";
 
 export function JoinPage() {
   const navigate = useNavigate();
   const { code: codeParam } = useParams<{ code?: string }>();
-  const sessionId = useSessionId();
-  const joinRoom = useMutation(api.players.joinRoom);
 
   const [code, setCode] = useState(codeParam?.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 4) ?? "");
   const [name, setName] = useState("");
   const [error, setError] = useState("");
   const [joining, setJoining] = useState(false);
-  const [dismissedRejoin, setDismissedRejoin] = useState(false);
   const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null);
   const [avatarModalOpen, setAvatarModalOpen] = useState(false);
 
-  const existingSession = useQuery(api.players.rejoinRoom, { sessionId });
-
   const canSubmit = code.length === 4 && name.trim().length > 0 && !joining;
 
-  async function handleJoin(e: React.FormEvent) {
+  function handleJoin(e: React.FormEvent) {
     e.preventDefault();
     if (!canSubmit) return;
 
     setError("");
     setJoining(true);
-    try {
-      const result = await joinRoom({
-        code: code.toUpperCase(),
-        name: name.trim(),
-        sessionId,
-        ...(selectedAvatar ? { avatarImage: selectedAvatar } : {}),
-      });
-      navigate(`/play/${result.code}`);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Fejl");
-    } finally {
-      setJoining(false);
+
+    // Store player name and avatar in sessionStorage so PlayerView can send
+    // the join message when it connects to PartyKit
+    const trimmedName = name.trim();
+    sessionStorage.setItem(PLAYER_NAME_KEY, trimmedName);
+    if (selectedAvatar) {
+      sessionStorage.setItem(PLAYER_AVATAR_KEY, selectedAvatar);
+    } else {
+      sessionStorage.removeItem(PLAYER_AVATAR_KEY);
     }
+
+    navigate(`/play/${code.toUpperCase()}`);
   }
 
   return (
@@ -74,37 +66,6 @@ export function JoinPage() {
         >
           {da.title}
         </motion.a>
-
-        {/* Rejoin banner */}
-        <AnimatePresence>
-          {existingSession && !dismissedRejoin ? (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="card-glow flex w-full flex-col gap-3 rounded-2xl bg-[var(--color-surface)] p-5"
-            >
-              <p className="text-center text-sm">
-                Du er allerede i et spil som{" "}
-                <strong className="text-[var(--color-primary-light)]">
-                  {existingSession.playerName}
-                </strong>
-              </p>
-              <button
-                onClick={() => navigate(`/play/${existingSession.roomCode}`)}
-                className="rounded-xl bg-[var(--color-primary)] p-3 font-bold transition-transform hover:scale-[1.03] active:scale-95 cursor-pointer"
-              >
-                Vend tilbage ({existingSession.roomCode})
-              </button>
-              <button
-                onClick={() => setDismissedRejoin(true)}
-                className="text-sm text-[var(--color-text-muted)] underline underline-offset-4 cursor-pointer"
-              >
-                Deltag i et nyt spil i stedet
-              </button>
-            </motion.div>
-          ) : null}
-        </AnimatePresence>
 
         {/* Join form */}
         <motion.form

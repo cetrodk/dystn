@@ -1,21 +1,21 @@
-import { Suspense, useState } from "react";
+import { Suspense, useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery, useMutation } from "convex/react";
 import { motion, AnimatePresence } from "framer-motion";
-import { api } from "../../convex/_generated/api";
+import { WifiOff } from "lucide-react";
 import { useSessionId } from "@/providers/SessionProvider";
-import { useHeartbeat } from "@/hooks/useHeartbeat";
+import { PartyProvider, useRoom, useSend, usePartyConnection, useRoomClosed } from "@/providers/PartyProvider";
 import { gameComponents } from "@/games/registry";
 import { GameAvatar } from "@/components/GameAvatar";
 import { AvatarPickerModal } from "@/components/AvatarPickerModal";
 import { da } from "@/lib/da";
+import { PLAYER_NAME_KEY, PLAYER_AVATAR_KEY } from "@/lib/session";
 
-function PlayerNav({ roomId, sessionId }: { roomId: any; sessionId: string }) {
-  const leaveRoom = useMutation(api.players.leaveRoom);
+function PlayerNav({ sessionId }: { sessionId: string }) {
+  const send = useSend();
   const navigate = useNavigate();
 
-  async function handleLeave() {
-    await leaveRoom({ roomId, sessionId });
+  function handleLeave() {
+    send({ type: "leaveRoom", sessionId });
     navigate("/play");
   }
 
@@ -37,18 +37,72 @@ function PlayerNav({ roomId, sessionId }: { roomId: any; sessionId: string }) {
   );
 }
 
-export function PlayerView() {
-  const { code } = useParams<{ code: string }>();
-  const sessionId = useSessionId();
-  const room = useQuery(
-    api.rooms.getRoomForPlayer,
-    code ? { code, sessionId } : "skip",
+function HostDisconnectedBanner() {
+  const navigate = useNavigate();
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      className="fixed top-0 left-0 right-0 z-50 flex flex-col items-center gap-2 px-4 py-4 bg-[var(--color-warning)]/10 backdrop-blur-md border-b border-[var(--color-warning)]/20"
+    >
+      <div className="flex items-center gap-2 text-[var(--color-warning)]">
+        <WifiOff className="h-5 w-5" />
+        <span className="font-bold text-sm">{da.hostDisconnected}</span>
+      </div>
+      <p className="text-xs text-[var(--color-text-muted)] animate-gentle-pulse">
+        {da.waitingForHostReturn}
+      </p>
+      <button
+        onClick={() => navigate("/play")}
+        className="rounded-xl bg-[var(--color-surface)] px-4 py-2 text-xs font-semibold text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors cursor-pointer"
+      >
+        {da.leaveGame}
+      </button>
+    </motion.div>
   );
+}
+
+function PlayerViewInner() {
+  const sessionId = useSessionId();
+  const room = useRoom();
+  const send = useSend();
+  const navigate = useNavigate();
+  const { connected } = usePartyConnection();
+  const roomClosed = useRoomClosed();
+  const hasJoined = useRef(false);
+  const prevConnected = useRef(false);
 
   const [avatarModalOpen, setAvatarModalOpen] = useState(false);
-  const changeAvatar = useMutation(api.players.changeAvatar);
 
-  useHeartbeat(sessionId);
+  // Send join on first connect, rejoin on reconnect
+  useEffect(() => {
+    if (!connected) {
+      prevConnected.current = false;
+      return;
+    }
+    if (prevConnected.current) return;
+    prevConnected.current = true;
+
+    // Read name from sessionStorage (set by JoinPage) — only clear AFTER reading
+    const storedName = sessionStorage.getItem(PLAYER_NAME_KEY);
+    const storedAvatar = sessionStorage.getItem(PLAYER_AVATAR_KEY);
+
+    if (!hasJoined.current && storedName) {
+      hasJoined.current = true;
+      sessionStorage.removeItem(PLAYER_NAME_KEY);
+      sessionStorage.removeItem(PLAYER_AVATAR_KEY);
+      send({
+        type: "join",
+        name: storedName,
+        sessionId,
+        ...(storedAvatar ? { avatarImage: storedAvatar } : {}),
+      });
+    } else {
+      hasJoined.current = true;
+      send({ type: "rejoin", sessionId });
+    }
+  }, [connected, send, sessionId]);
 
   if (!room) {
     return (
@@ -58,6 +112,20 @@ export function PlayerView() {
     );
   }
 
+  if (roomClosed) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-6 p-4">
+        <p className="font-display text-3xl font-bold">{da.roomClosed}</p>
+        <p className="text-[var(--color-text-muted)]">{roomClosed}</p>
+        <button onClick={() => navigate("/play")} className="rounded-xl bg-[var(--color-primary)] px-8 py-3 font-bold cursor-pointer">
+          {da.back}
+        </button>
+      </div>
+    );
+  }
+
+  const hostGone = room.hostConnected === false;
+
   // Phase routing
   if (room.status === "playing" && room.currentPhase && room.gameType) {
     const components = gameComponents[room.gameType];
@@ -66,25 +134,30 @@ export function PlayerView() {
 
     if (PhaseComponent) {
       return (
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={room.currentPhase + "-" + room.roundNumber}
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -16 }}
-            transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-          >
-            <Suspense
-              fallback={
-                <div className="flex min-h-screen items-center justify-center text-[var(--color-text-muted)] animate-gentle-pulse">
-                  Indlæser...
-                </div>
-              }
+        <>
+          <AnimatePresence>
+            {hostGone && <HostDisconnectedBanner />}
+          </AnimatePresence>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={room.currentPhase + "-" + room.roundNumber}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -16 }}
+              transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
             >
-              <PhaseComponent room={room} sessionId={sessionId} />
-            </Suspense>
-          </motion.div>
-        </AnimatePresence>
+              <Suspense
+                fallback={
+                  <div className="flex min-h-screen items-center justify-center text-[var(--color-text-muted)] animate-gentle-pulse">
+                    Indlæser...
+                  </div>
+                }
+              >
+                <PhaseComponent room={room} sessionId={sessionId} />
+              </Suspense>
+            </motion.div>
+          </AnimatePresence>
+        </>
       );
     }
   }
@@ -93,7 +166,7 @@ export function PlayerView() {
     (p) => p._id === room.currentPlayerId,
   );
 
-  // ── Finished ──
+  // -- Finished --
   if (room.status === "finished") {
     const sorted = [...(room.players ?? [])].sort(
       (a, b) => b.score - a.score,
@@ -129,14 +202,17 @@ export function PlayerView() {
         <p className="text-sm text-[var(--color-text-muted)] animate-gentle-pulse">
           {da.waitingForHost}
         </p>
-        <PlayerNav roomId={room._id} sessionId={sessionId} />
+        <PlayerNav sessionId={sessionId} />
       </div>
     );
   }
 
-  // ── Lobby ──
+  // -- Lobby --
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-6 p-4">
+      <AnimatePresence>
+        {hostGone && <HostDisconnectedBanner />}
+      </AnimatePresence>
       <motion.h2
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -199,7 +275,7 @@ export function PlayerView() {
           <AvatarPickerModal
             selected={currentPlayer?.avatarImage ?? null}
             onSelect={(name) => {
-              changeAvatar({ roomId: room._id, sessionId, avatarImage: name ?? "" });
+              send({ type: "changeAvatar", sessionId, avatarImage: name ?? "" });
             }}
             onClose={() => setAvatarModalOpen(false)}
           />
@@ -209,7 +285,26 @@ export function PlayerView() {
       <p className="text-sm text-[var(--color-text-muted)] animate-gentle-pulse">
         {room.gameType ? da.waitingForHost : da.noGameSelected}
       </p>
-      <PlayerNav roomId={room._id} sessionId={sessionId} />
+      <PlayerNav sessionId={sessionId} />
     </div>
+  );
+}
+
+export function PlayerView() {
+  const { code } = useParams<{ code: string }>();
+  const sessionId = useSessionId();
+
+  if (!code) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <p className="text-[var(--color-text-muted)]">Intet rumkode angivet.</p>
+      </div>
+    );
+  }
+
+  return (
+    <PartyProvider roomCode={code} sessionId={sessionId}>
+      <PlayerViewInner />
+    </PartyProvider>
   );
 }

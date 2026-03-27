@@ -1,17 +1,17 @@
 import { useState } from "react";
-import { useMutation } from "convex/react";
 import { motion } from "framer-motion";
 import { Paintbrush } from "lucide-react";
-import { api } from "../../../convex/_generated/api";
 import { CountdownTimer } from "@festspil/ui/CountdownTimer";
 import { WaitingScreen } from "@/components/WaitingScreen";
+import { useSend } from "@/providers/PartyProvider";
 import { sfxClick } from "@/lib/sounds";
 import { da } from "@/lib/da";
 import type { PhaseComponentProps } from "../registry";
 
 export default function PlayerVote({ room, sessionId }: PhaseComponentProps) {
-  const submitAnswer = useMutation(api.game.submitAnswer);
+  const send = useSend();
   const [voted, setVoted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const phaseData = room.phaseData ?? {};
   const isArtist = phaseData.isArtist ?? false;
@@ -23,13 +23,11 @@ export default function PlayerVote({ room, sessionId }: PhaseComponentProps) {
     else voteableAnswers.push(a);
   }
 
-  async function handleVote(answerId: string) {
+  function handleVote(answerId: string) {
+    if (submitting) return;
+    setSubmitting(true);
     sfxClick();
-    await submitAnswer({
-      roomId: room._id,
-      sessionId,
-      content: answerId,
-    });
+    send({ type: "submitAnswer", sessionId, content: answerId });
     setVoted(true);
   }
 
@@ -82,7 +80,8 @@ export default function PlayerVote({ room, sessionId }: PhaseComponentProps) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.1 }}
             onClick={() => handleVote(answer.id)}
-            className="rounded-xl bg-[var(--color-surface)] p-4 text-lg font-medium text-left transition-transform hover:scale-105 active:scale-95 cursor-pointer"
+            disabled={submitting}
+            className={`rounded-xl bg-[var(--color-surface)] p-4 text-lg font-medium text-left ${submitting ? "opacity-60 cursor-not-allowed" : "transition-transform hover:scale-105 active:scale-95 cursor-pointer"}`}
           >
             {answer.text}
           </motion.button>

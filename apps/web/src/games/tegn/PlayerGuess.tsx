@@ -1,22 +1,28 @@
-import { useState, useCallback } from "react";
-import { useMutation } from "convex/react";
-import { ConvexError } from "convex/values";
+import { useState, useCallback, useEffect } from "react";
 import { motion } from "framer-motion";
-import { api } from "../../../convex/_generated/api";
+import { Pencil } from "lucide-react";
 import { CountdownTimer } from "@festspil/ui/CountdownTimer";
 import { WaitingScreen } from "@/components/WaitingScreen";
+import { useSend } from "@/providers/PartyProvider";
 import { sfxWhoosh, sfxUrgent } from "@/lib/sounds";
 import { da } from "@/lib/da";
 import type { PhaseComponentProps } from "../registry";
 
 export default function PlayerGuess({ room, sessionId }: PhaseComponentProps) {
-  const submitAnswer = useMutation(api.game.submitAnswer);
+  const send = useSend();
+  const phaseData = room.phaseData ?? {};
+  const myPrev = phaseData.mySubmission as string | null;
+
   const [guess, setGuess] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  const phaseData = room.phaseData ?? {};
   const isArtist = phaseData.isArtist;
+
+  useEffect(() => {
+    if (myPrev && !submitted) setGuess(myPrev);
+  }, [myPrev, submitted]);
 
   const handleTick = useCallback((s: number) => {
     if (s <= 5 && s > 0) sfxUrgent();
@@ -41,27 +47,33 @@ export default function PlayerGuess({ room, sessionId }: PhaseComponentProps) {
     );
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!guess.trim()) return;
+    if (!guess.trim() || submitting) return;
+    setSubmitting(true);
 
-    try {
-      sfxWhoosh();
-      await submitAnswer({
-        roomId: room._id,
-        sessionId,
-        content: guess.trim(),
-      });
-      setSubmitted(true);
-      setError("");
-    } catch (err) {
-      const msg = err instanceof ConvexError ? String(err.data) : "Fejl";
-      setError(msg);
-    }
+    sfxWhoosh();
+    send({ type: "submitAnswer", sessionId, content: guess.trim() });
+    setSubmitted(true);
+    setError("");
+    setSubmitting(false);
   }
 
-  if (submitted || phaseData.mySubmission) {
-    return <WaitingScreen deadline={room.phaseDeadline} players={room.players} />;
+  if (submitted || myPrev) {
+    return (
+      <WaitingScreen deadline={room.phaseDeadline} players={room.players}>
+        <motion.button
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          onClick={() => { setSubmitted(false); setSubmitting(false); }}
+          className="flex items-center gap-2 rounded-xl bg-[var(--color-surface)] px-5 py-3 text-sm font-semibold text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors cursor-pointer"
+        >
+          <Pencil className="h-4 w-4" />
+          {da.editAnswer}
+        </motion.button>
+      </WaitingScreen>
+    );
   }
 
   return (
@@ -97,7 +109,7 @@ export default function PlayerGuess({ room, sessionId }: PhaseComponentProps) {
         ) : null}
         <button
           type="submit"
-          disabled={!guess.trim()}
+          disabled={!guess.trim() || submitting}
           className="rounded-xl bg-[var(--color-primary)] p-4 text-xl font-bold transition-transform hover:scale-105 active:scale-95 disabled:opacity-40 cursor-pointer"
         >
           {da.submit}

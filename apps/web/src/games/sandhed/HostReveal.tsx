@@ -1,11 +1,10 @@
 import { useCallback, useEffect } from "react";
-import { useMutation } from "convex/react";
 import { motion } from "framer-motion";
 import { Check, X, HelpCircle } from "lucide-react";
-import { api } from "../../../convex/_generated/api";
 import { CountdownTimer } from "@festspil/ui/CountdownTimer";
 import { sfxReveal, sfxCorrect, sfxWrong, sfxShame, sfxHop } from "@/lib/sounds";
 import { GameAvatar } from "@/components/GameAvatar";
+import { useSend } from "@/providers/PartyProvider";
 import { da } from "@/lib/da";
 import { Racetrack } from "./Racetrack";
 import type { PhaseComponentProps } from "../registry";
@@ -22,7 +21,7 @@ interface ResultEntry {
 }
 
 export default function HostReveal({ room, sessionId }: PhaseComponentProps) {
-  const hostAdvance = useMutation(api.game.hostAdvance);
+  const send = useSend();
   const pd = room.phaseData ?? {};
   const correctAnswer = pd.correctAnswer as string;
   const results = (pd.results ?? []) as ResultEntry[];
@@ -51,8 +50,8 @@ export default function HostReveal({ room, sessionId }: PhaseComponentProps) {
   }, []);
 
   const handleAdvance = useCallback(() => {
-    hostAdvance({ roomId: room._id, hostId: sessionId });
-  }, [hostAdvance, room._id, sessionId]);
+    send({ type: "hostAdvance", hostId: sessionId });
+  }, [send, sessionId]);
 
   return (
     <div className="flex flex-col items-center gap-8">

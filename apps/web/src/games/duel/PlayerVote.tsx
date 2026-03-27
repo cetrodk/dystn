@@ -1,29 +1,27 @@
 import { useState } from "react";
-import { useMutation } from "convex/react";
 import { motion } from "framer-motion";
-import { api } from "../../../convex/_generated/api";
 import { CountdownTimer } from "@festspil/ui/CountdownTimer";
 import { WaitingScreen } from "@/components/WaitingScreen";
+import { useSend } from "@/providers/PartyProvider";
 import { sfxClick } from "@/lib/sounds";
 import { da } from "@/lib/da";
 import type { PhaseComponentProps } from "../registry";
 
 export default function PlayerVote({ room, sessionId }: PhaseComponentProps) {
-  const submitAnswer = useMutation(api.game.submitAnswer);
+  const send = useSend();
   const [voted, setVoted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const phaseData = room.phaseData ?? {};
   const answers = [...(phaseData.answersAnonymized ?? [])].sort(
     (a: any, b: any) => (b.isOwn ? 1 : 0) - (a.isOwn ? 1 : 0),
   );
 
-  async function handleVote(answerId: string) {
+  function handleVote(answerId: string) {
+    if (submitting) return;
+    setSubmitting(true);
     sfxClick();
-    await submitAnswer({
-      roomId: room._id,
-      sessionId,
-      content: answerId,
-    });
+    send({ type: "submitAnswer", sessionId, content: answerId });
     setVoted(true);
   }
 
@@ -47,7 +45,7 @@ export default function PlayerVote({ room, sessionId }: PhaseComponentProps) {
             animate={{ opacity: answer.isOwn ? 0.4 : 1, y: 0 }}
             transition={{ delay: i * 0.1 }}
             onClick={() => !answer.isOwn && handleVote(answer.id)}
-            disabled={answer.isOwn}
+            disabled={answer.isOwn || submitting}
             className={`rounded-xl bg-[var(--color-surface)] p-4 text-lg font-medium text-left ${
               answer.isOwn
                 ? "cursor-not-allowed"

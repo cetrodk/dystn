@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Swords, Drama, Paintbrush, Phone, Tag, ExternalLink, Scale } from "lucide-react";
 import { da } from "@/lib/da";
@@ -83,7 +83,7 @@ export function GamePicker({
   );
 }
 
-/* ── Game Grid ─────────────────────────────────────────── */
+/* ── Game Carousel ────────────────────────────────────── */
 
 function GameGrid({
   onSelect,
@@ -92,75 +92,123 @@ function GameGrid({
   onSelect: (game: GameMeta) => void;
   showExternalGames: boolean;
 }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  const totalItems = showExternalGames ? GAMES.length + 1 : GAMES.length;
+
+  // Track which card is most visible via IntersectionObserver
+  useEffect(() => {
+    const container = scrollRef.current;
+    if (!container) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            const idx = Number(entry.target.getAttribute("data-index"));
+            if (!isNaN(idx)) setActiveIndex(idx);
+          }
+        }
+      },
+      { root: container, threshold: 0.6 },
+    );
+
+    container.querySelectorAll("[data-index]").forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, []);
+
+  function scrollTo(index: number) {
+    const el = scrollRef.current?.querySelector(`[data-index="${index}"]`);
+    el?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0, y: -20 }}
       transition={{ duration: 0.25 }}
-      className="flex w-full max-w-lg flex-col items-center gap-6"
+      className="flex w-full flex-col items-center gap-4"
     >
       <p className="text-xs font-semibold uppercase tracking-widest text-[var(--color-text-muted)]">
         {da.pickGame}
       </p>
 
-      <div className="grid w-full grid-cols-2 gap-3 sm:gap-4">
+      {/* Horizontal scroll-snap carousel */}
+      <div
+        ref={scrollRef}
+        className="flex w-full gap-3 overflow-x-auto snap-x snap-mandatory pb-2 no-scrollbar"
+      >
+        {/* Edge spacers so first/last cards can center */}
+        <div className="shrink-0 w-[max(1rem,calc((100%-200px)/2))]" />
+
         {GAMES.map((game, i) => (
           <motion.button
             key={game.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.05 + i * 0.07, type: "spring", stiffness: 200 }}
-            whileHover={{ scale: 1.03, y: -2 }}
-            whileTap={{ scale: 0.97 }}
+            data-index={i}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.05 + i * 0.06, type: "spring", stiffness: 200 }}
+            whileTap={{ scale: 0.95 }}
             onClick={() => onSelect(game)}
-            className="card-glow group relative flex flex-col items-center gap-2 rounded-2xl bg-[var(--color-surface)] p-5 sm:p-6 cursor-pointer transition-shadow hover:shadow-lg"
+            className="card-glow snap-center shrink-0 w-[200px] flex flex-col items-center gap-3 rounded-2xl bg-[var(--color-surface)] p-5 cursor-pointer transition-shadow hover:shadow-lg"
             style={{ "--tw-shadow-color": game.glow } as any}
           >
-            <game.Icon className="h-10 w-10 sm:h-12 sm:w-12" style={{ color: game.color }} />
+            <game.Icon className="h-10 w-10" style={{ color: game.color }} />
             <span
-              className="font-display text-lg font-bold sm:text-xl"
+              className="font-display text-lg font-bold"
               style={{ color: game.color }}
             >
               {game.name}
             </span>
-            <span className="text-xs text-[var(--color-text-muted)] leading-relaxed sm:text-sm">
+            <span className="text-xs text-[var(--color-text-muted)] leading-relaxed text-center">
               {game.description}
             </span>
           </motion.button>
         ))}
-      </div>
 
-      {showExternalGames && (
-        <>
-          <p className="text-xs font-semibold uppercase tracking-widest text-[var(--color-text-muted)]">
-            {da.externalGames}
-          </p>
+        {showExternalGames && (
           <motion.a
             href="https://quizmaster.cetropolis.dk/"
             target="_blank"
             rel="noopener noreferrer"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.05 + GAMES.length * 0.07, type: "spring", stiffness: 200 }}
-            whileHover={{ scale: 1.03, y: -2 }}
-            whileTap={{ scale: 0.97 }}
-            className="card-glow flex w-full items-center gap-4 rounded-2xl bg-[var(--color-surface)] p-4 sm:p-5 cursor-pointer transition-shadow hover:shadow-lg"
+            data-index={GAMES.length}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.05 + GAMES.length * 0.06, type: "spring", stiffness: 200 }}
+            whileTap={{ scale: 0.95 }}
+            className="card-glow snap-center shrink-0 w-[200px] flex flex-col items-center gap-3 rounded-2xl bg-[var(--color-surface)] p-5 cursor-pointer transition-shadow hover:shadow-lg"
             style={{ "--tw-shadow-color": "var(--color-pris-glow)" } as any}
           >
-            <Tag className="h-8 w-8 shrink-0 sm:h-10 sm:w-10" style={{ color: "var(--color-pris)" }} />
-            <div className="flex flex-col gap-0.5 text-left">
-              <span className="font-display text-lg font-bold sm:text-xl" style={{ color: "var(--color-pris)" }}>
-                {da.pris.name}
-              </span>
-              <span className="text-xs text-[var(--color-text-muted)] leading-relaxed sm:text-sm">
-                {da.pris.description}
-              </span>
-            </div>
-            <ExternalLink className="ml-auto h-4 w-4 shrink-0 text-[var(--color-text-muted)]" />
+            <Tag className="h-10 w-10" style={{ color: "var(--color-pris)" }} />
+            <span className="font-display text-lg font-bold" style={{ color: "var(--color-pris)" }}>
+              {da.pris.name}
+            </span>
+            <span className="text-xs text-[var(--color-text-muted)] leading-relaxed text-center">
+              {da.pris.description}
+            </span>
+            <ExternalLink className="h-3.5 w-3.5 text-[var(--color-text-muted)]" />
           </motion.a>
-        </>
-      )}
+        )}
+
+        <div className="shrink-0 w-[max(1rem,calc((100%-200px)/2))]" />
+      </div>
+
+      {/* Dot indicators */}
+      <div className="flex gap-1.5">
+        {Array.from({ length: totalItems }).map((_, i) => (
+          <button
+            key={i}
+            onClick={() => scrollTo(i)}
+            className="h-1.5 rounded-full transition-all duration-300 cursor-pointer"
+            style={{
+              width: i === activeIndex ? 16 : 6,
+              backgroundColor: i === activeIndex ? "var(--color-primary)" : "var(--color-surface-light)",
+            }}
+          />
+        ))}
+      </div>
     </motion.div>
   );
 }

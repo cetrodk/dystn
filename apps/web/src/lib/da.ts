@@ -1,4 +1,5 @@
-import { MIN_PLAYERS, MAX_PLAYERS } from "../../convex/lib/gameConfig";
+const MIN_PLAYERS = 1;
+const MAX_PLAYERS = 8;
 
 export const da = {
   // App
@@ -41,6 +42,7 @@ export const da = {
   yourAnswer: "Dit svar",
   lookAtScreen: "Se op på skærmen!",
   waiting: "Venter på andre...",
+  editAnswer: "Redigér svar",
   changeGame: "Skift spil",
   chooseNewGame: "Vælg nyt spil",
   noGameSelected: "Værten vælger spil...",
@@ -58,6 +60,18 @@ export const da = {
 
   // Connection
   connectionLost: "Forbindelse mistet — genopretter...",
+
+  // Host disconnect
+  hostDisconnected: "Værten er midlertidigt frakoblet",
+  waitingForHostReturn: "Venter på at værten vender tilbage...",
+  leaveGame: "Forlad spil",
+  roomClosed: "Spillet er lukket",
+  hostLeft: "Værten har forladt spillet",
+  returnToRoom: "Vend tilbage til dit rum",
+  createNewRoom: "Opret nyt rum",
+  leaveRoomConfirm: "Du er vært — vil du virkelig forlade rummet?",
+  stayHere: "Bliv her",
+  leaveAnyway: "Forlad",
 
   // Games
   duel: {
@@ -113,6 +127,13 @@ export const da = {
     guessReal: "Gæt det rigtige ord",
     artistWaiting: "De andre stemmer nu — vent her",
     drawingSecretWords: "Alle tegner deres hemmelige ord...",
+    difficulty: "Sværhedsgrad",
+    difficultyLevels: ["Let", "Medium", "Svær"] as readonly string[],
+    difficultyDescriptions: [
+      "Enkle ting (hest, hus, sol)",
+      "Scener (en kat der sover i solen)",
+      "Absurde situationer (en vampyr der er vegetar)",
+    ] as readonly string[],
   },
 
   telefon: {
@@ -153,6 +174,13 @@ export const da = {
     getReady: "Gør jer klar!",
     statement: "Påstand",
     lookAtScreenForChoices: "Se op — hvem skifter side?",
+    difficulty: "Sværhedsgrad",
+    difficultyLevels: ["Let", "Medium", "Svær"] as readonly string[],
+    difficultyDescriptions: [
+      "Simpelt (LEGO, dyr, popkultur)",
+      "Almenviden (geografi, historie)",
+      "Tricky myter og fakta",
+    ] as readonly string[],
   },
 
   // External games

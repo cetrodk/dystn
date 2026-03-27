@@ -1,17 +1,18 @@
-import { useMutation } from "convex/react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { api } from "../../convex/_generated/api";
-import { useSessionId } from "@/providers/SessionProvider";
+import { generateRoomCode } from "@/hooks/useCreateRoom";
+import { setHostSession, clearHostSession, getHostSession } from "@/lib/session";
 import { da } from "@/lib/da";
 
 export function LandingPage() {
   const navigate = useNavigate();
-  const sessionId = useSessionId();
-  const createRoom = useMutation(api.rooms.createRoom);
+  const [hostSession, setHostSessionState] = useState(() => getHostSession());
 
-  async function handleCreateRoom() {
-    const { code } = await createRoom({ hostId: sessionId });
+  function handleCreateRoom() {
+    const code = generateRoomCode();
+    const secret = crypto.randomUUID?.() ?? Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, "0")).join("");
+    setHostSession(code, secret);
     navigate(`/host/${code}`);
   }
 
@@ -48,6 +49,34 @@ export function LandingPage() {
             {da.subtitle}
           </p>
         </motion.div>
+
+        {/* Existing host session banner */}
+        {hostSession && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="card-glow w-full max-w-sm rounded-2xl bg-[var(--color-surface)] p-5"
+          >
+            <p className="mb-3 text-center text-sm">
+              Du har et aktivt rum:{" "}
+              <strong className="text-[var(--color-primary-light)]">{hostSession.roomCode}</strong>
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => navigate(`/host/${hostSession.roomCode}`)}
+                className="flex-1 rounded-xl bg-[var(--color-primary)] p-3 font-bold transition-transform hover:scale-[1.03] active:scale-95 cursor-pointer"
+              >
+                {da.returnToRoom}
+              </button>
+              <button
+                onClick={() => { clearHostSession(); setHostSessionState(null); }}
+                className="flex-1 rounded-xl bg-[var(--color-surface-light)] p-3 font-semibold text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors cursor-pointer"
+              >
+                {da.createNewRoom}
+              </button>
+            </div>
+          </motion.div>
+        )}
 
         {/* Two equal action cards */}
         <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2">
