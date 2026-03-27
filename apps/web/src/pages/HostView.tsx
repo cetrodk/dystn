@@ -19,13 +19,13 @@ import { getHostSession, clearHostSession } from "@/lib/session";
 const MIN_PLAYERS = 1;
 
 const TIMER_OPTIONS = [
-  { key: "submitTime", label: "Svartid", defaultMs: 60_000, min: 15, max: 180 },
-  { key: "voteTime", label: "Stemmetid", defaultMs: 15_000, min: 10, max: 60 },
-  { key: "revealTime", label: "Afsløring", defaultMs: 60_000, min: 15, max: 90 },
-  { key: "scoresTime", label: "Pointvisning", defaultMs: 8_000, min: 3, max: 20 },
-  { key: "drawTime", label: "Tegnetid", defaultMs: 90_000, min: 30, max: 180 },
-  { key: "guessTime", label: "Gættetid", defaultMs: 45_000, min: 15, max: 90 },
-  { key: "writeTime", label: "Skrivetid", defaultMs: 60_000, min: 15, max: 120 },
+  { key: "submitTime", label: "Svartid", defaultMs: 60_000, min: 15, max: 180, games: ["duel", "bluff"] },
+  { key: "voteTime", label: "Stemmetid", defaultMs: 15_000, min: 10, max: 60, games: ["duel", "bluff", "tegn"] },
+  { key: "revealTime", label: "Afsløring", defaultMs: 60_000, min: 15, max: 90, games: ["duel", "bluff", "tegn", "telefon"] },
+  { key: "scoresTime", label: "Pointvisning", defaultMs: 8_000, min: 3, max: 20, games: ["duel", "bluff", "tegn", "telefon", "sandhed"] },
+  { key: "drawTime", label: "Tegnetid", defaultMs: 90_000, min: 30, max: 180, games: ["tegn", "telefon"] },
+  { key: "guessTime", label: "Gættetid", defaultMs: 45_000, min: 15, max: 90, games: ["tegn", "telefon"] },
+  { key: "writeTime", label: "Skrivetid", defaultMs: 60_000, min: 15, max: 120, games: ["telefon"] },
 ] as const;
 
 const GAME_OPTIONS = [
@@ -170,7 +170,7 @@ function HostSettingsOverlay({
             />
           )}
 
-          {TIMER_OPTIONS.map(({ key, label, defaultMs, min, max }) => {
+          {TIMER_OPTIONS.filter(({ games }) => !room.gameType || games.includes(room.gameType)).map(({ key, label, defaultMs, min, max }) => {
             const currentMs = typeof settings[key] === "number" ? settings[key] : defaultMs;
             const currentSec = Math.round(currentMs / 1000);
             return (
@@ -239,26 +239,34 @@ function HostToolbar({
       </div>
 
       <div className="flex items-center gap-2">
-        {confirmStop ? (
-          <>
-            <span className="text-xs text-[var(--color-text-muted)]">Stop spillet?</span>
-            <button
-              onClick={() => {
-                send({ type: "backToLobby", hostId: sessionId });
-                setConfirmStop(false);
-              }}
-              className="rounded-lg bg-[var(--color-danger)]/20 px-3 py-1.5 text-xs font-bold text-[var(--color-danger)] hover:bg-[var(--color-danger)]/30 transition-colors cursor-pointer"
+        <AnimatePresence>
+          {confirmStop && (
+            <motion.div
+              initial={{ opacity: 0, x: 10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 10 }}
+              className="flex items-center gap-2"
             >
-              Ja, stop
-            </button>
-            <button
-              onClick={() => setConfirmStop(false)}
-              className="rounded-lg bg-[var(--color-surface-light)] px-3 py-1.5 text-xs font-bold text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors cursor-pointer"
-            >
-              Annuller
-            </button>
-          </>
-        ) : (
+              <span className="text-xs text-[var(--color-text-muted)]">Stop?</span>
+              <button
+                onClick={() => {
+                  send({ type: "backToLobby", hostId: sessionId });
+                  setConfirmStop(false);
+                }}
+                className="rounded-lg bg-[var(--color-danger)]/20 px-3 py-1.5 text-xs font-bold text-[var(--color-danger)] hover:bg-[var(--color-danger)]/30 transition-colors cursor-pointer"
+              >
+                Ja
+              </button>
+              <button
+                onClick={() => setConfirmStop(false)}
+                className="rounded-lg bg-[var(--color-surface-light)] px-3 py-1.5 text-xs font-bold text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors cursor-pointer"
+              >
+                Nej
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        {!confirmStop && (
           <button
             onClick={() => setConfirmStop(true)}
             className="rounded-lg bg-[var(--color-surface-light)] p-1.5 hover:bg-[var(--color-danger)]/20 hover:text-[var(--color-danger)] transition-colors cursor-pointer"
@@ -436,6 +444,7 @@ function GameInfoCard({
 
 function PlayerList({ room, sessionId }: { room: RoomSnapshot; sessionId: string }) {
   const send = useSend();
+  const [confirmKick, setConfirmKick] = useState<string | null>(null);
 
   return (
     <motion.div
@@ -445,36 +454,73 @@ function PlayerList({ room, sessionId }: { room: RoomSnapshot; sessionId: string
       className="w-full max-w-md"
     >
       <p className="mb-4 text-center text-base text-[var(--color-text-muted)]">
-        {room.players.length} {da.playersJoined}
+        <span className="font-bold text-[var(--color-text)]">{room.players.length}</span>
+        <span className="mx-1">/</span>
+        <span>8</span>
+        {" "}{da.playersJoined}
       </p>
-      <ul className="flex flex-col gap-2">
-        <AnimatePresence>
-          {room.players.map((player: any, i: number) => (
-            <motion.li
-              key={player._id}
-              initial={{ opacity: 0, x: -20, scale: 0.9 }}
-              animate={{ opacity: 1, x: 0, scale: 1 }}
-              transition={{ delay: i * 0.05, type: "spring", stiffness: 300 }}
-              className="flex items-center gap-3 rounded-xl bg-[var(--color-surface)] p-4"
-            >
-              <GameAvatar name={player.name} avatarColor={player.avatarColor} avatarImage={player.avatarImage} className="h-10 w-10" />
-              <span className="text-lg font-semibold">{player.name}</span>
-              {!player.isConnected ? (
-                <span className="ml-auto text-xs text-[var(--color-text-muted)]">
-                  afbrudt
-                </span>
-              ) : null}
-              <button
-                onClick={() => send({ type: "kickPlayer", hostId: sessionId, playerId: player._id })}
-                className="ml-auto rounded-lg p-1.5 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 transition-colors cursor-pointer"
-                title="Fjern spiller"
+
+      {room.players.length === 0 ? (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-[var(--color-surface-light)] p-8 text-center"
+        >
+          <span className="text-4xl animate-gentle-pulse">📱</span>
+          <p className="text-sm text-[var(--color-text-muted)]">
+            Scan QR-koden eller indtast rumkoden for at deltage
+          </p>
+        </motion.div>
+      ) : (
+        <ul className="flex flex-col gap-2">
+          <AnimatePresence>
+            {room.players.map((player: any, i: number) => (
+              <motion.li
+                key={player._id}
+                initial={{ opacity: 0, x: -20, scale: 0.9 }}
+                animate={{ opacity: 1, x: 0, scale: 1 }}
+                transition={{ delay: i * 0.05, type: "spring", stiffness: 300 }}
+                className="flex items-center gap-3 rounded-xl bg-[var(--color-surface)] p-4"
               >
-                ✕
-              </button>
-            </motion.li>
-          ))}
-        </AnimatePresence>
-      </ul>
+                <GameAvatar name={player.name} avatarColor={player.avatarColor} avatarImage={player.avatarImage} className="h-10 w-10" />
+                <div className="flex flex-col min-w-0 flex-1">
+                  <span className="text-lg font-semibold truncate">{player.name}</span>
+                  {!player.isConnected && (
+                    <span className="text-xs text-[var(--color-danger)]">afbrudt</span>
+                  )}
+                </div>
+                {confirmKick === player._id ? (
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button
+                      onClick={() => {
+                        send({ type: "kickPlayer", hostId: sessionId, playerId: player._id });
+                        setConfirmKick(null);
+                      }}
+                      className="rounded-lg bg-[var(--color-danger)]/20 px-2.5 py-1 text-xs font-bold text-[var(--color-danger)] hover:bg-[var(--color-danger)]/30 transition-colors cursor-pointer"
+                    >
+                      Fjern
+                    </button>
+                    <button
+                      onClick={() => setConfirmKick(null)}
+                      className="rounded-lg bg-[var(--color-surface-light)] px-2.5 py-1 text-xs font-bold text-[var(--color-text-muted)] cursor-pointer"
+                    >
+                      Nej
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setConfirmKick(player._id)}
+                    className="shrink-0 rounded-lg p-1.5 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 transition-colors cursor-pointer"
+                    title="Fjern spiller"
+                  >
+                    ✕
+                  </button>
+                )}
+              </motion.li>
+            ))}
+          </AnimatePresence>
+        </ul>
+      )}
     </motion.div>
   );
 }
@@ -502,14 +548,23 @@ function HostViewInner() {
     }
   }, [connected, send, sessionId]);
 
-  // Warn before closing/refreshing — ref lets us remove it for intentional navigation
+  // Warn before closing/refreshing — only when game is active (lobby or playing)
   const beforeUnloadRef = useRef<((e: BeforeUnloadEvent) => void) | null>(null);
+  const isFinished = room?.status === "finished";
   useEffect(() => {
+    // Remove handler when game is finished — host should be free to leave
+    if (isFinished) {
+      if (beforeUnloadRef.current) {
+        window.removeEventListener("beforeunload", beforeUnloadRef.current);
+        beforeUnloadRef.current = null;
+      }
+      return;
+    }
     const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); };
     beforeUnloadRef.current = handler;
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
-  }, []);
+  }, [isFinished]);
 
   if (!room) {
     return (
@@ -695,9 +750,6 @@ function HostViewInner() {
               <GamePicker
                 onSelect={(gameId) => {
                   send({ type: "changeGameType", hostId: sessionId, gameType: gameId });
-                  if (room.players.length >= MIN_PLAYERS) {
-                    send({ type: "startGame", hostId: sessionId });
-                  }
                 }}
                 showExternalGames
               />
@@ -901,6 +953,16 @@ function FinishedScreen({ room, sessionId }: { room: RoomSnapshot; sessionId: st
           {da.chooseNewGame}
         </button>
       </motion.div>
+
+      {/* Back to lobby hint */}
+      <motion.p
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.7 }}
+        className="text-xs text-[var(--color-text-muted)]/50"
+      >
+        {room.players.length} spillere stadig tilsluttet
+      </motion.p>
     </div>
   );
 }

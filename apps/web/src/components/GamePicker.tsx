@@ -105,30 +105,35 @@ function GameGrid({
       </p>
 
       <div className="grid w-full grid-cols-2 gap-3 sm:gap-4">
-        {GAMES.map((game, i) => (
-          <motion.button
-            key={game.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.05 + i * 0.07, type: "spring", stiffness: 200 }}
-            whileHover={{ scale: 1.03, y: -2 }}
-            whileTap={{ scale: 0.97 }}
-            onClick={() => onSelect(game)}
-            className="card-glow group relative flex flex-col items-center gap-2 rounded-2xl bg-[var(--color-surface)] p-5 sm:p-6 cursor-pointer transition-shadow hover:shadow-lg"
-            style={{ "--tw-shadow-color": game.glow } as any}
-          >
-            <game.Icon className="h-10 w-10 sm:h-12 sm:w-12" style={{ color: game.color }} />
-            <span
-              className="font-display text-lg font-bold sm:text-xl"
-              style={{ color: game.color }}
+        {GAMES.map((game, i) => {
+          const isLastOdd = GAMES.length % 2 === 1 && i === GAMES.length - 1;
+          return (
+            <motion.button
+              key={game.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.05 + i * 0.07, type: "spring", stiffness: 200 }}
+              whileHover={{ scale: 1.03, y: -2 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => onSelect(game)}
+              className={`card-glow group relative flex ${isLastOdd ? "flex-row items-center gap-4 col-span-2" : "flex-col items-center gap-2"} rounded-2xl bg-[var(--color-surface)] p-5 sm:p-6 cursor-pointer transition-shadow hover:shadow-lg`}
+              style={{ "--tw-shadow-color": game.glow } as any}
             >
-              {game.name}
-            </span>
-            <span className="text-xs text-[var(--color-text-muted)] leading-relaxed sm:text-sm">
-              {game.description}
-            </span>
-          </motion.button>
-        ))}
+              <game.Icon className={isLastOdd ? "h-10 w-10 shrink-0" : "h-10 w-10 sm:h-12 sm:w-12"} style={{ color: game.color }} />
+              <div className={isLastOdd ? "flex flex-col gap-0.5 text-left" : "flex flex-col items-center gap-0.5"}>
+                <span
+                  className="font-display text-lg font-bold sm:text-xl"
+                  style={{ color: game.color }}
+                >
+                  {game.name}
+                </span>
+                <span className="text-xs text-[var(--color-text-muted)] leading-relaxed sm:text-sm">
+                  {game.description}
+                </span>
+              </div>
+            </motion.button>
+          );
+        })}
       </div>
 
       {showExternalGames && (
