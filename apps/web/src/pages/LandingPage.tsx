@@ -1,13 +1,45 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { generateRoomCode } from "@/hooks/useCreateRoom";
 import { setHostSession, clearHostSession, getHostSession } from "@/lib/session";
 import { da } from "@/lib/da";
 
+const HOST_PASSPHRASE = import.meta.env.VITE_HOST_PASSPHRASE as string | undefined;
+const PASSPHRASE_STORAGE_KEY = "festspil_host_unlocked";
+
 export function LandingPage() {
   const navigate = useNavigate();
   const [hostSession, setHostSessionState] = useState(() => getHostSession());
+  const [showPassphrase, setShowPassphrase] = useState(false);
+  const [phrase, setPhrase] = useState("");
+  const [phraseError, setPhraseError] = useState(false);
+
+  function handleHostClick() {
+    // No passphrase configured — skip check
+    if (!HOST_PASSPHRASE) {
+      handleCreateRoom();
+      return;
+    }
+    // Already unlocked this session
+    if (sessionStorage.getItem(PASSPHRASE_STORAGE_KEY) === "1") {
+      handleCreateRoom();
+      return;
+    }
+    setShowPassphrase(true);
+  }
+
+  function handlePassphraseSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (phrase.trim().toLowerCase() === HOST_PASSPHRASE!.toLowerCase()) {
+      sessionStorage.setItem(PASSPHRASE_STORAGE_KEY, "1");
+      setShowPassphrase(false);
+      handleCreateRoom();
+    } else {
+      setPhraseError(true);
+      setTimeout(() => setPhraseError(false), 1500);
+    }
+  }
 
   function handleCreateRoom() {
     const code = generateRoomCode();
@@ -86,7 +118,7 @@ export function LandingPage() {
             title="Vær vært"
             description="Vis spillet på dit TV eller din computer."
             accentColor="var(--color-primary)"
-            onClick={handleCreateRoom}
+            onClick={handleHostClick}
           />
           <ActionCard
             index={1}
@@ -110,6 +142,63 @@ export function LandingPage() {
           Alle andre deltager via telefonen
         </motion.p>
       </motion.div>
+
+      {/* Passphrase modal */}
+      <AnimatePresence>
+        {showPassphrase && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+            onClick={() => setShowPassphrase(false)}
+          >
+            <motion.form
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={phraseError ? { scale: 1, opacity: 1, x: [0, -12, 12, -8, 8, -4, 4, 0] } : { scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={phraseError ? { x: { duration: 0.5 } } : undefined}
+              onClick={(e) => e.stopPropagation()}
+              onSubmit={handlePassphraseSubmit}
+              className="w-full max-w-xs rounded-2xl bg-[var(--color-surface)] p-6 flex flex-col gap-4"
+            >
+              <h3 className="font-display text-xl font-bold text-center">Adgangskode</h3>
+              <p className="text-sm text-[var(--color-text-muted)] text-center">
+                Indtast kodeordet for at oprette et rum
+              </p>
+              <input
+                type="text"
+                autoFocus
+                value={phrase}
+                onChange={(e) => { setPhrase(e.target.value); setPhraseError(false); }}
+                placeholder="Kodeord"
+                className={`w-full rounded-xl bg-[var(--color-bg)] px-4 py-3 text-center font-mono text-lg outline-none transition-colors ${
+                  phraseError
+                    ? "ring-2 ring-[var(--color-danger)] text-[var(--color-danger)]"
+                    : "focus:ring-2 focus:ring-[var(--color-primary)]"
+                }`}
+              />
+              <div className="h-5 flex items-center justify-center overflow-hidden">
+                {phraseError && (
+                  <motion.p
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-sm font-semibold text-[var(--color-danger)]"
+                  >
+                    Forkert kodeord
+                  </motion.p>
+                )}
+              </div>
+              <button
+                type="submit"
+                className="rounded-xl bg-[var(--color-primary)] py-3 font-bold transition-transform hover:scale-[1.03] active:scale-95 cursor-pointer"
+              >
+                Bekræft
+              </button>
+            </motion.form>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Footer */}
       <motion.footer
