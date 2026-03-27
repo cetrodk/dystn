@@ -6,6 +6,16 @@ import { TRUTH_ID } from "../constants";
 
 const allPrompts = prompts.filter((p) => !!p.answer);
 
+/** Normalize an answer so player fakes and the truth look identical in style. */
+function normalizeAnswer(raw: string): string {
+  let text = raw.trim().slice(0, 80);
+  // Strip trailing punctuation so "37." and "37" match
+  text = text.replace(/[.!,;:]+$/, "");
+  // Lowercase everything so answers fit mid-sentence blanks and casing can't be a tell
+  text = text.toLowerCase();
+  return text;
+}
+
 registerGameHandlers("bluff", {
   setupRound(room: RoomState): Record<string, unknown> {
     // Track which prompts have been used across all rounds in this game
@@ -37,14 +47,12 @@ registerGameHandlers("bluff", {
   },
 
   onSubmission(room: RoomState, player: Player, content: unknown): void {
-    let text = String(content).trim().slice(0, 80);
+    const text = normalizeAnswer(String(content));
     if (!text) throw new Error("Tomt svar");
-    // Lowercase first char so answers fit mid-sentence blanks
-    text = text[0].toLowerCase() + text.slice(1);
 
-    // Reject if it matches the real answer (case-insensitive)
+    // Reject if it matches the real answer after normalization
     const realAnswer = (room.phaseData as any)?.realAnswer;
-    if (realAnswer && text.toLowerCase() === realAnswer.toLowerCase()) {
+    if (realAnswer && text.toLowerCase() === normalizeAnswer(realAnswer).toLowerCase()) {
       throw new Error("Prøv et andet svar");
     }
 
@@ -74,10 +82,10 @@ registerGameHandlers("bluff", {
       }
     }
 
-    // Also check if any fake matches the real answer (shouldn't happen due to onSubmission guard, but just in case)
+    // Add the truth with the same normalization applied to player answers
     options.push({
       id: TRUTH_ID,
-      text: realAnswer,
+      text: normalizeAnswer(realAnswer),
       playerId: null as any,
     });
 
@@ -178,10 +186,10 @@ registerGameHandlers("bluff", {
       });
     }
 
-    // Add the truth entry
+    // Add the truth entry (normalized to match player answer style)
     results.push({
       answerId: TRUTH_ID,
-      text: realAnswer,
+      text: normalizeAnswer(realAnswer),
       isReal: true,
       playerId: null,
       playerName: null,
