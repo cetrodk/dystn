@@ -30,7 +30,7 @@ export default function HostReveal({ room, sessionId }: PhaseComponentProps) {
 
   const isCorrectTrue = correctAnswer === "true";
 
-  // Play staggered sounds: reveal → per-player results → track hops
+  // Play staggered sounds: reveal -> per-player results -> track hops
   useEffect(() => {
     const timers: ReturnType<typeof setTimeout>[] = [];
     // Answer reveal sound
@@ -54,15 +54,15 @@ export default function HostReveal({ room, sessionId }: PhaseComponentProps) {
   }, [send, sessionId]);
 
   return (
-    <div className="flex flex-1 min-h-0 w-full flex-col items-center gap-6">
+    <div className="flex flex-1 min-h-0 w-full flex-col items-center gap-5">
       {/* Statement + answer */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         className="text-center"
       >
-        <p className="max-w-4xl text-center font-display text-4xl font-bold leading-tight mb-4">
-          "{pd.statement}"
+        <p className="max-w-5xl text-center font-display text-5xl font-bold leading-tight mb-4">
+          &ldquo;{pd.statement}&rdquo;
         </p>
         <motion.div
           initial={{ scale: 0.5, opacity: 0 }}
@@ -79,7 +79,7 @@ export default function HostReveal({ room, sessionId }: PhaseComponentProps) {
       </motion.div>
 
       {/* Results per player */}
-      <div className="flex flex-wrap justify-center gap-4 max-w-5xl">
+      <div className="flex flex-wrap justify-center gap-4 max-w-6xl">
         {results.map((result, i) => (
           <motion.div
             key={result.playerId}
@@ -97,28 +97,28 @@ export default function HostReveal({ room, sessionId }: PhaseComponentProps) {
             <GameAvatar
               name={result.playerName}
               avatarColor={result.avatarColor}
-              className="h-10 w-10"
+              className="h-12 w-12"
             />
-            <span className="font-semibold text-lg">{result.playerName}</span>
+            <span className="font-semibold text-xl">{result.playerName}</span>
 
             {result.noAnswer ? (
               <motion.div
                 animate={{ rotate: [0, 10, -10, 0] }}
                 transition={{ repeat: 2, duration: 0.4 }}
               >
-                <HelpCircle className="h-6 w-6 text-[var(--color-text-muted)]" />
+                <HelpCircle className="h-7 w-7 text-[var(--color-text-muted)]" />
               </motion.div>
             ) : result.correct ? (
-              <Check className="h-6 w-6 text-emerald-400" />
+              <Check className="h-7 w-7 text-emerald-400" />
             ) : (
-              <X className="h-6 w-6 text-red-400" />
+              <X className="h-7 w-7 text-red-400" />
             )}
 
             <motion.span
               initial={{ scale: 1.5 }}
               animate={{ scale: 1 }}
               transition={{ delay: 0.7 + i * 0.15 }}
-              className={`font-display text-xl font-bold ${
+              className={`font-display text-2xl font-bold ${
                 result.delta > 0
                   ? "text-emerald-400"
                   : result.delta < 0
@@ -152,7 +152,7 @@ export default function HostReveal({ room, sessionId }: PhaseComponentProps) {
         >
           {da.nextRound}
         </button>
-        <span className="text-base text-[var(--color-text-muted)]">
+        <span className="text-lg text-[var(--color-text-muted)]">
           <CountdownTimer deadline={room.phaseDeadline ?? null} />s
         </span>
       </motion.div>

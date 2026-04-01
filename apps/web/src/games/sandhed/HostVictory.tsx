@@ -24,11 +24,19 @@ export default function HostVictory({ room }: PhaseComponentProps) {
     <div className="flex flex-1 min-h-0 w-full flex-col items-center gap-6">
       <ConfettiBackground />
 
-      {/* Trophy */}
+      {/* Trophy with gentle float */}
       <motion.div
         initial={{ scale: 0, rotate: -10 }}
-        animate={{ scale: 1, rotate: 0 }}
-        transition={{ type: "spring", stiffness: 200, damping: 15 }}
+        animate={{
+          scale: 1,
+          rotate: 0,
+          y: [0, -6, 0],
+        }}
+        transition={{
+          scale: { type: "spring", stiffness: 200, damping: 15 },
+          rotate: { type: "spring", stiffness: 200, damping: 15 },
+          y: { duration: 3, repeat: Infinity, ease: "easeInOut", delay: 1 },
+        }}
         className="text-8xl"
       >
         🏆
@@ -39,13 +47,16 @@ export default function HostVictory({ room }: PhaseComponentProps) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
-        className="font-display text-5xl font-bold text-[var(--color-sandhed)]"
+        className="font-display text-6xl font-bold text-[var(--color-sandhed)]"
+        style={{
+          textShadow: "0 0 30px var(--color-sandhed-glow)",
+        }}
       >
         {isSharedWin ? da.sandhed.sharedWin : da.sandhed.winner}
       </motion.h2>
 
       {/* Winner avatars */}
-      <div className="flex gap-6">
+      <div className="flex gap-8">
         {winnerPlayers.map((p, i) => (
           <motion.div
             key={p._id}
@@ -58,7 +69,7 @@ export default function HostVictory({ room }: PhaseComponentProps) {
               name={p.name}
               avatarColor={p.avatarColor}
               avatarImage={p.avatarImage}
-              className="h-24 w-24"
+              className="h-28 w-28"
             />
             <span className="font-display text-3xl font-bold">{p.name}</span>
           </motion.div>

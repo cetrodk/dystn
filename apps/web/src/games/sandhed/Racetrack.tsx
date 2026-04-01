@@ -5,14 +5,14 @@ export const FINISH_LINE = 8;
 
 // Track dimensions within the SVG viewBox
 const SVG_WIDTH = 900;
-const SVG_HEIGHT = 200;
-const TRACK_START_X = 50;
-const TRACK_END_X = 850;
+const SVG_HEIGHT = 240;
+const TRACK_START_X = 60;
+const TRACK_END_X = 840;
 const TRACK_WIDTH = TRACK_END_X - TRACK_START_X;
 
 // Generate a gentle wave path between start and end
 function buildTrackPath(yCenter: number): string {
-  const amplitude = 25;
+  const amplitude = 30;
   // Cubic bezier wave: 3 curves across the width
   return [
     `M ${TRACK_START_X},${yCenter}`,
@@ -31,7 +31,7 @@ function buildTrackPath(yCenter: number): string {
 // Sample a point along an SVG path at a given fraction (0-1)
 // Uses a temporary SVG path element for accurate positioning
 function samplePath(pathD: string, fraction: number): { x: number; y: number } {
-  if (typeof document === "undefined") return { x: TRACK_START_X + fraction * TRACK_WIDTH, y: 100 };
+  if (typeof document === "undefined") return { x: TRACK_START_X + fraction * TRACK_WIDTH, y: 120 };
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
   path.setAttribute("d", pathD);
@@ -65,7 +65,7 @@ export const Racetrack = memo(function Racetrack({
 }: RacetrackProps) {
   // Build one lane path per player, spread vertically
   const lanes = useMemo(() => {
-    const spread = Math.min(players.length * 12, 60);
+    const spread = Math.min(players.length * 14, 70);
     return players.map((_, i) => {
       const yOffset =
         players.length <= 1
@@ -92,6 +92,41 @@ export const Racetrack = memo(function Racetrack({
         className="h-full w-full"
         preserveAspectRatio="xMidYMid meet"
       >
+        <defs>
+          {/* Finish line glow filter */}
+          <filter id="finishGlow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="4" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+          {/* Subtle ambient glow for the track surface */}
+          <linearGradient id="trackAmbient" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="var(--color-sandhed)" stopOpacity="0.03" />
+            <stop offset="50%" stopColor="var(--color-sandhed)" stopOpacity="0.06" />
+            <stop offset="100%" stopColor="var(--color-sandhed)" stopOpacity="0.12" />
+          </linearGradient>
+          {/* Player avatar glow */}
+          <filter id="avatarGlow" x="-100%" y="-100%" width="300%" height="300%">
+            <feGaussianBlur stdDeviation="3" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+
+        {/* Ambient track surface glow */}
+        <rect
+          x={TRACK_START_X - 10}
+          y={30}
+          width={TRACK_WIDTH + 20}
+          height={SVG_HEIGHT - 60}
+          rx={12}
+          fill="url(#trackAmbient)"
+        />
+
         {/* Track lane lines */}
         {lanes.map((d, i) => (
           <path
@@ -100,8 +135,8 @@ export const Racetrack = memo(function Racetrack({
             fill="none"
             stroke="var(--color-surface-light)"
             strokeWidth="2"
-            strokeDasharray="8 6"
-            opacity="0.35"
+            strokeDasharray="10 8"
+            opacity="0.3"
           />
         ))}
 
@@ -112,24 +147,37 @@ export const Racetrack = memo(function Racetrack({
             <g key={`marker-${i}`}>
               <line
                 x1={x}
-                y1={20}
+                y1={30}
                 x2={x}
-                y2={SVG_HEIGHT - 20}
+                y2={SVG_HEIGHT - 30}
                 stroke="var(--color-text-muted)"
                 strokeWidth="1"
-                opacity="0.1"
+                opacity="0.08"
               />
+              {/* Small tick marks at top and bottom */}
               {i > 0 && i < FINISH_LINE && (
-                <text
-                  x={x}
-                  y={SVG_HEIGHT - 5}
-                  textAnchor="middle"
-                  fill="var(--color-text-muted)"
-                  fontSize="10"
-                  opacity="0.25"
-                >
-                  {i}
-                </text>
+                <>
+                  <line
+                    x1={x}
+                    y1={SVG_HEIGHT - 28}
+                    x2={x}
+                    y2={SVG_HEIGHT - 20}
+                    stroke="var(--color-sandhed)"
+                    strokeWidth="1.5"
+                    opacity="0.25"
+                  />
+                  <text
+                    x={x}
+                    y={SVG_HEIGHT - 8}
+                    textAnchor="middle"
+                    fill="var(--color-text-muted)"
+                    fontSize="13"
+                    fontFamily="var(--font-display)"
+                    opacity="0.3"
+                  >
+                    {i}
+                  </text>
+                </>
               )}
             </g>
           );
@@ -138,40 +186,66 @@ export const Racetrack = memo(function Racetrack({
         {/* Start line */}
         <line
           x1={TRACK_START_X}
-          y1={15}
+          y1={20}
           x2={TRACK_START_X}
-          y2={SVG_HEIGHT - 15}
+          y2={SVG_HEIGHT - 20}
           stroke="var(--color-text-muted)"
           strokeWidth="2"
-          opacity="0.25"
-        />
-
-        {/* Finish line */}
-        <line
-          x1={TRACK_END_X}
-          y1={15}
-          x2={TRACK_END_X}
-          y2={SVG_HEIGHT - 15}
-          stroke="var(--color-sandhed)"
-          strokeWidth="3"
-          opacity="0.8"
+          opacity="0.2"
         />
         <text
-          x={TRACK_END_X}
-          y={10}
+          x={TRACK_START_X}
+          y={14}
           textAnchor="middle"
-          fill="var(--color-sandhed)"
+          fill="var(--color-text-muted)"
           fontSize="11"
           fontWeight="bold"
-          opacity="0.7"
+          fontFamily="var(--font-display)"
+          opacity="0.35"
+        >
+          START
+        </text>
+
+        {/* Finish line with glow */}
+        <line
+          x1={TRACK_END_X}
+          y1={20}
+          x2={TRACK_END_X}
+          y2={SVG_HEIGHT - 20}
+          stroke="var(--color-sandhed)"
+          strokeWidth="4"
+          opacity="0.9"
+          filter="url(#finishGlow)"
+        />
+        {/* Checkered pattern on finish line */}
+        {Array.from({ length: 8 }, (_, i) => (
+          <rect
+            key={`check-${i}`}
+            x={TRACK_END_X - 4}
+            y={25 + i * ((SVG_HEIGHT - 50) / 8)}
+            width={8}
+            height={(SVG_HEIGHT - 50) / 16}
+            fill="var(--color-sandhed)"
+            opacity={i % 2 === 0 ? 0.5 : 0.15}
+          />
+        ))}
+        <text
+          x={TRACK_END_X}
+          y={14}
+          textAnchor="middle"
+          fill="var(--color-sandhed)"
+          fontSize="13"
+          fontWeight="bold"
+          fontFamily="var(--font-display)"
+          opacity="0.8"
         >
           MÅL
         </text>
 
-        {/* Player avatars — rendered inside SVG so coordinates match exactly */}
+        {/* Player avatars */}
         {playerPoints.map(({ player, point, pos, laneIndex }) => {
           const isWinner = winners?.includes(player._id);
-          const avatarSize = isWinner ? 36 : 28;
+          const avatarSize = isWinner ? 40 : 32;
 
           return (
             <motion.g
@@ -184,23 +258,32 @@ export const Racetrack = memo(function Racetrack({
                 delay: animationDelay + laneIndex * 0.08,
               }}
             >
-              {/* Winner glow */}
+              {/* Winner glow — animated pulse */}
               {isWinner && (
-                <circle
-                  r={avatarSize / 2 + 4}
+                <motion.circle
+                  r={avatarSize / 2 + 6}
                   fill="none"
                   stroke="var(--color-sandhed)"
                   strokeWidth="2"
-                  opacity="0.6"
+                  animate={{ opacity: [0.3, 0.7, 0.3], scale: [1, 1.15, 1] }}
+                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
                 />
               )}
+
+              {/* Subtle glow behind avatar */}
+              <circle
+                r={avatarSize / 2 + 2}
+                fill={player.avatarColor}
+                opacity="0.15"
+                filter="url(#avatarGlow)"
+              />
 
               {/* Avatar circle with player color */}
               <circle
                 r={avatarSize / 2}
                 fill={player.avatarColor}
                 stroke={isWinner ? "var(--color-sandhed)" : "var(--color-surface)"}
-                strokeWidth="2"
+                strokeWidth="2.5"
               />
 
               {/* Player initials */}
@@ -217,11 +300,12 @@ export const Racetrack = memo(function Racetrack({
 
               {/* Name label below */}
               <text
-                y={avatarSize / 2 + 12}
+                y={avatarSize / 2 + 14}
                 textAnchor="middle"
                 fill={isWinner ? "var(--color-sandhed)" : "var(--color-text-muted)"}
-                fontSize="9"
+                fontSize="11"
                 fontWeight="600"
+                fontFamily="var(--font-display)"
               >
                 {player.name} ({pos})
               </text>

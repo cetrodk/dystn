@@ -25,7 +25,19 @@ export default function HostCountdown({ room }: PhaseComponentProps) {
   for (const p of players) trackPositions[p._id] = 0;
 
   return (
-    <div className="flex flex-1 min-h-0 w-full flex-col items-center gap-8">
+    <div className="relative flex flex-1 min-h-0 w-full flex-col items-center gap-8">
+      {/* Subtle radial pulse synced to countdown */}
+      <motion.div
+        key={`pulse-${count}`}
+        className="pointer-events-none absolute inset-0"
+        initial={{ opacity: 0.15 }}
+        animate={{ opacity: 0 }}
+        transition={{ duration: 1, ease: "easeOut" }}
+        style={{
+          background: "radial-gradient(circle at 50% 30%, var(--color-sandhed-glow) 0%, transparent 60%)",
+        }}
+      />
+
       {/* Countdown number */}
       <AnimatePresence mode="wait">
         <motion.div
@@ -50,7 +62,7 @@ export default function HostCountdown({ room }: PhaseComponentProps) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.5 }}
-        className="text-2xl text-[var(--color-text-muted)]"
+        className="text-3xl font-display text-[var(--color-text-muted)]"
       >
         {da.sandhed.getReady}
       </motion.p>

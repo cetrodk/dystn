@@ -38,14 +38,14 @@ export default function HostCommit({ room }: PhaseComponentProps) {
   const undecided = players.filter((p) => !currentChoices[p._id]);
 
   return (
-    <div className="flex flex-1 min-h-0 w-full flex-col items-center gap-6">
+    <div className="flex flex-1 min-h-0 w-full flex-col items-center gap-5">
       {/* Statement */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="max-w-4xl text-center font-display text-5xl font-bold leading-tight"
+        className="max-w-5xl text-center font-display text-5xl font-bold leading-tight"
       >
-        "{pd.statement}"
+        &ldquo;{pd.statement}&rdquo;
       </motion.div>
 
       {/* SANDT / FALSK zones */}
@@ -82,9 +82,9 @@ export default function HostCommit({ room }: PhaseComponentProps) {
                   name={p.name}
                   avatarColor={p.avatarColor}
                   avatarImage={p.avatarImage}
-                  className="h-8 w-8"
+                  className="h-10 w-10"
                 />
-                <span className="text-xs text-[var(--color-text-muted)]">?</span>
+                <span className="text-sm text-[var(--color-text-muted)]">?</span>
               </motion.div>
             ))}
           </AnimatePresence>
@@ -134,15 +134,15 @@ const PlayerBubble = memo(function PlayerBubble({
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.5 }}
       transition={{ type: "spring", stiffness: 300, damping: 25 }}
-      className="flex items-center gap-2 rounded-full bg-[var(--color-surface)] px-4 py-2"
+      className="flex items-center gap-2.5 rounded-full bg-[var(--color-surface)] px-5 py-2.5"
     >
       <GameAvatar
         name={player.name}
         avatarColor={player.avatarColor}
         avatarImage={player.avatarImage}
-        className="h-8 w-8"
+        className="h-10 w-10"
       />
-      <span className="text-sm font-semibold">{player.name}</span>
+      <span className="text-base font-semibold">{player.name}</span>
     </motion.div>
   );
 });
