@@ -38,7 +38,7 @@ export default function HostCommit({ room }: PhaseComponentProps) {
   const undecided = players.filter((p) => !currentChoices[p._id]);
 
   return (
-    <div className="flex flex-col items-center gap-8">
+    <div className="flex flex-1 min-h-0 w-full flex-col items-center gap-6">
       {/* Statement */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}

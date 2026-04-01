@@ -54,7 +54,7 @@ export default function HostReveal({ room, sessionId }: PhaseComponentProps) {
   }, [send, sessionId]);
 
   return (
-    <div className="flex flex-col items-center gap-8">
+    <div className="flex flex-1 min-h-0 w-full flex-col items-center gap-6">
       {/* Statement + answer */}
       <motion.div
         initial={{ opacity: 0 }}

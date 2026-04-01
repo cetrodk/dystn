@@ -21,7 +21,7 @@ export default function HostVictory({ room }: PhaseComponentProps) {
   }, []);
 
   return (
-    <div className="flex flex-col items-center gap-10">
+    <div className="flex flex-1 min-h-0 w-full flex-col items-center gap-6">
       <ConfettiBackground />
 
       {/* Trophy */}

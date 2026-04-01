@@ -25,7 +25,7 @@ export default function HostCountdown({ room }: PhaseComponentProps) {
   for (const p of players) trackPositions[p._id] = 0;
 
   return (
-    <div className="flex flex-col items-center gap-12">
+    <div className="flex flex-1 min-h-0 w-full flex-col items-center gap-8">
       {/* Countdown number */}
       <AnimatePresence mode="wait">
         <motion.div

@@ -365,7 +365,7 @@ function HostViewInner() {
 
     if (PhaseComponent) {
       return (
-        <div className="flex min-h-screen flex-col items-center justify-center gap-8 p-8 pt-16">
+        <div className="flex h-screen flex-col items-center justify-center gap-8 overflow-hidden p-8 pt-16">
           <HostToolbar
             room={room}
             sessionId={sessionId}
@@ -385,7 +385,7 @@ function HostViewInner() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.3 }}
-              className="flex w-full flex-col items-center gap-8"
+              className="flex w-full flex-1 min-h-0 flex-col items-center gap-8"
             >
               <Suspense
                 fallback={

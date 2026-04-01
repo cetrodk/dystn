@@ -86,11 +86,11 @@ export const Racetrack = memo(function Racetrack({
   }, [players, trackPositions, lanes]);
 
   return (
-    <div className="w-full max-w-5xl">
+    <div className="w-full flex-1 min-h-0">
       <svg
         viewBox={`0 0 ${SVG_WIDTH} ${SVG_HEIGHT}`}
-        className="w-full"
-        style={{ height: Math.max(140, 100 + players.length * 14) }}
+        className="h-full w-full"
+        preserveAspectRatio="xMidYMid meet"
       >
         {/* Track lane lines */}
         {lanes.map((d, i) => (
