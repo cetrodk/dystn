@@ -7,9 +7,9 @@ import { HostSettingsPage } from "@/pages/HostSettings";
 import { PlayerView } from "@/pages/PlayerView";
 import { ConfettiBackground } from "@/components/ConfettiBackground";
 
-const SimulatorPage = lazy(() =>
-  import("@/pages/SimulatorPage").then((m) => ({ default: m.SimulatorPage })),
-);
+const SimulatorPage = import.meta.env.DEV
+  ? lazy(() => import("@/pages/SimulatorPage").then((m) => ({ default: m.SimulatorPage })))
+  : () => null;
 
 export default function App() {
   return (
@@ -22,14 +22,16 @@ export default function App() {
         <Route path="/play/:code" element={<PlayerView />} />
         <Route path="/host/:code" element={<HostView />} />
         <Route path="/host/:code/settings" element={<HostSettingsPage />} />
-        <Route
-          path="/simulator"
-          element={
-            <Suspense fallback={<div className="flex min-h-screen items-center justify-center text-[var(--color-text-muted)]">Indlæser simulator...</div>}>
-              <SimulatorPage />
-            </Suspense>
-          }
-        />
+        {import.meta.env.DEV && (
+          <Route
+            path="/simulator"
+            element={
+              <Suspense fallback={<div className="flex min-h-screen items-center justify-center text-[var(--color-text-muted)]">Indlæser simulator...</div>}>
+                <SimulatorPage />
+              </Suspense>
+            }
+          />
+        )}
       </Routes>
     </BrowserRouter>
   );
