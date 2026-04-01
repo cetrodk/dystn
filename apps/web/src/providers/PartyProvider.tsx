@@ -2,6 +2,7 @@ import {
   createContext,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
   useCallback,
@@ -153,4 +154,31 @@ export function useRoomClosed(): string | null {
   const ctx = useContext(PartyContext);
   if (!ctx) throw new Error("useRoomClosed must be used within PartyProvider");
   return ctx.roomClosed;
+}
+
+/** Mock provider for simulator — renders game components without a WebSocket */
+export function MockPartyProvider({
+  room,
+  onSend,
+  children,
+}: {
+  room: RoomSnapshot;
+  onSend?: (msg: ClientMessage) => void;
+  children: ReactNode;
+}) {
+  const send = useCallback(
+    (msg: ClientMessage) => onSend?.(msg),
+    [onSend],
+  );
+
+  const value = useMemo(
+    () => ({ room, send, error: null, connected: true, roomClosed: null }),
+    [room, send],
+  );
+
+  return (
+    <PartyContext.Provider value={value}>
+      {children}
+    </PartyContext.Provider>
+  );
 }
