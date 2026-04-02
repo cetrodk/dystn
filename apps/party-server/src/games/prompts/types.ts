@@ -1,28 +1,28 @@
-export type DuelPrompt = string;
+export type BlitzPrompt = string;
 
-export interface BluffPrompt {
+export interface FuskPrompt {
   text: string;
   answer: string;
 }
 
-export interface TegnPrompt {
+export interface ScrawlPrompt {
   text: string;
   category: "1" | "2" | "3";
 }
 
-export interface SandhedPrompt {
+export interface SurgePrompt {
   text: string;
   answer: "true" | "false";
   category: "1" | "2" | "3";
 }
 
-export interface OrdklapPrompt {
+export interface HunchPrompt {
   leftLabel: string;
   rightLabel: string;
   category: string;
 }
 
-export type GameName = "duel" | "bluff" | "tegn" | "sandhed" | "ordklap";
+export type GameName = "blitz" | "fusk" | "scrawl" | "surge" | "hunch";
 
 export interface PromptManifest {
   game: GameName;

@@ -1,0 +1,5 @@
+{
+  "game": "fusk",
+  "activeVersions": ["v1"],
+  "description": "Fibbage-style fill-in-the-blank trivia. Each entry has { text, answer } where text contains ___."
+}

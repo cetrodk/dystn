@@ -11,12 +11,12 @@ import { getGameHandlers } from "./registry";
 import { getAvatarColor } from "./colors";
 
 // Register all game handlers (must be after registry is loaded)
-import "./games/duel";
-import "./games/bluff";
-import "./games/tegn";
-import "./games/sandhed";
-import "./games/telefon";
-import "./games/ordklap";
+import "./games/blitz";
+import "./games/fusk";
+import "./games/scrawl";
+import "./games/surge";
+import "./games/morph";
+import "./games/hunch";
 
 const MAX_PLAYERS = 8;
 const MIN_PLAYERS = 1;
@@ -172,8 +172,8 @@ export default class FestspilServer implements Party.Server {
         case "leaveRoom":
           this.handleLeaveRoom(sender, msg.sessionId);
           break;
-        case "telefonAdvanceReveal":
-          this.handleTelefonAdvanceReveal(msg.hostId);
+        case "morphAdvanceReveal":
+          this.handleMorphAdvanceReveal(msg.hostId);
           break;
         case "hostConnect":
           this.handleHostConnect(sender, msg.sessionId, msg.hostSecret);
@@ -441,9 +441,9 @@ export default class FestspilServer implements Party.Server {
     conn.close();
   }
 
-  private handleTelefonAdvanceReveal(hostId: string) {
+  private handleMorphAdvanceReveal(hostId: string) {
     if (this.state.hostId !== hostId) return;
-    if (this.state.gameType !== "telefon") return;
+    if (this.state.gameType !== "morph") return;
     if (this.state.currentPhase !== "reveal") return;
 
     const pd = (this.state.phaseData ?? {}) as any;

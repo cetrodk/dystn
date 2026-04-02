@@ -14,87 +14,87 @@
  */
 
 import type {
-  BluffPrompt,
-  DuelPrompt,
+  FuskPrompt,
+  BlitzPrompt,
   GameName,
-  OrdklapPrompt,
+  HunchPrompt,
   PromptManifest,
-  SandhedPrompt,
-  TegnPrompt,
+  SurgePrompt,
+  ScrawlPrompt,
 } from "./types";
 
-import duelManifest from "./duel/manifest.json";
-import bluffManifest from "./bluff/manifest.json";
-import tegnManifest from "./tegn/manifest.json";
-import sandhedManifest from "./sandhed/manifest.json";
-import ordklapManifest from "./ordklap/manifest.json";
+import blitzManifest from "./blitz/manifest.json";
+import fuskManifest from "./fusk/manifest.json";
+import scrawlManifest from "./scrawl/manifest.json";
+import surgeManifest from "./surge/manifest.json";
+import hunchManifest from "./hunch/manifest.json";
 
 // Add new version imports here, then register in the version map below
-import duelV1 from "./duel/v1.json";
-import bluffV1 from "./bluff/v1.json";
-import tegnV1 from "./tegn/v1.json";
-import sandhedV1 from "./sandhed/v1.json";
-import ordklapV1 from "./ordklap/v1.json";
+import blitzV1 from "./blitz/v1.json";
+import fuskV1 from "./fusk/v1.json";
+import scrawlV1 from "./scrawl/v1.json";
+import surgeV1 from "./surge/v1.json";
+import hunchV1 from "./hunch/v1.json";
 
-const duelVersions: Record<string, unknown[]> = { v1: duelV1 };
-const bluffVersions: Record<string, unknown[]> = { v1: bluffV1 };
-const tegnVersions: Record<string, unknown[]> = { v1: tegnV1 };
-const sandhedVersions: Record<string, unknown[]> = { v1: sandhedV1 };
-const ordklapVersions: Record<string, unknown[]> = { v1: ordklapV1 };
+const blitzVersions: Record<string, unknown[]> = { v1: blitzV1 };
+const fuskVersions: Record<string, unknown[]> = { v1: fuskV1 };
+const scrawlVersions: Record<string, unknown[]> = { v1: scrawlV1 };
+const surgeVersions: Record<string, unknown[]> = { v1: surgeV1 };
+const hunchVersions: Record<string, unknown[]> = { v1: hunchV1 };
 
 const manifests: Record<GameName, PromptManifest> = {
-  duel: duelManifest as PromptManifest,
-  bluff: bluffManifest as PromptManifest,
-  tegn: tegnManifest as PromptManifest,
-  sandhed: sandhedManifest as PromptManifest,
-  ordklap: ordklapManifest as PromptManifest,
+  blitz: blitzManifest as PromptManifest,
+  fusk: fuskManifest as PromptManifest,
+  scrawl: scrawlManifest as PromptManifest,
+  surge: surgeManifest as PromptManifest,
+  hunch: hunchManifest as PromptManifest,
 };
 
-function validateDuelPrompt(entry: unknown, index: number, version: string): DuelPrompt {
+function validateBlitzPrompt(entry: unknown, index: number, version: string): BlitzPrompt {
   if (typeof entry !== "string" || entry.trim().length === 0) {
-    throw new Error(`duel/${version}.json[${index}]: expected non-empty string, got ${typeof entry}`);
+    throw new Error(`blitz/${version}.json[${index}]: expected non-empty string, got ${typeof entry}`);
   }
   return entry;
 }
 
-function validateBluffPrompt(entry: unknown, index: number, version: string): BluffPrompt {
+function validateFuskPrompt(entry: unknown, index: number, version: string): FuskPrompt {
   const e = entry as Record<string, unknown>;
   if (!e || typeof e.text !== "string" || typeof e.answer !== "string") {
-    throw new Error(`bluff/${version}.json[${index}]: must have string 'text' and 'answer'`);
+    throw new Error(`fusk/${version}.json[${index}]: must have string 'text' and 'answer'`);
   }
   if (!e.text.includes("___")) {
-    throw new Error(`bluff/${version}.json[${index}]: text must contain '___' blank: "${e.text}"`);
+    throw new Error(`fusk/${version}.json[${index}]: text must contain '___' blank: "${e.text}"`);
   }
   if (e.answer.trim().length === 0) {
-    throw new Error(`bluff/${version}.json[${index}]: answer must not be empty`);
+    throw new Error(`fusk/${version}.json[${index}]: answer must not be empty`);
   }
   return { text: e.text, answer: e.answer };
 }
 
-function validateTegnPrompt(entry: unknown, index: number, version: string): TegnPrompt {
+function validateScrawlPrompt(entry: unknown, index: number, version: string): ScrawlPrompt {
   const e = entry as Record<string, unknown>;
   if (!e || typeof e.text !== "string" || typeof e.category !== "string") {
-    throw new Error(`tegn/${version}.json[${index}]: must have string 'text' and 'category'`);
+    throw new Error(`scrawl/${version}.json[${index}]: must have string 'text' and 'category'`);
   }
   if (!["1", "2", "3"].includes(e.category)) {
-    throw new Error(`tegn/${version}.json[${index}]: category must be "1", "2", or "3", got "${e.category}"`);
+    throw new Error(`scrawl/${version}.json[${index}]: category must be "1", "2", or "3", got "${e.category}"`);
   }
   if (e.text.trim().length === 0) {
-    throw new Error(`tegn/${version}.json[${index}]: text must not be empty`);
+    throw new Error(`scrawl/${version}.json[${index}]: text must not be empty`);
   }
   return { text: e.text, category: e.category as "1" | "2" | "3" };
 }
 
-function validateSandhedPrompt(entry: unknown, index: number, version: string): SandhedPrompt {
+function validateSurgePrompt(entry: unknown, index: number, version: string): SurgePrompt {
   const e = entry as Record<string, unknown>;
   if (!e || typeof e.text !== "string" || typeof e.answer !== "string" || typeof e.category !== "string") {
-    throw new Error(`sandhed/${version}.json[${index}]: must have string 'text', 'answer', and 'category'`);
+    throw new Error(`surge/${version}.json[${index}]: must have string 'text', 'answer', and 'category'`);
   }
   if (!["true", "false"].includes(e.answer)) {
-    throw new Error(`sandhed/${version}.json[${index}]: answer must be "true" or "false", got "${e.answer}"`);
+    throw new Error(`surge/${version}.json[${index}]: answer must be "true" or "false", got "${e.answer}"`);
   }
   if (!["1", "2", "3"].includes(e.category)) {
-    throw new Error(`sandhed/${version}.json[${index}]: category must be "1", "2", or "3", got "${e.category}"`);
+    throw new Error(`surge/${version}.json[${index}]: category must be "1", "2", or "3", got "${e.category}"`);
   }
   return { text: e.text, answer: e.answer as "true" | "false", category: e.category as "1" | "2" | "3" };
 }
@@ -128,30 +128,30 @@ function loadVersions<T>(
   return result;
 }
 
-export const duelPrompts: DuelPrompt[] = loadVersions(manifests.duel, duelVersions, validateDuelPrompt);
-export const bluffPrompts: BluffPrompt[] = loadVersions(manifests.bluff, bluffVersions, validateBluffPrompt);
-export const tegnPrompts: TegnPrompt[] = loadVersions(manifests.tegn, tegnVersions, validateTegnPrompt);
-export const sandhedPrompts: SandhedPrompt[] = loadVersions(manifests.sandhed, sandhedVersions, validateSandhedPrompt);
+export const blitzPrompts: BlitzPrompt[] = loadVersions(manifests.blitz, blitzVersions, validateBlitzPrompt);
+export const fuskPrompts: FuskPrompt[] = loadVersions(manifests.fusk, fuskVersions, validateFuskPrompt);
+export const scrawlPrompts: ScrawlPrompt[] = loadVersions(manifests.scrawl, scrawlVersions, validateScrawlPrompt);
+export const surgePrompts: SurgePrompt[] = loadVersions(manifests.surge, surgeVersions, validateSurgePrompt);
 
-function validateOrdklapPrompt(entry: unknown, index: number, version: string): OrdklapPrompt {
+function validateHunchPrompt(entry: unknown, index: number, version: string): HunchPrompt {
   const e = entry as Record<string, unknown>;
   if (!e || typeof e.leftLabel !== "string" || typeof e.rightLabel !== "string" || typeof e.category !== "string") {
-    throw new Error(`ordklap/${version}.json[${index}]: must have string 'leftLabel', 'rightLabel', and 'category'`);
+    throw new Error(`hunch/${version}.json[${index}]: must have string 'leftLabel', 'rightLabel', and 'category'`);
   }
   if (e.leftLabel.trim().length === 0 || e.rightLabel.trim().length === 0) {
-    throw new Error(`ordklap/${version}.json[${index}]: labels must not be empty`);
+    throw new Error(`hunch/${version}.json[${index}]: labels must not be empty`);
   }
   return { leftLabel: e.leftLabel, rightLabel: e.rightLabel, category: e.category };
 }
 
-export const ordklapPrompts: OrdklapPrompt[] = loadVersions(manifests.ordklap, ordklapVersions, validateOrdklapPrompt);
+export const hunchPrompts: HunchPrompt[] = loadVersions(manifests.hunch, hunchVersions, validateHunchPrompt);
 
 export function getPromptStats(): Record<GameName, { total: number; versions: string[] }> {
   return {
-    duel: { total: duelPrompts.length, versions: manifests.duel.activeVersions },
-    bluff: { total: bluffPrompts.length, versions: manifests.bluff.activeVersions },
-    tegn: { total: tegnPrompts.length, versions: manifests.tegn.activeVersions },
-    sandhed: { total: sandhedPrompts.length, versions: manifests.sandhed.activeVersions },
-    ordklap: { total: ordklapPrompts.length, versions: manifests.ordklap.activeVersions },
+    blitz: { total: blitzPrompts.length, versions: manifests.blitz.activeVersions },
+    fusk: { total: fuskPrompts.length, versions: manifests.fusk.activeVersions },
+    scrawl: { total: scrawlPrompts.length, versions: manifests.scrawl.activeVersions },
+    surge: { total: surgePrompts.length, versions: manifests.surge.activeVersions },
+    hunch: { total: hunchPrompts.length, versions: manifests.hunch.activeVersions },
   };
 }

@@ -19,12 +19,12 @@ import { getHostSession, clearHostSession } from "@/lib/session";
 const MIN_PLAYERS = 1;
 
 const GAME_OPTIONS = [
-  { id: "duel", color: "var(--color-duel)", textColor: "#fff" },
-  { id: "bluff", color: "var(--color-bluff)", textColor: "#0d0b1a" },
-  { id: "tegn", color: "var(--color-tegn)", textColor: "#fff" },
-  { id: "telefon", color: "var(--color-telefon)", textColor: "#0d0b1a" },
-  { id: "sandhed", color: "var(--color-sandhed)", textColor: "#fff" },
-  { id: "ordklap", color: "var(--color-ordklap)", textColor: "#0d0b1a" },
+  { id: "blitz", color: "var(--color-blitz)", textColor: "#fff" },
+  { id: "fusk", color: "var(--color-fusk)", textColor: "#0d0b1a" },
+  { id: "scrawl", color: "var(--color-scrawl)", textColor: "#fff" },
+  { id: "morph", color: "var(--color-morph)", textColor: "#0d0b1a" },
+  { id: "surge", color: "var(--color-surge)", textColor: "#fff" },
+  { id: "hunch", color: "var(--color-hunch)", textColor: "#0d0b1a" },
 ] as const;
 
 function getGameMeta(gameType: string | undefined) {

@@ -1,0 +1,5 @@
+{
+  "game": "hunch",
+  "activeVersions": ["v1"],
+  "description": "Wavelength-style spectrum cards. Each entry has { leftLabel, rightLabel, category }."
+}

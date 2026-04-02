@@ -10,7 +10,7 @@
  *  - Cross-game overlap detection
  */
 
-import { duelPrompts, bluffPrompts, tegnPrompts, sandhedPrompts, getPromptStats } from "./loader";
+import { blitzPrompts, fuskPrompts, scrawlPrompts, surgePrompts, getPromptStats } from "./loader";
 
 let errors = 0;
 let warnings = 0;
@@ -45,89 +45,89 @@ function findDuplicates(texts: string[], label: string) {
 
 // ── Duel ────────────────────────────────────────────────────────────
 
-console.log("\n=== DUEL ===");
-info(`Total prompts: ${duelPrompts.length}`);
+console.log("\n=== BLITZ ===");
+info(`Total prompts: ${blitzPrompts.length}`);
 
-findDuplicates(duelPrompts, "duel");
+findDuplicates(blitzPrompts, "blitz");
 
-for (let i = 0; i < duelPrompts.length; i++) {
-  const p = duelPrompts[i];
+for (let i = 0; i < blitzPrompts.length; i++) {
+  const p = blitzPrompts[i];
   if (p.length > 280) {
-    error(`duel[${i}]: prompt exceeds 280 chars (${p.length}): "${p.slice(0, 50)}..."`);
+    error(`blitz[${i}]: prompt exceeds 280 chars (${p.length}): "${p.slice(0, 50)}..."`);
   }
   if (p.length < 10) {
-    warn(`duel[${i}]: prompt seems too short (${p.length} chars): "${p}"`);
+    warn(`blitz[${i}]: prompt seems too short (${p.length} chars): "${p}"`);
   }
 }
 
 // ── Bluff ───────────────────────────────────────────────────────────
 
-console.log("\n=== BLUFF ===");
-info(`Total prompts: ${bluffPrompts.length}`);
+console.log("\n=== FUSK ===");
+info(`Total prompts: ${fuskPrompts.length}`);
 
 findDuplicates(
-  bluffPrompts.map((p) => p.text),
-  "bluff (text)",
+  fuskPrompts.map((p) => p.text),
+  "fusk (text)",
 );
 findDuplicates(
-  bluffPrompts.map((p) => p.answer),
-  "bluff (answer)",
+  fuskPrompts.map((p) => p.answer),
+  "fusk (answer)",
 );
 
-for (let i = 0; i < bluffPrompts.length; i++) {
-  const p = bluffPrompts[i];
+for (let i = 0; i < fuskPrompts.length; i++) {
+  const p = fuskPrompts[i];
   if (!p.text.includes("___")) {
-    error(`bluff[${i}]: missing ___ blank in: "${p.text}"`);
+    error(`fusk[${i}]: missing ___ blank in: "${p.text}"`);
   }
   const blanks = (p.text.match(/___/g) ?? []).length;
   if (blanks > 1) {
-    warn(`bluff[${i}]: multiple ___ blanks (${blanks}) in: "${p.text}"`);
+    warn(`fusk[${i}]: multiple ___ blanks (${blanks}) in: "${p.text}"`);
   }
   if (p.answer.length > 80) {
-    warn(`bluff[${i}]: answer exceeds 80 chars (${p.answer.length}): "${p.answer}"`);
+    warn(`fusk[${i}]: answer exceeds 80 chars (${p.answer.length}): "${p.answer}"`);
   }
 }
 
 // ── Tegn ────────────────────────────────────────────────────────────
 
-console.log("\n=== TEGN ===");
-info(`Total prompts: ${tegnPrompts.length}`);
+console.log("\n=== SCRAWL ===");
+info(`Total prompts: ${scrawlPrompts.length}`);
 
 findDuplicates(
-  tegnPrompts.map((p) => p.text),
-  "tegn",
+  scrawlPrompts.map((p) => p.text),
+  "scrawl",
 );
 
-const tegnByCategory = { "1": 0, "2": 0, "3": 0 };
-for (const p of tegnPrompts) {
-  tegnByCategory[p.category]++;
+const scrawlByCategory = { "1": 0, "2": 0, "3": 0 };
+for (const p of scrawlPrompts) {
+  scrawlByCategory[p.category]++;
 }
-info(`Category distribution: easy=${tegnByCategory["1"]}, medium=${tegnByCategory["2"]}, hard=${tegnByCategory["3"]}`);
+info(`Category distribution: easy=${scrawlByCategory["1"]}, medium=${scrawlByCategory["2"]}, hard=${scrawlByCategory["3"]}`);
 
-if (tegnByCategory["1"] < 15) warn("Category 1 (simple) has fewer than 15 prompts");
-if (tegnByCategory["2"] < 15) warn("Category 2 (scene) has fewer than 15 prompts");
-if (tegnByCategory["3"] < 15) warn("Category 3 (surreal) has fewer than 15 prompts");
+if (scrawlByCategory["1"] < 15) warn("Category 1 (simple) has fewer than 15 prompts");
+if (scrawlByCategory["2"] < 15) warn("Category 2 (scene) has fewer than 15 prompts");
+if (scrawlByCategory["3"] < 15) warn("Category 3 (surreal) has fewer than 15 prompts");
 
 // ── Sandhed ─────────────────────────────────────────────────────────
 
-console.log("\n=== SANDHED ===");
-info(`Total prompts: ${sandhedPrompts.length}`);
+console.log("\n=== SURGE ===");
+info(`Total prompts: ${surgePrompts.length}`);
 
 findDuplicates(
-  sandhedPrompts.map((p) => p.text),
-  "sandhed",
+  surgePrompts.map((p) => p.text),
+  "surge",
 );
 
-const sandhedByCategory = { "1": 0, "2": 0, "3": 0 };
-const sandhedTrueCount = { "1": 0, "2": 0, "3": 0 };
-for (const p of sandhedPrompts) {
-  sandhedByCategory[p.category]++;
-  if (p.answer === "true") sandhedTrueCount[p.category]++;
+const surgeByCategory = { "1": 0, "2": 0, "3": 0 };
+const surgeTrueCount = { "1": 0, "2": 0, "3": 0 };
+for (const p of surgePrompts) {
+  surgeByCategory[p.category]++;
+  if (p.answer === "true") surgeTrueCount[p.category]++;
 }
 
 for (const cat of ["1", "2", "3"] as const) {
-  const total = sandhedByCategory[cat];
-  const trueCount = sandhedTrueCount[cat];
+  const total = surgeByCategory[cat];
+  const trueCount = surgeTrueCount[cat];
   const falseCount = total - trueCount;
   const truePercent = total > 0 ? Math.round((trueCount / total) * 100) : 0;
   info(`Category ${cat}: ${total} total, ${trueCount} true / ${falseCount} false (${truePercent}% true)`);
@@ -139,18 +139,18 @@ for (const cat of ["1", "2", "3"] as const) {
 
 console.log("\n=== CROSS-GAME OVERLAP ===");
 
-const bluffFacts = new Set(bluffPrompts.map((p) => p.text.toLowerCase()));
-const sandhedFacts = new Set(sandhedPrompts.map((p) => p.text.toLowerCase()));
+const fuskFacts = new Set(fuskPrompts.map((p) => p.text.toLowerCase()));
+const surgeFacts = new Set(surgePrompts.map((p) => p.text.toLowerCase()));
 
 // Check if Bluff answers appear as Sandhed statements (topic overlap)
-for (const bp of bluffPrompts) {
-  for (const sp of sandhedPrompts) {
+for (const bp of fuskPrompts) {
+  for (const sp of surgePrompts) {
     // Simple keyword overlap check: if >50% of words overlap
     const bWords = new Set(bp.text.toLowerCase().split(/\s+/).filter((w) => w.length > 3));
     const sWords = new Set(sp.text.toLowerCase().split(/\s+/).filter((w) => w.length > 3));
     const overlap = [...bWords].filter((w) => sWords.has(w));
     if (overlap.length >= 3 && overlap.length >= bWords.size * 0.5) {
-      warn(`Cross-game overlap: bluff "${bp.text.slice(0, 50)}..." ↔ sandhed "${sp.text.slice(0, 50)}..."`);
+      warn(`Cross-game overlap: fusk "${bp.text.slice(0, 50)}..." ↔ surge "${sp.text.slice(0, 50)}..."`);
     }
   }
 }

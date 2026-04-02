@@ -1,5 +1,0 @@
-{
-  "game": "tegn",
-  "activeVersions": ["v1"],
-  "description": "Drawful-style drawing prompts. Each entry has { text, category } where category is 1 (simple), 2 (scene), 3 (surreal)."
-}

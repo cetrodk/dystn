@@ -112,7 +112,7 @@ export type ClientMessage =
   | { type: "kickPlayer"; hostId: string; playerId: string }
   | { type: "changeAvatar"; sessionId: string; avatarImage: string }
   | { type: "leaveRoom"; sessionId: string }
-  | { type: "telefonAdvanceReveal"; hostId: string }
+  | { type: "morphAdvanceReveal"; hostId: string }
   | { type: "hostConnect"; sessionId: string; hostSecret: string };
 
 /** Server → Client */

@@ -74,7 +74,7 @@ export const da = {
   leaveAnyway: "Forlad",
 
   // Games
-  duel: {
+  blitz: {
     name: "Blitz",
     description: "Skriv sjove svar — stem på det bedste!",
     howToPlay: "Alle får det samme spørgsmål og skriver et sjovt svar. Derefter stemmer alle på det bedste svar — undtagen dit eget!",
@@ -90,7 +90,7 @@ export const da = {
     quiplash: "QUIPLASH!",
   },
 
-  bluff: {
+  fusk: {
     name: "Fusk",
     description: "Find det rigtige svar blandt løgnene",
     howToPlay: "Du får et spørgsmål med et hul — skriv et falsk svar der lyder ægte. Gæt derefter det rigtige svar mellem alle løgnene. Du scorer point for at narre andre!",
@@ -107,7 +107,7 @@ export const da = {
     wroteThis: "skrev dette",
   },
 
-  tegn: {
+  scrawl: {
     name: "Scrawl",
     description: "Tegn på din telefon — andre gætter!",
     howToPlay: "Alle tegner et hemmeligt ord på telefonen. Derefter gætter de andre hvad det forestiller — skriv falske gæt for at narre! Stem på det rigtige ord.",
@@ -136,7 +136,7 @@ export const da = {
     ] as readonly string[],
   },
 
-  telefon: {
+  morph: {
     name: "Morph",
     description: "Skriv, tegn, gæt — se hvad der sker!",
     howToPlay: "Skriv en sjov sætning. Den næste tegner den, den næste gætter tegningen, den næste tegner gættet... Til sidst afsløres hele kæden — og du ser hvor galt det gik!",
@@ -156,7 +156,7 @@ export const da = {
     matchBonus: "Det matchede originalen!",
   },
 
-  sandhed: {
+  surge: {
     name: "Surge",
     description: "Sandt eller falsk? Kap om at nå målet!",
     howToPlay: "Et udsagn vises på skærmen — flyt dig til SANDT eller FALSK. Se hvad de andre gør i realtid og skift side for at narre dem. Men pas på: det tager tid at skifte, og bliver du fanget midt imellem, tæller det ikke! Rigtigt svar = ét skridt fremad. Først i mål vinder!",
@@ -183,7 +183,7 @@ export const da = {
     ] as readonly string[],
   },
 
-  ordklap: {
+  hunch: {
     name: "Hunch",
     description: "Giv et fingerpeg — andre gætter positionen!",
     howToPlay: "En spiller ser en hemmelig position på et spektrum og giver et fingerpeg. Alle andre gætter positionen. Jo tættere på, jo flere point!",

@@ -13,18 +13,18 @@
   --color-text-muted: #c5bfdd;
 
   /* Game-specific accent colors */
-  --color-duel: #60a5fa;
-  --color-duel-glow: #3b82f620;
-  --color-bluff: #fbbf24;
-  --color-bluff-glow: #f59e0b20;
-  --color-tegn: #f472b6;
-  --color-tegn-glow: #ec489920;
-  --color-telefon: #34d399;
-  --color-telefon-glow: #10b98120;
-  --color-sandhed: #a78bfa;
-  --color-sandhed-glow: #a78bfa20;
-  --color-ordklap: #fb923c;
-  --color-ordklap-glow: #fb923c20;
+  --color-blitz: #60a5fa;
+  --color-blitz-glow: #3b82f620;
+  --color-fusk: #fbbf24;
+  --color-fusk-glow: #f59e0b20;
+  --color-scrawl: #f472b6;
+  --color-scrawl-glow: #ec489920;
+  --color-morph: #34d399;
+  --color-morph-glow: #10b98120;
+  --color-surge: #a78bfa;
+  --color-surge-glow: #a78bfa20;
+  --color-hunch: #fb923c;
+  --color-hunch-glow: #fb923c20;
   --color-pris: #f97316;
   --color-pris-glow: #f9731620;
 

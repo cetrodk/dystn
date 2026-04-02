@@ -25,7 +25,7 @@ export type ClientMessage =
   | { type: "continueGame"; hostId: string }
   | { type: "kickPlayer"; hostId: string; playerId: string }
   | { type: "heartbeat"; sessionId: string }
-  | { type: "telefonAdvanceReveal"; hostId: string }
+  | { type: "morphAdvanceReveal"; hostId: string }
   | { type: "changeAvatar"; sessionId: string; avatarImage: string }
   | { type: "leaveRoom"; sessionId: string }
   | { type: "hostConnect"; sessionId: string; hostSecret: string };

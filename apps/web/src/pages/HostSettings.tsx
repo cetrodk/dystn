@@ -25,7 +25,7 @@ const GENERAL_TIMERS: TimerOption[] = [
   { key: "scoresTime", label: "Pointvisning", desc: "Vis points mellem runder", defaultMs: 8_000, min: 3, max: 20 },
 ];
 
-const DUEL_TIMERS: TimerOption[] = [
+const BLITZ_TIMERS: TimerOption[] = [
   { key: "presentTime", label: "Præsentation", desc: "Vis svar før afstemning", defaultMs: 45_000, min: 10, max: 90 },
 ];
 
@@ -34,14 +34,14 @@ const DRAW_GUESS_TIMERS: TimerOption[] = [
   { key: "guessTime", label: "Gættetid", desc: "Tid til at gætte", defaultMs: 45_000, min: 15, max: 90 },
 ];
 
-const TEGN_TIMERS = DRAW_GUESS_TIMERS;
+const SCRAWL_TIMERS = DRAW_GUESS_TIMERS;
 
-const TELEFON_TIMERS: TimerOption[] = [
+const MORPH_TIMERS: TimerOption[] = [
   { key: "writeTime", label: "Skrivetid", desc: "Tid til at skrive", defaultMs: 60_000, min: 15, max: 120 },
   ...DRAW_GUESS_TIMERS,
 ];
 
-const SANDHED_TIMERS: TimerOption[] = [
+const SURGE_TIMERS: TimerOption[] = [
   { key: "commitTime", label: "Valgtid", desc: "Tid til at vælge sandt/falsk", defaultMs: 20_000, min: 5, max: 60 },
 ];
 
@@ -51,28 +51,28 @@ interface TabDef {
   Icon: typeof Swords;
   color: string;
   timers: TimerOption[];
-  hasDifficulty?: { settingsKey: string; gameKey: "tegn" | "sandhed" };
+  hasDifficulty?: { settingsKey: string; gameKey: "scrawl" | "surge" };
 }
 
 const TABS: TabDef[] = [
   { id: "general", label: "Generelt", Icon: Settings, color: "var(--color-primary)", timers: GENERAL_TIMERS },
-  { id: "duel", label: "Blitz", Icon: Swords, color: "var(--color-duel)", timers: DUEL_TIMERS },
+  { id: "blitz", label: "Blitz", Icon: Swords, color: "var(--color-blitz)", timers: BLITZ_TIMERS },
   {
-    id: "tegn",
+    id: "scrawl",
     label: "Scrawl",
     Icon: Paintbrush,
-    color: "var(--color-tegn)",
-    timers: TEGN_TIMERS,
-    hasDifficulty: { settingsKey: "tegnDifficulty", gameKey: "tegn" },
+    color: "var(--color-scrawl)",
+    timers: SCRAWL_TIMERS,
+    hasDifficulty: { settingsKey: "scrawlDifficulty", gameKey: "scrawl" },
   },
-  { id: "telefon", label: "Morph", Icon: Phone, color: "var(--color-telefon)", timers: TELEFON_TIMERS },
+  { id: "morph", label: "Morph", Icon: Phone, color: "var(--color-morph)", timers: MORPH_TIMERS },
   {
-    id: "sandhed",
+    id: "surge",
     label: "Surge",
     Icon: Scale,
-    color: "var(--color-sandhed)",
-    timers: SANDHED_TIMERS,
-    hasDifficulty: { settingsKey: "sandhedDifficulty", gameKey: "sandhed" },
+    color: "var(--color-surge)",
+    timers: SURGE_TIMERS,
+    hasDifficulty: { settingsKey: "surgeDifficulty", gameKey: "surge" },
   },
 ];
 
@@ -123,7 +123,7 @@ function DifficultySelector({
   current,
   onChange,
 }: {
-  gameKey: "tegn" | "sandhed";
+  gameKey: "scrawl" | "surge";
   color: string;
   current: number;
   onChange: (level: number) => void;

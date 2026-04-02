@@ -6,58 +6,58 @@ import { da } from "@/lib/da";
 
 export const GAMES = [
   {
-    id: "duel",
-    ...da.duel,
+    id: "blitz",
+    ...da.blitz,
     Icon: Swords,
-    color: "var(--color-duel)",
-    glow: "var(--color-duel-glow)",
+    color: "var(--color-blitz)",
+    glow: "var(--color-blitz-glow)",
     textColor: "#fff",
   },
   {
-    id: "bluff",
-    ...da.bluff,
+    id: "fusk",
+    ...da.fusk,
     Icon: Drama,
-    color: "var(--color-bluff)",
-    glow: "var(--color-bluff-glow)",
+    color: "var(--color-fusk)",
+    glow: "var(--color-fusk-glow)",
     textColor: "#0d0b1a",
   },
   {
-    id: "tegn",
-    ...da.tegn,
+    id: "scrawl",
+    ...da.scrawl,
     Icon: Paintbrush,
-    color: "var(--color-tegn)",
-    glow: "var(--color-tegn-glow)",
+    color: "var(--color-scrawl)",
+    glow: "var(--color-scrawl-glow)",
     textColor: "#fff",
   },
   {
-    id: "telefon",
-    ...da.telefon,
+    id: "morph",
+    ...da.morph,
     Icon: Phone,
-    color: "var(--color-telefon)",
-    glow: "var(--color-telefon-glow)",
+    color: "var(--color-morph)",
+    glow: "var(--color-morph-glow)",
     textColor: "#0d0b1a",
   },
   {
-    id: "sandhed",
-    ...da.sandhed,
+    id: "surge",
+    ...da.surge,
     Icon: Scale,
-    color: "var(--color-sandhed)",
-    glow: "var(--color-sandhed-glow)",
+    color: "var(--color-surge)",
+    glow: "var(--color-surge-glow)",
     textColor: "#fff",
   },
   {
-    id: "ordklap",
-    ...da.ordklap,
+    id: "hunch",
+    ...da.hunch,
     Icon: SlidersHorizontal,
-    color: "var(--color-ordklap)",
-    glow: "var(--color-ordklap-glow)",
+    color: "var(--color-hunch)",
+    glow: "var(--color-hunch-glow)",
     textColor: "#0d0b1a",
   },
 ] as const;
 
 export type GameMeta = (typeof GAMES)[number];
 
-export const GAME_ICONS = { duel: Swords, bluff: Drama, tegn: Paintbrush, telefon: Phone, sandhed: Scale, ordklap: SlidersHorizontal } as const;
+export const GAME_ICONS = { blitz: Swords, fusk: Drama, scrawl: Paintbrush, morph: Phone, surge: Scale, hunch: SlidersHorizontal } as const;
 
 /**
  * Game picker with 2x2 grid and detail splash.

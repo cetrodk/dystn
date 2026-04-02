@@ -24,7 +24,7 @@ import {
   type PlayerSnapshot,
 } from "@/games/registry";
 import { MockPartyProvider } from "@/providers/PartyProvider";
-import type { Stroke } from "@/games/tegn/DrawingCanvas";
+import type { Stroke } from "@/games/scrawl/DrawingCanvas";
 
 /* -- Mock Players ------------------------------------------------ */
 
@@ -123,7 +123,7 @@ function defaultFilter(room: RoomSnapshot, playerId: string): RoomSnapshot {
 
 /* -- Bluff ------------------------------------------------------- */
 
-const BLUFF_ROUNDS = [
+const FUSK_ROUNDS = [
   {
     promptText: "Den første ___ i Danmark blev bygget i 1876",
     realAnswer: "rutsjebane",
@@ -159,7 +159,7 @@ const BLUFF_ROUNDS = [
   },
 ];
 
-function shuffleBluffAnswers(round: typeof BLUFF_ROUNDS[0], roundIndex: number) {
+function shuffleBluffAnswers(round: typeof FUSK_ROUNDS[0], roundIndex: number) {
   const all = [
     ...round.fakes.map((f) => ({ id: f.playerId, text: f.text })),
     { id: "truth", text: round.realAnswer },
@@ -167,17 +167,17 @@ function shuffleBluffAnswers(round: typeof BLUFF_ROUNDS[0], roundIndex: number) 
   return [...all].sort((a, b) => hashStr(a.id + roundIndex) - hashStr(b.id + roundIndex));
 }
 
-const bluffConfig: GameMockConfig = {
+const fuskConfig: GameMockConfig = {
   label: "Fusk",
-  color: "var(--color-bluff)",
+  color: "var(--color-fusk)",
   phases: ["submit", "vote", "reveal", "scores"],
-  roundCount: BLUFF_ROUNDS.length,
+  roundCount: FUSK_ROUNDS.length,
 
   buildHostRoom(phase, roundIndex, submittedSet, now) {
-    const round = BLUFF_ROUNDS[roundIndex] ?? BLUFF_ROUNDS[0];
-    const prevScores = roundIndex > 0 ? BLUFF_ROUNDS[roundIndex - 1].scoresAfter : {};
+    const round = FUSK_ROUNDS[roundIndex] ?? FUSK_ROUNDS[0];
+    const prevScores = roundIndex > 0 ? FUSK_ROUNDS[roundIndex - 1].scoresAfter : {};
     const scores = phase === "scores" || phase === "reveal" ? round.scoresAfter : prevScores;
-    const base = makeBaseRoom("bluff", phase, mapPlayers(scores, submittedSet), roundIndex + 1, BLUFF_ROUNDS.length, now);
+    const base = makeBaseRoom("fusk", phase, mapPlayers(scores, submittedSet), roundIndex + 1, FUSK_ROUNDS.length, now);
 
     switch (phase) {
       case "submit":
@@ -210,7 +210,7 @@ const bluffConfig: GameMockConfig = {
   },
 
   filterForPlayer(room, playerId, roundIndex) {
-    const round = BLUFF_ROUNDS[roundIndex] ?? BLUFF_ROUNDS[0];
+    const round = FUSK_ROUNDS[roundIndex] ?? FUSK_ROUNDS[0];
     const filtered: RoomSnapshot = { ...room, currentPlayerId: playerId, phaseData: { ...room.phaseData } };
     switch (room.currentPhase) {
       case "submit":
@@ -230,7 +230,7 @@ const bluffConfig: GameMockConfig = {
 
 /* -- Duel -------------------------------------------------------- */
 
-const DUEL_ROUNDS = [
+const BLITZ_ROUNDS = [
   {
     promptText: "Hvad ville du gøre, hvis du vågnede op som borgmester?",
     answers: [
@@ -243,16 +243,16 @@ const DUEL_ROUNDS = [
   },
 ];
 
-const duelConfig: GameMockConfig = {
+const blitzConfig: GameMockConfig = {
   label: "Blitz",
-  color: "var(--color-duel)",
+  color: "var(--color-blitz)",
   phases: ["submit", "present", "vote", "reveal", "scores"],
-  roundCount: DUEL_ROUNDS.length,
+  roundCount: BLITZ_ROUNDS.length,
 
   buildHostRoom(phase, roundIndex, submittedSet, now) {
-    const round = DUEL_ROUNDS[roundIndex % DUEL_ROUNDS.length];
+    const round = BLITZ_ROUNDS[roundIndex % BLITZ_ROUNDS.length];
     const scores = phase === "reveal" || phase === "scores" ? round.scoresAfter : {};
-    const base = makeBaseRoom("duel", phase, mapPlayers(scores, submittedSet), roundIndex + 1, 3, now);
+    const base = makeBaseRoom("blitz", phase, mapPlayers(scores, submittedSet), roundIndex + 1, 3, now);
 
     switch (phase) {
       case "submit":
@@ -306,7 +306,7 @@ const duelConfig: GameMockConfig = {
 
 /* -- Tegn -------------------------------------------------------- */
 
-const TEGN_ROUNDS = [
+const SCRAWL_ROUNDS = [
   {
     artistId: "p1",
     artistName: "Anders",
@@ -320,16 +320,16 @@ const TEGN_ROUNDS = [
   },
 ];
 
-const tegnConfig: GameMockConfig = {
+const scrawlConfig: GameMockConfig = {
   label: "Scrawl",
-  color: "var(--color-tegn)",
+  color: "var(--color-scrawl)",
   phases: ["draw", "guess", "vote", "reveal", "scores"],
-  roundCount: TEGN_ROUNDS.length,
+  roundCount: SCRAWL_ROUNDS.length,
 
   buildHostRoom(phase, roundIndex, submittedSet, now) {
-    const round = TEGN_ROUNDS[roundIndex % TEGN_ROUNDS.length];
+    const round = SCRAWL_ROUNDS[roundIndex % SCRAWL_ROUNDS.length];
     const scores = phase === "reveal" || phase === "scores" ? round.scoresAfter : {};
-    const base = makeBaseRoom("tegn", phase, mapPlayers(scores, submittedSet), roundIndex + 1, 3, now);
+    const base = makeBaseRoom("scrawl", phase, mapPlayers(scores, submittedSet), roundIndex + 1, 3, now);
 
     switch (phase) {
       case "draw":
@@ -393,7 +393,7 @@ const tegnConfig: GameMockConfig = {
   },
 
   filterForPlayer(room, playerId, roundIndex) {
-    const round = TEGN_ROUNDS[roundIndex % TEGN_ROUNDS.length];
+    const round = SCRAWL_ROUNDS[roundIndex % SCRAWL_ROUNDS.length];
     const filtered: RoomSnapshot = { ...room, currentPlayerId: playerId, phaseData: { ...room.phaseData } };
     const phase = (room.currentPhase ?? "").split("_")[0];
 
@@ -445,20 +445,20 @@ function makeTelefonChain(
   ];
 }
 
-const TELEFON_CHAINS = [
+const MORPH_CHAINS = [
   makeTelefonChain(MOCK_PLAYERS[0], "solskin"),
   makeTelefonChain(MOCK_PLAYERS[1], "regnbue"),
   makeTelefonChain(MOCK_PLAYERS[2], "pandekage"),
 ];
 
-const telefonConfig: GameMockConfig = {
+const morphConfig: GameMockConfig = {
   label: "Morph",
-  color: "var(--color-telefon)",
+  color: "var(--color-morph)",
   phases: ["write", "draw", "guess", "reveal"],
   roundCount: 1,
 
   buildHostRoom(phase, _roundIndex, submittedSet, now) {
-    const base = makeBaseRoom("telefon", phase, mapPlayers({}, submittedSet), 1, 1, now);
+    const base = makeBaseRoom("morph", phase, mapPlayers({}, submittedSet), 1, 1, now);
 
     switch (phase) {
       case "write":
@@ -476,7 +476,7 @@ const telefonConfig: GameMockConfig = {
         base.phaseDeadline = now + 45000;
         break;
       case "reveal":
-        base.phaseData = { chains: TELEFON_CHAINS, revealChainIndex: 0, revealStepIndex: 0 };
+        base.phaseData = { chains: MORPH_CHAINS, revealChainIndex: 0, revealStepIndex: 0 };
         break;
     }
     return base;
@@ -505,7 +505,7 @@ const telefonConfig: GameMockConfig = {
 
 const SANDHED_FINISH_LINE = 8;
 
-const SANDHED_ROUNDS = [
+const SURGE_ROUNDS = [
   {
     statement: "En blåhval's hjerte er så stort at et barn kan svømme gennem dens arterier",
     correctAnswer: "true" as const,
@@ -529,15 +529,15 @@ const SANDHED_ROUNDS = [
   },
 ];
 
-const sandhedConfig: GameMockConfig = {
+const surgeConfig: GameMockConfig = {
   label: "Surge",
-  color: "var(--color-sandhed)",
+  color: "var(--color-surge)",
   phases: ["countdown", "commit", "reveal", "victory"],
-  roundCount: SANDHED_ROUNDS.length,
+  roundCount: SURGE_ROUNDS.length,
 
   buildHostRoom(phase, roundIndex, submittedSet, now) {
-    const round = SANDHED_ROUNDS[roundIndex % SANDHED_ROUNDS.length];
-    const base = makeBaseRoom("sandhed", phase, mapPlayers({}, submittedSet), roundIndex + 1, 100, now);
+    const round = SURGE_ROUNDS[roundIndex % SURGE_ROUNDS.length];
+    const base = makeBaseRoom("surge", phase, mapPlayers({}, submittedSet), roundIndex + 1, 100, now);
 
     switch (phase) {
       case "countdown":
@@ -595,7 +595,7 @@ const sandhedConfig: GameMockConfig = {
 
 /* -- Ord & Klap -------------------------------------------------- */
 
-const ORDKLAP_ROUNDS = [
+const HUNCH_ROUNDS = [
   {
     leftLabel: "Helt koldt", rightLabel: "Helt varmt", category: "temperatur",
     clueGiverId: "p1", clueGiverName: "Anders", target: 8, clue: "Kakaomælk",
@@ -616,17 +616,17 @@ const ORDKLAP_ROUNDS = [
   },
 ];
 
-const ordklapConfig: GameMockConfig = {
+const hunchConfig: GameMockConfig = {
   label: "Hunch",
-  color: "var(--color-ordklap)",
+  color: "var(--color-hunch)",
   phases: ["clue", "guess", "reveal", "scores"],
-  roundCount: ORDKLAP_ROUNDS.length,
+  roundCount: HUNCH_ROUNDS.length,
 
   buildHostRoom(phase, roundIndex, submittedSet, now) {
-    const round = ORDKLAP_ROUNDS[roundIndex % ORDKLAP_ROUNDS.length];
-    const prevScores = roundIndex > 0 ? ORDKLAP_ROUNDS[roundIndex - 1].scoresAfter : {};
+    const round = HUNCH_ROUNDS[roundIndex % HUNCH_ROUNDS.length];
+    const prevScores = roundIndex > 0 ? HUNCH_ROUNDS[roundIndex - 1].scoresAfter : {};
     const scores = phase === "reveal" || phase === "scores" ? round.scoresAfter : prevScores;
-    const base = makeBaseRoom("ordklap", phase, mapPlayers(scores, submittedSet), roundIndex + 1, ORDKLAP_ROUNDS.length, now);
+    const base = makeBaseRoom("hunch", phase, mapPlayers(scores, submittedSet), roundIndex + 1, HUNCH_ROUNDS.length, now);
 
     switch (phase) {
       case "clue":
@@ -670,7 +670,7 @@ const ordklapConfig: GameMockConfig = {
   },
 
   filterForPlayer(room, playerId, roundIndex) {
-    const round = ORDKLAP_ROUNDS[roundIndex % ORDKLAP_ROUNDS.length];
+    const round = HUNCH_ROUNDS[roundIndex % HUNCH_ROUNDS.length];
     const filtered: RoomSnapshot = { ...room, currentPlayerId: playerId, phaseData: { ...room.phaseData } };
     const isClueGiver = playerId === round.clueGiverId;
 
@@ -698,12 +698,12 @@ const ordklapConfig: GameMockConfig = {
 /* -- Game Config Registry ---------------------------------------- */
 
 const GAME_CONFIGS: Record<string, GameMockConfig> = {
-  bluff: bluffConfig,
-  duel: duelConfig,
-  tegn: tegnConfig,
-  telefon: telefonConfig,
-  sandhed: sandhedConfig,
-  ordklap: ordklapConfig,
+  fusk: fuskConfig,
+  blitz: blitzConfig,
+  scrawl: scrawlConfig,
+  morph: morphConfig,
+  surge: surgeConfig,
+  hunch: hunchConfig,
 };
 
 /* -- Room Generation --------------------------------------------- */
@@ -749,7 +749,7 @@ const SUBMITTABLE_PHASES = new Set(["submit", "vote", "commit", "write", "draw",
 export function SimulatorPage() {
   const navigate = useNavigate();
 
-  const [gameType, setGameType] = useState("bluff");
+  const [gameType, setGameType] = useState("fusk");
   const [phaseIndex, setPhaseIndex] = useState(0);
   const [roundIndex, setRoundIndex] = useState(0);
   const [autoPlay, setAutoPlay] = useState(false);

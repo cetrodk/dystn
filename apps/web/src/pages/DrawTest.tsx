@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
-import { DrawingCanvas, type DrawingCanvasRef, type Stroke } from "@/games/tegn/DrawingCanvas";
-import { DrawingDisplay } from "@/games/tegn/DrawingDisplay";
+import { DrawingCanvas, type DrawingCanvasRef, type Stroke } from "@/games/scrawl/DrawingCanvas";
+import { DrawingDisplay } from "@/games/scrawl/DrawingDisplay";
 
 interface SubmittedData {
   strokes: Stroke[];

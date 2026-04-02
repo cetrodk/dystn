@@ -39,92 +39,92 @@ interface GameComponents {
 }
 
 export const gameComponents: Record<string, GameComponents> = {
-  duel: {
+  blitz: {
     host: {
-      submit: lazy(() => import("./duel/HostSubmit")),
-      present: lazy(() => import("./duel/HostPresent")),
-      vote: lazy(() => import("./duel/HostVote")),
-      reveal: lazy(() => import("./duel/HostReveal")),
-      scores: lazy(() => import("./duel/HostScores")),
+      submit: lazy(() => import("./blitz/HostSubmit")),
+      present: lazy(() => import("./blitz/HostPresent")),
+      vote: lazy(() => import("./blitz/HostVote")),
+      reveal: lazy(() => import("./blitz/HostReveal")),
+      scores: lazy(() => import("./blitz/HostScores")),
     },
     player: {
-      submit: lazy(() => import("./duel/PlayerSubmit")),
-      present: lazy(() => import("./duel/PlayerPresent")),
-      vote: lazy(() => import("./duel/PlayerVote")),
-      reveal: lazy(() => import("./duel/PlayerReveal")),
-      scores: lazy(() => import("./duel/PlayerReveal")), // same passive view
+      submit: lazy(() => import("./blitz/PlayerSubmit")),
+      present: lazy(() => import("./blitz/PlayerPresent")),
+      vote: lazy(() => import("./blitz/PlayerVote")),
+      reveal: lazy(() => import("./blitz/PlayerReveal")),
+      scores: lazy(() => import("./blitz/PlayerReveal")), // same passive view
     },
   },
-  bluff: {
+  fusk: {
     host: {
-      submit: lazy(() => import("./bluff/HostSubmit")),
-      vote: lazy(() => import("./bluff/HostVote")),
-      reveal: lazy(() => import("./bluff/HostReveal")),
-      scores: lazy(() => import("./duel/HostScores")), // reuse game-agnostic scoreboard
+      submit: lazy(() => import("./fusk/HostSubmit")),
+      vote: lazy(() => import("./fusk/HostVote")),
+      reveal: lazy(() => import("./fusk/HostReveal")),
+      scores: lazy(() => import("./blitz/HostScores")), // reuse game-agnostic scoreboard
     },
     player: {
-      submit: lazy(() => import("./bluff/PlayerSubmit")),
-      vote: lazy(() => import("./bluff/PlayerVote")),
-      reveal: lazy(() => import("./duel/PlayerReveal")), // same passive view
-      scores: lazy(() => import("./duel/PlayerReveal")),
+      submit: lazy(() => import("./fusk/PlayerSubmit")),
+      vote: lazy(() => import("./fusk/PlayerVote")),
+      reveal: lazy(() => import("./blitz/PlayerReveal")), // same passive view
+      scores: lazy(() => import("./blitz/PlayerReveal")),
     },
   },
-  tegn: {
+  scrawl: {
     host: {
-      draw: lazy(() => import("./tegn/HostDraw")),
-      guess: lazy(() => import("./tegn/HostGuess")),
-      vote: lazy(() => import("./tegn/HostVote")),
-      reveal: lazy(() => import("./tegn/HostReveal")),
-      scores: lazy(() => import("./duel/HostScores")),
+      draw: lazy(() => import("./scrawl/HostDraw")),
+      guess: lazy(() => import("./scrawl/HostGuess")),
+      vote: lazy(() => import("./scrawl/HostVote")),
+      reveal: lazy(() => import("./scrawl/HostReveal")),
+      scores: lazy(() => import("./blitz/HostScores")),
     },
     player: {
-      draw: lazy(() => import("./tegn/PlayerDraw")),
-      guess: lazy(() => import("./tegn/PlayerGuess")),
-      vote: lazy(() => import("./tegn/PlayerVote")),
-      reveal: lazy(() => import("./tegn/PlayerReveal")),
-      scores: lazy(() => import("./duel/PlayerReveal")),
+      draw: lazy(() => import("./scrawl/PlayerDraw")),
+      guess: lazy(() => import("./scrawl/PlayerGuess")),
+      vote: lazy(() => import("./scrawl/PlayerVote")),
+      reveal: lazy(() => import("./scrawl/PlayerReveal")),
+      scores: lazy(() => import("./blitz/PlayerReveal")),
     },
   },
-  telefon: {
+  morph: {
     host: {
-      write: lazy(() => import("./telefon/HostWrite")),
-      draw: lazy(() => import("./telefon/HostDraw")),
-      guess: lazy(() => import("./telefon/HostGuess")),
-      reveal: lazy(() => import("./telefon/HostReveal")),
+      write: lazy(() => import("./morph/HostWrite")),
+      draw: lazy(() => import("./morph/HostDraw")),
+      guess: lazy(() => import("./morph/HostGuess")),
+      reveal: lazy(() => import("./morph/HostReveal")),
     },
     player: {
-      write: lazy(() => import("./telefon/PlayerWrite")),
-      draw: lazy(() => import("./telefon/PlayerDraw")),
-      guess: lazy(() => import("./telefon/PlayerGuess")),
-      reveal: lazy(() => import("./telefon/PlayerReveal")),
+      write: lazy(() => import("./morph/PlayerWrite")),
+      draw: lazy(() => import("./morph/PlayerDraw")),
+      guess: lazy(() => import("./morph/PlayerGuess")),
+      reveal: lazy(() => import("./morph/PlayerReveal")),
     },
   },
-  sandhed: {
+  surge: {
     host: {
-      countdown: lazy(() => import("./sandhed/HostCountdown")),
-      commit: lazy(() => import("./sandhed/HostCommit")),
-      reveal: lazy(() => import("./sandhed/HostReveal")),
-      victory: lazy(() => import("./sandhed/HostVictory")),
+      countdown: lazy(() => import("./surge/HostCountdown")),
+      commit: lazy(() => import("./surge/HostCommit")),
+      reveal: lazy(() => import("./surge/HostReveal")),
+      victory: lazy(() => import("./surge/HostVictory")),
     },
     player: {
-      countdown: lazy(() => import("./sandhed/PlayerCountdown")),
-      commit: lazy(() => import("./sandhed/PlayerCommit")),
-      reveal: lazy(() => import("./sandhed/PlayerReveal")),
-      victory: lazy(() => import("./sandhed/PlayerVictory")),
+      countdown: lazy(() => import("./surge/PlayerCountdown")),
+      commit: lazy(() => import("./surge/PlayerCommit")),
+      reveal: lazy(() => import("./surge/PlayerReveal")),
+      victory: lazy(() => import("./surge/PlayerVictory")),
     },
   },
-  ordklap: {
+  hunch: {
     host: {
-      clue: lazy(() => import("./ordklap/HostClue")),
-      guess: lazy(() => import("./ordklap/HostGuess")),
-      reveal: lazy(() => import("./ordklap/HostReveal")),
-      scores: lazy(() => import("./duel/HostScores")),
+      clue: lazy(() => import("./hunch/HostClue")),
+      guess: lazy(() => import("./hunch/HostGuess")),
+      reveal: lazy(() => import("./hunch/HostReveal")),
+      scores: lazy(() => import("./blitz/HostScores")),
     },
     player: {
-      clue: lazy(() => import("./ordklap/PlayerClue")),
-      guess: lazy(() => import("./ordklap/PlayerGuess")),
-      reveal: lazy(() => import("./ordklap/PlayerReveal")),
-      scores: lazy(() => import("./duel/PlayerReveal")),
+      clue: lazy(() => import("./hunch/PlayerClue")),
+      guess: lazy(() => import("./hunch/PlayerGuess")),
+      reveal: lazy(() => import("./hunch/PlayerReveal")),
+      scores: lazy(() => import("./blitz/PlayerReveal")),
     },
   },
 };
