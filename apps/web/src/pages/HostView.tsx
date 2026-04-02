@@ -24,6 +24,7 @@ const GAME_OPTIONS = [
   { id: "tegn", color: "var(--color-tegn)", textColor: "#fff" },
   { id: "telefon", color: "var(--color-telefon)", textColor: "#0d0b1a" },
   { id: "sandhed", color: "var(--color-sandhed)", textColor: "#fff" },
+  { id: "ordklap", color: "var(--color-ordklap)", textColor: "#0d0b1a" },
 ] as const;
 
 function getGameMeta(gameType: string | undefined) {

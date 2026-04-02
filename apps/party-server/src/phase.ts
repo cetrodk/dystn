@@ -13,6 +13,7 @@ export const DEFAULT_DURATIONS: Record<string, number> = {
   write: 60_000,
   countdown: 4_000,
   commit: 20_000,
+  clue: 60_000,
   victory: 15_000,
 };
 
@@ -26,6 +27,7 @@ const SETTINGS_KEY: Record<string, string> = {
   guess: "guessTime",
   write: "writeTime",
   commit: "commitTime",
+  clue: "clueTime",
 };
 
 export function getPhaseDuration(phase: string, settings?: Record<string, unknown>): number {

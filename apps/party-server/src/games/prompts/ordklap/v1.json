@@ -1,0 +1,22 @@
+[
+  { "leftLabel": "Helt koldt", "rightLabel": "Helt varmt", "category": "temperatur" },
+  { "leftLabel": "Meget stille", "rightLabel": "Meget højlydt", "category": "lyd" },
+  { "leftLabel": "Totalt nørdet", "rightLabel": "Totalt populær", "category": "personlighed" },
+  { "leftLabel": "Meget langsomt", "rightLabel": "Lynhurtigt", "category": "hastighed" },
+  { "leftLabel": "Meget billig", "rightLabel": "Ekstremt dyr", "category": "pris" },
+  { "leftLabel": "Totalt ufarlig", "rightLabel": "Livsfarlig", "category": "fare" },
+  { "leftLabel": "Meget kedelig", "rightLabel": "Ekstremt spændende", "category": "underholdning" },
+  { "leftLabel": "Helt sund", "rightLabel": "Totalt usund", "category": "sundhed" },
+  { "leftLabel": "Meget sjælden", "rightLabel": "Ekstremt almindelig", "category": "hyppighed" },
+  { "leftLabel": "Fra fortiden", "rightLabel": "Fra fremtiden", "category": "tid" },
+  { "leftLabel": "Meget lille", "rightLabel": "Kæmpe stor", "category": "størrelse" },
+  { "leftLabel": "Totalt seriøs", "rightLabel": "Komplet fjollet", "category": "humor" },
+  { "leftLabel": "Let at lære", "rightLabel": "Umulig at mestre", "category": "sværhedsgrad" },
+  { "leftLabel": "Meget naturlig", "rightLabel": "Ekstremt kunstig", "category": "natur" },
+  { "leftLabel": "Børnevenlig", "rightLabel": "Kun for voksne", "category": "aldersgruppe" },
+  { "leftLabel": "Meget privat", "rightLabel": "Offentligt for alle", "category": "privatliv" },
+  { "leftLabel": "Accepteret af alle", "rightLabel": "Kontroversielt", "category": "holdning" },
+  { "leftLabel": "Meget gammeldags", "rightLabel": "Super moderne", "category": "trend" },
+  { "leftLabel": "Meget simpelt", "rightLabel": "Ekstremt komplekst", "category": "kompleksitet" },
+  { "leftLabel": "Totalt ubrugelig", "rightLabel": "Uundværlig", "category": "nytteværdi" }
+]

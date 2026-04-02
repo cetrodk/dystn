@@ -17,6 +17,7 @@ import type {
   BluffPrompt,
   DuelPrompt,
   GameName,
+  OrdklapPrompt,
   PromptManifest,
   SandhedPrompt,
   TegnPrompt,
@@ -26,23 +27,27 @@ import duelManifest from "./duel/manifest.json";
 import bluffManifest from "./bluff/manifest.json";
 import tegnManifest from "./tegn/manifest.json";
 import sandhedManifest from "./sandhed/manifest.json";
+import ordklapManifest from "./ordklap/manifest.json";
 
 // Add new version imports here, then register in the version map below
 import duelV1 from "./duel/v1.json";
 import bluffV1 from "./bluff/v1.json";
 import tegnV1 from "./tegn/v1.json";
 import sandhedV1 from "./sandhed/v1.json";
+import ordklapV1 from "./ordklap/v1.json";
 
 const duelVersions: Record<string, unknown[]> = { v1: duelV1 };
 const bluffVersions: Record<string, unknown[]> = { v1: bluffV1 };
 const tegnVersions: Record<string, unknown[]> = { v1: tegnV1 };
 const sandhedVersions: Record<string, unknown[]> = { v1: sandhedV1 };
+const ordklapVersions: Record<string, unknown[]> = { v1: ordklapV1 };
 
 const manifests: Record<GameName, PromptManifest> = {
   duel: duelManifest as PromptManifest,
   bluff: bluffManifest as PromptManifest,
   tegn: tegnManifest as PromptManifest,
   sandhed: sandhedManifest as PromptManifest,
+  ordklap: ordklapManifest as PromptManifest,
 };
 
 function validateDuelPrompt(entry: unknown, index: number, version: string): DuelPrompt {
@@ -128,11 +133,25 @@ export const bluffPrompts: BluffPrompt[] = loadVersions(manifests.bluff, bluffVe
 export const tegnPrompts: TegnPrompt[] = loadVersions(manifests.tegn, tegnVersions, validateTegnPrompt);
 export const sandhedPrompts: SandhedPrompt[] = loadVersions(manifests.sandhed, sandhedVersions, validateSandhedPrompt);
 
+function validateOrdklapPrompt(entry: unknown, index: number, version: string): OrdklapPrompt {
+  const e = entry as Record<string, unknown>;
+  if (!e || typeof e.leftLabel !== "string" || typeof e.rightLabel !== "string" || typeof e.category !== "string") {
+    throw new Error(`ordklap/${version}.json[${index}]: must have string 'leftLabel', 'rightLabel', and 'category'`);
+  }
+  if (e.leftLabel.trim().length === 0 || e.rightLabel.trim().length === 0) {
+    throw new Error(`ordklap/${version}.json[${index}]: labels must not be empty`);
+  }
+  return { leftLabel: e.leftLabel, rightLabel: e.rightLabel, category: e.category };
+}
+
+export const ordklapPrompts: OrdklapPrompt[] = loadVersions(manifests.ordklap, ordklapVersions, validateOrdklapPrompt);
+
 export function getPromptStats(): Record<GameName, { total: number; versions: string[] }> {
   return {
     duel: { total: duelPrompts.length, versions: manifests.duel.activeVersions },
     bluff: { total: bluffPrompts.length, versions: manifests.bluff.activeVersions },
     tegn: { total: tegnPrompts.length, versions: manifests.tegn.activeVersions },
     sandhed: { total: sandhedPrompts.length, versions: manifests.sandhed.activeVersions },
+    ordklap: { total: ordklapPrompts.length, versions: manifests.ordklap.activeVersions },
   };
 }

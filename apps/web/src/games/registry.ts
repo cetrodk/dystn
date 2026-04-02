@@ -113,4 +113,18 @@ export const gameComponents: Record<string, GameComponents> = {
       victory: lazy(() => import("./sandhed/PlayerVictory")),
     },
   },
+  ordklap: {
+    host: {
+      clue: lazy(() => import("./ordklap/HostClue")),
+      guess: lazy(() => import("./ordklap/HostGuess")),
+      reveal: lazy(() => import("./ordklap/HostReveal")),
+      scores: lazy(() => import("./duel/HostScores")),
+    },
+    player: {
+      clue: lazy(() => import("./ordklap/PlayerClue")),
+      guess: lazy(() => import("./ordklap/PlayerGuess")),
+      reveal: lazy(() => import("./ordklap/PlayerReveal")),
+      scores: lazy(() => import("./duel/PlayerReveal")),
+    },
+  },
 };

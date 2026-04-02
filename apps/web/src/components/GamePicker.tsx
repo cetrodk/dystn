@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Swords, Drama, Paintbrush, Phone, Tag, ExternalLink, Scale } from "lucide-react";
+import { Swords, Drama, Paintbrush, Phone, Tag, ExternalLink, Scale, SlidersHorizontal } from "lucide-react";
 import useEmblaCarousel from "embla-carousel-react";
 import { da } from "@/lib/da";
 
@@ -45,11 +45,19 @@ export const GAMES = [
     glow: "var(--color-sandhed-glow)",
     textColor: "#fff",
   },
+  {
+    id: "ordklap",
+    ...da.ordklap,
+    Icon: SlidersHorizontal,
+    color: "var(--color-ordklap)",
+    glow: "var(--color-ordklap-glow)",
+    textColor: "#0d0b1a",
+  },
 ] as const;
 
 export type GameMeta = (typeof GAMES)[number];
 
-export const GAME_ICONS = { duel: Swords, bluff: Drama, tegn: Paintbrush, telefon: Phone, sandhed: Scale } as const;
+export const GAME_ICONS = { duel: Swords, bluff: Drama, tegn: Paintbrush, telefon: Phone, sandhed: Scale, ordklap: SlidersHorizontal } as const;
 
 /**
  * Game picker with 2x2 grid and detail splash.

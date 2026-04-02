@@ -16,6 +16,7 @@ import "./games/bluff";
 import "./games/tegn";
 import "./games/sandhed";
 import "./games/telefon";
+import "./games/ordklap";
 
 const MAX_PLAYERS = 8;
 const MIN_PLAYERS = 1;
@@ -311,7 +312,7 @@ export default class FestspilServer implements Party.Server {
 
     const phase = this.state.currentPhase ?? "";
     const base = phase.split("_")[0];
-    if (!["submit", "vote", "draw", "guess", "write", "commit"].includes(base)) return;
+    if (!["submit", "vote", "draw", "guess", "write", "commit", "clue"].includes(base)) return;
 
     // Check deadline (2s grace), skip if paused
     if (!this.state.settings.paused && this.state.phaseDeadline && Date.now() > this.state.phaseDeadline + 2000) {

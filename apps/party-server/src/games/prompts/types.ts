@@ -16,7 +16,13 @@ export interface SandhedPrompt {
   category: "1" | "2" | "3";
 }
 
-export type GameName = "duel" | "bluff" | "tegn" | "sandhed";
+export interface OrdklapPrompt {
+  leftLabel: string;
+  rightLabel: string;
+  category: string;
+}
+
+export type GameName = "duel" | "bluff" | "tegn" | "sandhed" | "ordklap";
 
 export interface PromptManifest {
   game: GameName;

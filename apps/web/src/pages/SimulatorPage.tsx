@@ -168,7 +168,7 @@ function shuffleBluffAnswers(round: typeof BLUFF_ROUNDS[0], roundIndex: number) 
 }
 
 const bluffConfig: GameMockConfig = {
-  label: "Bluff",
+  label: "Fusk",
   color: "var(--color-bluff)",
   phases: ["submit", "vote", "reveal", "scores"],
   roundCount: BLUFF_ROUNDS.length,
@@ -244,7 +244,7 @@ const DUEL_ROUNDS = [
 ];
 
 const duelConfig: GameMockConfig = {
-  label: "Duel",
+  label: "Blitz",
   color: "var(--color-duel)",
   phases: ["submit", "present", "vote", "reveal", "scores"],
   roundCount: DUEL_ROUNDS.length,
@@ -321,7 +321,7 @@ const TEGN_ROUNDS = [
 ];
 
 const tegnConfig: GameMockConfig = {
-  label: "Tegn & Gæt",
+  label: "Scrawl",
   color: "var(--color-tegn)",
   phases: ["draw", "guess", "vote", "reveal", "scores"],
   roundCount: TEGN_ROUNDS.length,
@@ -452,7 +452,7 @@ const TELEFON_CHAINS = [
 ];
 
 const telefonConfig: GameMockConfig = {
-  label: "Telefon",
+  label: "Morph",
   color: "var(--color-telefon)",
   phases: ["write", "draw", "guess", "reveal"],
   roundCount: 1,
@@ -530,7 +530,7 @@ const SANDHED_ROUNDS = [
 ];
 
 const sandhedConfig: GameMockConfig = {
-  label: "Sandhed",
+  label: "Surge",
   color: "var(--color-sandhed)",
   phases: ["countdown", "commit", "reveal", "victory"],
   roundCount: SANDHED_ROUNDS.length,
@@ -593,6 +593,108 @@ const sandhedConfig: GameMockConfig = {
   },
 };
 
+/* -- Ord & Klap -------------------------------------------------- */
+
+const ORDKLAP_ROUNDS = [
+  {
+    leftLabel: "Helt koldt", rightLabel: "Helt varmt", category: "temperatur",
+    clueGiverId: "p1", clueGiverName: "Anders", target: 8, clue: "Kakaomælk",
+    guesses: { p2: 7, p3: 9 } as Record<string, number>,
+    scoresAfter: { p1: 500, p2: 500, p3: 500 },
+  },
+  {
+    leftLabel: "Meget stille", rightLabel: "Meget højlydt", category: "lyd",
+    clueGiverId: "p2", clueGiverName: "Sofie", target: 2, clue: "Bibliotek",
+    guesses: { p1: 3, p3: 1 } as Record<string, number>,
+    scoresAfter: { p1: 1000, p2: 1000, p3: 1000 },
+  },
+  {
+    leftLabel: "Totalt nørdet", rightLabel: "Totalt populær", category: "personlighed",
+    clueGiverId: "p3", clueGiverName: "Magnus", target: 5, clue: "Magnus selv",
+    guesses: { p1: 5, p2: 7 } as Record<string, number>,
+    scoresAfter: { p1: 2000, p2: 1200, p3: 1600 },
+  },
+];
+
+const ordklapConfig: GameMockConfig = {
+  label: "Hunch",
+  color: "var(--color-ordklap)",
+  phases: ["clue", "guess", "reveal", "scores"],
+  roundCount: ORDKLAP_ROUNDS.length,
+
+  buildHostRoom(phase, roundIndex, submittedSet, now) {
+    const round = ORDKLAP_ROUNDS[roundIndex % ORDKLAP_ROUNDS.length];
+    const prevScores = roundIndex > 0 ? ORDKLAP_ROUNDS[roundIndex - 1].scoresAfter : {};
+    const scores = phase === "reveal" || phase === "scores" ? round.scoresAfter : prevScores;
+    const base = makeBaseRoom("ordklap", phase, mapPlayers(scores, submittedSet), roundIndex + 1, ORDKLAP_ROUNDS.length, now);
+
+    switch (phase) {
+      case "clue":
+        base.phaseData = {
+          leftLabel: round.leftLabel, rightLabel: round.rightLabel, category: round.category,
+          clueGiverId: round.clueGiverId,
+          submittedCount: submittedSet.has(round.clueGiverId) ? 1 : 0,
+        };
+        break;
+      case "guess":
+        base.phaseData = {
+          leftLabel: round.leftLabel, rightLabel: round.rightLabel, category: round.category,
+          clueGiverId: round.clueGiverId, clue: round.clue,
+          submittedCount: [...submittedSet].filter((id) => id !== round.clueGiverId).length,
+          totalGuessers: MOCK_PLAYERS.length - 1,
+        };
+        base.phaseDeadline = now + 30000;
+        break;
+      case "reveal": {
+        const results = MOCK_PLAYERS
+          .filter((p) => p._id !== round.clueGiverId)
+          .map((p) => {
+            const guess = round.guesses[p._id] ?? null;
+            const distance = guess !== null ? Math.abs(guess - round.target) : null;
+            const score = distance !== null ? ([1000, 500, 200][distance] ?? 0) : 0;
+            return { playerId: p._id, playerName: p.name, avatarColor: p.avatarColor, guess, distance, score };
+          });
+        base.phaseData = {
+          leftLabel: round.leftLabel, rightLabel: round.rightLabel, category: round.category,
+          clueGiverId: round.clueGiverId, clue: round.clue, target: round.target,
+          results, clueGiverBonus: 500, clueGiverName: round.clueGiverName,
+        };
+        base.phaseDeadline = now + 30000;
+        break;
+      }
+      case "scores":
+        base.phaseDeadline = now + 8000;
+        break;
+    }
+    return base;
+  },
+
+  filterForPlayer(room, playerId, roundIndex) {
+    const round = ORDKLAP_ROUNDS[roundIndex % ORDKLAP_ROUNDS.length];
+    const filtered: RoomSnapshot = { ...room, currentPlayerId: playerId, phaseData: { ...room.phaseData } };
+    const isClueGiver = playerId === round.clueGiverId;
+
+    switch (room.currentPhase) {
+      case "clue":
+        filtered.phaseData = isClueGiver
+          ? { ...room.phaseData, target: round.target, mySubmission: null }
+          : { leftLabel: round.leftLabel, rightLabel: round.rightLabel, category: round.category, clueGiverId: round.clueGiverId };
+        break;
+      case "guess":
+        filtered.phaseData = isClueGiver
+          ? { ...room.phaseData }
+          : { ...room.phaseData, myGuess: null };
+        break;
+      case "reveal": {
+        const results = (room.phaseData.results ?? []) as Array<{ playerId: string }>;
+        filtered.phaseData = { ...room.phaseData, myResult: results.find((r) => r.playerId === playerId) ?? null };
+        break;
+      }
+    }
+    return filtered;
+  },
+};
+
 /* -- Game Config Registry ---------------------------------------- */
 
 const GAME_CONFIGS: Record<string, GameMockConfig> = {
@@ -601,6 +703,7 @@ const GAME_CONFIGS: Record<string, GameMockConfig> = {
   tegn: tegnConfig,
   telefon: telefonConfig,
   sandhed: sandhedConfig,
+  ordklap: ordklapConfig,
 };
 
 /* -- Room Generation --------------------------------------------- */
@@ -618,10 +721,11 @@ function generateRooms(
     return { hostRoom: room, playerRooms: MOCK_PLAYERS.map((p) => ({ ...room, currentPlayerId: p._id })) };
   }
 
-  const hostRoom = config.buildHostRoom(phase, roundIndex, submittedSet, now);
+  const safeRound = Math.min(roundIndex, (config.roundCount ?? 1) - 1);
+  const hostRoom = config.buildHostRoom(phase, safeRound, submittedSet, now);
   const playerRooms = MOCK_PLAYERS.map((p) =>
     config.filterForPlayer
-      ? config.filterForPlayer(hostRoom, p._id, roundIndex)
+      ? config.filterForPlayer(hostRoom, p._id, safeRound)
       : defaultFilter(hostRoom, p._id),
   );
   return { hostRoom, playerRooms };
@@ -634,11 +738,11 @@ function generateRooms(
 const PHASE_DURATIONS: Record<string, number> = {
   submit: 6000, vote: 5000, reveal: 18000, scores: 5000,
   present: 6000, draw: 8000, guess: 6000, write: 6000,
-  countdown: 4000, commit: 5000, victory: 6000,
+  countdown: 4000, commit: 5000, clue: 8000, victory: 6000,
 };
 
 // Must match the phases guarded in apps/party-server/src/server.ts handleSubmitAnswer
-const SUBMITTABLE_PHASES = new Set(["submit", "vote", "commit", "write", "draw", "guess"]);
+const SUBMITTABLE_PHASES = new Set(["submit", "vote", "commit", "write", "draw", "guess", "clue"]);
 
 /* -- Simulator Page ---------------------------------------------- */
 
@@ -658,7 +762,8 @@ export function SimulatorPage() {
 
   const config = GAME_CONFIGS[gameType];
   const phases = config?.phases ?? ["submit"];
-  const currentPhase = phases[phaseIndex] ?? phases[0];
+  const safePhaseIndex = Math.min(phaseIndex, phases.length - 1);
+  const currentPhase = phases[safePhaseIndex] ?? phases[0];
   const maxRounds = config?.roundCount ?? 3;
 
   const resetState = useCallback(() => {
@@ -718,9 +823,10 @@ export function SimulatorPage() {
     let idx = 0;
     const interval = setInterval(() => {
       if (idx >= MOCK_PLAYERS.length) { clearInterval(interval); return; }
+      const playerId = MOCK_PLAYERS[idx]._id;
       setSubmittedPlayers((prev) => {
         const next = new Set(prev);
-        next.add(MOCK_PLAYERS[idx]._id);
+        next.add(playerId);
         return next;
       });
       idx++;

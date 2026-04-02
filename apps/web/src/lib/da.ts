@@ -75,7 +75,7 @@ export const da = {
 
   // Games
   duel: {
-    name: "Duel",
+    name: "Blitz",
     description: "Skriv sjove svar — stem på det bedste!",
     howToPlay: "Alle får det samme spørgsmål og skriver et sjovt svar. Derefter stemmer alle på det bedste svar — undtagen dit eget!",
     expects: `${MIN_PLAYERS}–${MAX_PLAYERS} spillere • 3 runder • Tekst`,
@@ -91,7 +91,7 @@ export const da = {
   },
 
   bluff: {
-    name: "Bluff",
+    name: "Fusk",
     description: "Find det rigtige svar blandt løgnene",
     howToPlay: "Du får et spørgsmål med et hul — skriv et falsk svar der lyder ægte. Gæt derefter det rigtige svar mellem alle løgnene. Du scorer point for at narre andre!",
     expects: `${MIN_PLAYERS}–${MAX_PLAYERS} spillere • 3 runder • Tekst`,
@@ -108,7 +108,7 @@ export const da = {
   },
 
   tegn: {
-    name: "Tegn & Gæt",
+    name: "Scrawl",
     description: "Tegn på din telefon — andre gætter!",
     howToPlay: "Alle tegner et hemmeligt ord på telefonen. Derefter gætter de andre hvad det forestiller — skriv falske gæt for at narre! Stem på det rigtige ord.",
     expects: `${MIN_PLAYERS}–${MAX_PLAYERS} spillere • 1 runde • Tegning + tekst`,
@@ -137,7 +137,7 @@ export const da = {
   },
 
   telefon: {
-    name: "Telefon",
+    name: "Morph",
     description: "Skriv, tegn, gæt — se hvad der sker!",
     howToPlay: "Skriv en sjov sætning. Den næste tegner den, den næste gætter tegningen, den næste tegner gættet... Til sidst afsløres hele kæden — og du ser hvor galt det gik!",
     expects: `${MIN_PLAYERS}–${MAX_PLAYERS} spillere • 1 runde • Tegning + tekst`,
@@ -157,7 +157,7 @@ export const da = {
   },
 
   sandhed: {
-    name: "Sandhed",
+    name: "Surge",
     description: "Sandt eller falsk? Kap om at nå målet!",
     howToPlay: "Et udsagn vises på skærmen — flyt dig til SANDT eller FALSK. Se hvad de andre gør i realtid og skift side for at narre dem. Men pas på: det tager tid at skifte, og bliver du fanget midt imellem, tæller det ikke! Rigtigt svar = ét skridt fremad. Først i mål vinder!",
     expects: `${MIN_PLAYERS}–${MAX_PLAYERS} spillere • Uendelige runder • Videns-quiz`,
@@ -181,6 +181,29 @@ export const da = {
       "Almenviden (geografi, historie)",
       "Tricky myter og fakta",
     ] as readonly string[],
+  },
+
+  ordklap: {
+    name: "Hunch",
+    description: "Giv et fingerpeg — andre gætter positionen!",
+    howToPlay: "En spiller ser en hemmelig position på et spektrum og giver et fingerpeg. Alle andre gætter positionen. Jo tættere på, jo flere point!",
+    expects: `${MIN_PLAYERS}–${MAX_PLAYERS} spillere • Roterende runder • Tekst`,
+    youAreClueGiver: "Du giver fingerpeget!",
+    writeClue: "Skriv dit fingerpeg",
+    cluePlaceholder: "Ét ord eller kort sætning...",
+    waitingForClue: "skriver et fingerpeg...",
+    clueIs: "Fingerpeget er",
+    placeGuess: "Placer dit gæt",
+    submitGuess: "Send gæt",
+    editGuess: "Redigér gæt",
+    watchingGuesses: "Venter på de andres gæt...",
+    targetWas: "Positionen var",
+    exact: "Præcist!",
+    close: "Meget tæt!",
+    near: "Næsten!",
+    miss: "Ikke helt...",
+    clueGiverBonus: "Fingerpeger-bonus",
+    yourScore: "Dine point",
   },
 
   // External games

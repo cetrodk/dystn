@@ -56,19 +56,19 @@ interface TabDef {
 
 const TABS: TabDef[] = [
   { id: "general", label: "Generelt", Icon: Settings, color: "var(--color-primary)", timers: GENERAL_TIMERS },
-  { id: "duel", label: "Duel", Icon: Swords, color: "var(--color-duel)", timers: DUEL_TIMERS },
+  { id: "duel", label: "Blitz", Icon: Swords, color: "var(--color-duel)", timers: DUEL_TIMERS },
   {
     id: "tegn",
-    label: "Tegn & Gæt",
+    label: "Scrawl",
     Icon: Paintbrush,
     color: "var(--color-tegn)",
     timers: TEGN_TIMERS,
     hasDifficulty: { settingsKey: "tegnDifficulty", gameKey: "tegn" },
   },
-  { id: "telefon", label: "Telefon", Icon: Phone, color: "var(--color-telefon)", timers: TELEFON_TIMERS },
+  { id: "telefon", label: "Morph", Icon: Phone, color: "var(--color-telefon)", timers: TELEFON_TIMERS },
   {
     id: "sandhed",
-    label: "Sandhed",
+    label: "Surge",
     Icon: Scale,
     color: "var(--color-sandhed)",
     timers: SANDHED_TIMERS,
