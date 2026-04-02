@@ -1,7 +1,7 @@
 import { registerGameHandlers } from "../registry";
 import type { RoomState, Player, PhaseTransition } from "../types";
 import { getSubmissions, upsertSubmission } from "../submissions";
-import allPrompts from "./prompts/tegn.json";
+import { tegnPrompts as allPrompts } from "./prompts/loader";
 import { TRUTH_ID } from "../constants";
 
 registerGameHandlers("tegn", {

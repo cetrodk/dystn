@@ -7,7 +7,8 @@
     "dev": "partykit dev",
     "build": "partykit build",
     "deploy": "partykit deploy",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "validate-prompts": "npx tsx src/games/prompts/validate.ts"
   },
   "dependencies": {
     "partykit": "^0.0.111",

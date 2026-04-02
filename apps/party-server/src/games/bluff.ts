@@ -1,10 +1,8 @@
 import { registerGameHandlers } from "../registry";
 import { getSubmissions, upsertSubmission } from "../submissions";
 import type { RoomState, Player, PhaseTransition } from "../types";
-import prompts from "./prompts/bluff.json";
+import { bluffPrompts as allPrompts } from "./prompts/loader";
 import { TRUTH_ID } from "../constants";
-
-const allPrompts = prompts.filter((p) => !!p.answer);
 
 /** Normalize an answer so player fakes and the truth look identical in style. */
 function normalizeAnswer(raw: string): string {

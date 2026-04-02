@@ -1,7 +1,7 @@
 import { registerGameHandlers } from "../registry";
 import { getSubmissions, upsertSubmission } from "../submissions";
 import type { PhaseTransition, Player, RoomState } from "../types";
-import duelPrompts from "./prompts/duel.json";
+import { duelPrompts } from "./prompts/loader";
 
 registerGameHandlers("duel", {
   setupRound(room: RoomState): Record<string, unknown> {

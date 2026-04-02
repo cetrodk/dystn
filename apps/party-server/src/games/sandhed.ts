@@ -1,15 +1,10 @@
 import { registerGameHandlers } from "../registry";
 import type { RoomState, Player, PhaseTransition } from "../types";
 import { getSubmissions, upsertSubmission } from "../submissions";
-import allPrompts from "./prompts/sandhed.json";
+import { sandhedPrompts as allPrompts } from "./prompts/loader";
+import type { SandhedPrompt } from "./prompts/types";
 
 const FINISH_LINE = 8;
-
-interface SandhedPrompt {
-  text: string;
-  answer: string;
-  category: string;
-}
 
 registerGameHandlers("sandhed", {
   config: {

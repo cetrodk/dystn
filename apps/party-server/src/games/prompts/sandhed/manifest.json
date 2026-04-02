@@ -1,0 +1,5 @@
+{
+  "game": "sandhed",
+  "activeVersions": ["v1"],
+  "description": "True/false trivia racing game. Each entry has { text, answer, category } where answer is 'true'/'false' and category is 1-3 difficulty."
+}

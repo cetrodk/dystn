@@ -6,5 +6,6 @@
     "lib": ["ES2022"],
     "resolveJsonModule": true
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": ["src/games/prompts/validate.ts"]
 }

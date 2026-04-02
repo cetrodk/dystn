@@ -1,0 +1,5 @@
+{
+  "game": "duel",
+  "activeVersions": ["v1"],
+  "description": "Quiplash-style creative prompts. Each entry is a plain string."
+}
