@@ -1,11 +1,12 @@
 import { useState, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Swords, Paintbrush, Phone, Scale, Settings } from "lucide-react";
+import { ArrowLeft, Swords, Paintbrush, Phone, Scale, Settings, Volume2, VolumeX } from "lucide-react";
 
 import { useSessionId } from "@/providers/SessionProvider";
 import { PartyProvider, useRoom, useSend } from "@/providers/PartyProvider";
 import { da } from "@/lib/da";
+import { useVolume } from "@/hooks/useVolume";
 
 /* -- Timer & tab definitions ---------------------------------------- */
 
@@ -55,6 +56,7 @@ interface TabDef {
 }
 
 const TABS: TabDef[] = [
+  { id: "sound", label: "Lyd", Icon: Volume2, color: "var(--color-primary)", timers: [] },
   { id: "general", label: "Generelt", Icon: Settings, color: "var(--color-primary)", timers: GENERAL_TIMERS },
   { id: "blitz", label: "Blitz", Icon: Swords, color: "var(--color-blitz)", timers: BLITZ_TIMERS },
   {
@@ -154,6 +156,54 @@ function DifficultySelector({
   );
 }
 
+/* -- Sound Settings ------------------------------------------------- */
+
+function SoundSettings() {
+  const { volume, muted, setVolume, toggleMute } = useVolume();
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="rounded-2xl bg-[var(--color-surface)] p-5">
+        <div className="flex items-center justify-between mb-0.5">
+          <span className="text-base font-semibold">Lydstyrke</span>
+          <span className="text-base font-mono font-bold text-[var(--color-primary-light)]">
+            {Math.round(volume * 100)}%
+          </span>
+        </div>
+        <p className="text-xs text-[var(--color-text-muted)] mb-1.5">
+          Master lydstyrke for musik og effekter
+        </p>
+        <input
+          type="range"
+          min={0}
+          max={100}
+          value={Math.round(volume * 100)}
+          onChange={(e) => setVolume(Number(e.target.value) / 100)}
+          className="w-full cursor-pointer"
+        />
+        <div className="flex justify-between text-xs text-[var(--color-text-muted)]">
+          <span>0%</span>
+          <span>100%</span>
+        </div>
+      </div>
+
+      <div className="rounded-2xl bg-[var(--color-surface)] p-5 flex flex-col items-center justify-center gap-3">
+        <button
+          onClick={toggleMute}
+          className="flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold transition-all cursor-pointer"
+          style={{
+            backgroundColor: muted ? "var(--color-danger)" : "var(--color-surface-light)",
+            color: muted ? "#fff" : "var(--color-text)",
+          }}
+        >
+          {muted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+          {muted ? "Lyden er slået fra" : "Slå lyd fra"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /* -- Settings Inner (inside PartyProvider) -------------------------- */
 
 function HostSettingsInner() {
@@ -162,7 +212,7 @@ function HostSettingsInner() {
   const sessionId = useSessionId();
   const room = useRoom();
   const send = useSend();
-  const [activeTab, setActiveTab] = useState("general");
+  const [activeTab, setActiveTab] = useState("sound");
 
   const settings = (room?.settings ?? {}) as Record<string, unknown>;
 
@@ -267,42 +317,46 @@ function HostSettingsInner() {
             </h2>
           </div>
 
-          {/* Difficulty selector if applicable — full width above timers */}
-          {currentTab.hasDifficulty && (
-            <div className="mb-8">
-              <DifficultySelector
-                gameKey={currentTab.hasDifficulty.gameKey}
-                color={currentTab.color}
-                current={
-                  typeof settings[currentTab.hasDifficulty.settingsKey] === "number"
-                    ? (settings[currentTab.hasDifficulty.settingsKey] as number)
-                    : 1
-                }
-                onChange={(level) => handleDifficulty(currentTab.hasDifficulty!.settingsKey, level)}
-              />
-            </div>
-          )}
-
-          {/* Timers in a 2-column grid */}
-          {currentTab.timers.length > 0 ? (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {currentTab.timers.map((timer) => (
-                <div
-                  key={timer.key}
-                  className="rounded-2xl bg-[var(--color-surface)] p-5"
-                >
-                  <TimerSlider
-                    timer={timer}
-                    settings={settings}
-                    onChange={handleTimerChange}
+          {activeTab === "sound" ? (
+            <SoundSettings />
+          ) : (
+            <>
+              {currentTab.hasDifficulty && (
+                <div className="mb-8">
+                  <DifficultySelector
+                    gameKey={currentTab.hasDifficulty.gameKey}
+                    color={currentTab.color}
+                    current={
+                      typeof settings[currentTab.hasDifficulty.settingsKey] === "number"
+                        ? (settings[currentTab.hasDifficulty.settingsKey] as number)
+                        : 1
+                    }
+                    onChange={(level) => handleDifficulty(currentTab.hasDifficulty!.settingsKey, level)}
                   />
                 </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-[var(--color-text-muted)] text-center py-8">
-              Ingen unikke indstillinger — se Generelt.
-            </p>
+              )}
+
+              {currentTab.timers.length > 0 ? (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {currentTab.timers.map((timer) => (
+                    <div
+                      key={timer.key}
+                      className="rounded-2xl bg-[var(--color-surface)] p-5"
+                    >
+                      <TimerSlider
+                        timer={timer}
+                        settings={settings}
+                        onChange={handleTimerChange}
+                      />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-[var(--color-text-muted)] text-center py-8">
+                  Ingen unikke indstillinger — se Generelt.
+                </p>
+              )}
+            </>
           )}
         </motion.div>
       </main>

@@ -1,7 +1,7 @@
 import { Suspense, lazy, useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { Settings, SkipForward, Square, WifiOff } from "lucide-react";
+import { Settings, SkipForward, Square, WifiOff, Volume2, VolumeX } from "lucide-react";
 
 // Lazy-load QR code (only used in lobby)
 const QRCodeSVG = lazy(() =>
@@ -11,6 +11,9 @@ import { useSessionId } from "@/providers/SessionProvider";
 import { PartyProvider, useRoom, useSend, usePartyConnection } from "@/providers/PartyProvider";
 import { gameComponents, type RoomSnapshot } from "@/games/registry";
 import { sfxFanfare } from "@/lib/sounds";
+import { useGameMusic } from "@/hooks/useGameMusic";
+import { useVolume } from "@/hooks/useVolume";
+import { ensureResumed } from "@/lib/audio/context";
 import { GameAvatar } from "@/components/GameAvatar";
 import { GamePicker, GAMES, GAME_ICONS } from "@/components/GamePicker";
 import { da } from "@/lib/da";
@@ -111,6 +114,7 @@ function HostToolbar({
         >
           <span className="flex items-center gap-1">Skip <SkipForward className="h-3.5 w-3.5" /></span>
         </button>
+        <MuteButton />
         <button
           onClick={() => navigate(`/host/${room.code}/settings`)}
           className="rounded-lg bg-[var(--color-surface-light)] p-1.5 hover:bg-[var(--color-primary)]/20 transition-colors cursor-pointer"
@@ -120,6 +124,23 @@ function HostToolbar({
         </button>
       </div>
     </motion.div>
+  );
+}
+
+function MuteButton() {
+  const { muted, toggleMute } = useVolume();
+  const Icon = muted ? VolumeX : Volume2;
+  return (
+    <button
+      onClick={() => {
+        ensureResumed();
+        toggleMute();
+      }}
+      className="rounded-lg bg-[var(--color-surface-light)] p-1.5 hover:bg-[var(--color-primary)]/20 transition-colors cursor-pointer"
+      title={muted ? "Slå lyd til" : "Slå lyd fra"}
+    >
+      <Icon className="h-4 w-4" />
+    </button>
   );
 }
 
@@ -312,6 +333,8 @@ function HostViewInner() {
   const [confirmLeave, setConfirmLeave] = useState(false);
   const hostConnectSent = useRef(false);
 
+  useGameMusic(room);
+
   // Send hostConnect when websocket connects
   useEffect(() => {
     if (!connected || hostConnectSent.current) return;
@@ -437,13 +460,16 @@ function HostViewInner() {
             ← {da.back}
           </button>
         )}
-        <button
-          onClick={() => navigate(`/host/${room.code}/settings`)}
-          className="rounded-xl bg-[var(--color-surface)] p-2 text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface-light)] transition-all cursor-pointer"
-          title="Indstillinger"
-        >
-          <Settings className="h-5 w-5" />
-        </button>
+        <div className="flex items-center gap-2">
+          <MuteButton />
+          <button
+            onClick={() => navigate(`/host/${room.code}/settings`)}
+            className="rounded-xl bg-[var(--color-surface)] p-2 text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface-light)] transition-all cursor-pointer"
+            title="Indstillinger"
+          >
+            <Settings className="h-5 w-5" />
+          </button>
+        </div>
       </div>
 
       {/* Two-column lobby: left (code+game) / right (players) */}
