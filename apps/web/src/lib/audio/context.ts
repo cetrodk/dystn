@@ -4,15 +4,13 @@
  * All audio in the app routes through:
  *   AudioContext.destination
  *     └── masterGain
- *           ├── sfxBus     (synth oscillator SFX)
- *           ├── sampleBus  (sample-based SFX)
- *           └── musicBus   (background music loops)
+ *           ├── sfxBus   (all sound effects — synth + file-based)
+ *           └── musicBus (background music loops)
  */
 
 let ac: AudioContext | null = null;
 let master: GainNode | null = null;
 let sfx: GainNode | null = null;
-let sample: GainNode | null = null;
 let music: GainNode | null = null;
 
 export function getAudioContext(): AudioContext {
@@ -45,11 +43,6 @@ function createBus(): GainNode {
 export function getSfxBus(): GainNode {
   if (!sfx) sfx = createBus();
   return sfx;
-}
-
-export function getSampleBus(): GainNode {
-  if (!sample) sample = createBus();
-  return sample;
 }
 
 export function getMusicBus(): GainNode {

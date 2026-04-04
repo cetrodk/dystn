@@ -3,7 +3,6 @@ export {
   ensureResumed,
   getMasterGain,
   getSfxBus,
-  getSampleBus,
   getMusicBus,
   loadAudioBuffer,
 } from "./context";

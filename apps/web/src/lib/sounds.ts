@@ -9,6 +9,7 @@
 import { getAudioContext, ensureResumed, getSfxBus } from "@/lib/audio/context";
 import { initVolume } from "@/lib/audio/volume";
 import { duck } from "@/lib/audio/music";
+import { playSample, isSampleLoaded } from "@/lib/audio/samples";
 
 function play(fn: (ac: AudioContext, dest: AudioNode) => void) {
   try {
@@ -86,8 +87,9 @@ export function sfxReveal() {
   });
 }
 
-/** Winner fanfare — three ascending notes */
+/** Winner fanfare — real sample preferred, synth fallback */
 export function sfxFanfare() {
+  if (isSampleLoaded("fanfare")) { playSample("fanfare"); return; }
   play((ac, dest) => {
     const notes = [523, 659, 784]; // C5, E5, G5
     notes.forEach((freq, i) => {
@@ -138,8 +140,9 @@ export function sfxUrgent() {
   });
 }
 
-/** Drumroll — rising noise burst before a reveal */
+/** Drumroll — real sample preferred, synth fallback */
 export function sfxDrumroll() {
+  if (isSampleLoaded("drumroll")) { playSample("drumroll"); return; }
   play((ac, dest) => {
     const t = ac.currentTime;
     // Snare-like noise bursts that accelerate (exponential decay spacing)
@@ -265,8 +268,9 @@ export function sfxHop() {
   });
 }
 
-/** Crowd reaction — warm layered "ooh" shimmer */
+/** Crowd reaction — real sample preferred, synth fallback */
 export function sfxCrowdReact() {
+  if (isSampleLoaded("crowd-cheer")) { playSample("crowd-cheer"); return; }
   play((ac, dest) => {
     const t = ac.currentTime;
     // Layer several detuned tones with vibrato for a "crowd murmur" feel

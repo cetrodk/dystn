@@ -3,7 +3,7 @@
  * Gracefully skips playback if a sample hasn't loaded yet.
  */
 
-import { getAudioContext, ensureResumed, getSampleBus, loadAudioBuffer } from "./context";
+import { getAudioContext, ensureResumed, getSfxBus, loadAudioBuffer } from "./context";
 import { initVolume } from "./volume";
 import { duck } from "./music";
 
@@ -36,7 +36,7 @@ export function playSample(id: string): void {
     initVolume();
     const src = ac.createBufferSource();
     src.buffer = buf;
-    src.connect(getSampleBus());
+    src.connect(getSfxBus());
     src.start();
     duck(400);
   } catch {
