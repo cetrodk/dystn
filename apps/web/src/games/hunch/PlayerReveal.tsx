@@ -9,6 +9,7 @@ export default function PlayerReveal({ room }: PhaseComponentProps) {
     distance: number | null;
     score: number;
   } | null;
+  const target = phaseData.target as number | undefined;
 
   const currentPlayer = room.players?.find((p) => p._id === room.currentPlayerId);
 
@@ -48,7 +49,7 @@ export default function PlayerReveal({ room }: PhaseComponentProps) {
               transition={{ delay: 0.4 }}
               className="text-lg text-[var(--color-text-muted)]"
             >
-              Du gættede {myResult.guess}
+              Du gættede {myResult.guess}{target != null ? ` — ${da.hunch.targetWas.toLowerCase()} ${target}` : ""}
             </motion.p>
           )}
         </>

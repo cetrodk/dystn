@@ -7,6 +7,8 @@ import { PartyProvider, useRoom, useSend, usePartyConnection, useRoomClosed } fr
 import { gameComponents } from "@/games/registry";
 import { GameAvatar } from "@/components/GameAvatar";
 import { AvatarPickerModal } from "@/components/AvatarPickerModal";
+import { GameIntro } from "@/components/GameIntro";
+import { useShowIntro } from "@/hooks/useShowIntro";
 import { da } from "@/lib/da";
 import { PLAYER_NAME_KEY, PLAYER_AVATAR_KEY } from "@/lib/session";
 
@@ -74,6 +76,7 @@ function PlayerViewInner() {
   const prevConnected = useRef(false);
 
   const [avatarModalOpen, setAvatarModalOpen] = useState(false);
+  const [showIntro, dismissIntro] = useShowIntro(room);
 
   // Send join on first connect, rejoin on reconnect
   useEffect(() => {
@@ -135,6 +138,9 @@ function PlayerViewInner() {
     if (PhaseComponent) {
       return (
         <>
+          {showIntro && room.gameType && (
+            <GameIntro gameType={room.gameType} variant="player" onDone={dismissIntro} />
+          )}
           <AnimatePresence>
             {hostGone && <HostDisconnectedBanner />}
           </AnimatePresence>

@@ -197,6 +197,8 @@ export const da = {
     submitGuess: "Send gæt",
     editGuess: "Redigér gæt",
     watchingGuesses: "Venter på de andres gæt...",
+    thisRound: "Denne runde",
+    guessHint: "Brug fingerpeget til at gætte positionen på skalaen",
     targetWas: "Positionen var",
     exact: "Præcist!",
     close: "Meget tæt!",

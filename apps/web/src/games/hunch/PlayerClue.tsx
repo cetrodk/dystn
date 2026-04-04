@@ -27,6 +27,18 @@ export default function PlayerClue({ room, sessionId }: PhaseComponentProps) {
     const clueGiver = room.players?.find((p) => p._id === clueGiverId);
     return (
       <WaitingScreen deadline={room.phaseDeadline} players={room.players}>
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-xl bg-[var(--color-surface)] px-6 py-3 text-center"
+        >
+          <p className="text-xs uppercase tracking-widest text-[var(--color-text-muted)] mb-2">
+            {da.hunch.thisRound}
+          </p>
+          <p className="font-display text-lg font-bold">
+            {String(phaseData.leftLabel ?? "")} ← → {String(phaseData.rightLabel ?? "")}
+          </p>
+        </motion.div>
         <p className="text-sm text-[var(--color-text-muted)]">
           {clueGiver?.name} {da.hunch.waitingForClue}
         </p>

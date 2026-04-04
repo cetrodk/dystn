@@ -6,7 +6,6 @@ import { WaitingScreen } from "@/components/WaitingScreen";
 import { useSend } from "@/providers/PartyProvider";
 import { sfxClick, sfxUrgent } from "@/lib/sounds";
 import { da } from "@/lib/da";
-import { SpectrumBar } from "./SpectrumBar";
 import type { PhaseComponentProps } from "../registry";
 
 export default function PlayerGuess({ room, sessionId }: PhaseComponentProps) {
@@ -52,7 +51,7 @@ export default function PlayerGuess({ room, sessionId }: PhaseComponentProps) {
           className="rounded-xl bg-[var(--color-surface)] px-6 py-3 text-center"
         >
           <p className="text-xs uppercase tracking-widest text-[var(--color-text-muted)] mb-1">
-            {da.hunch.yourScore}
+            {da.yourAnswer}
           </p>
           <p className="text-3xl font-bold text-[var(--color-hunch)]">{guess}</p>
         </motion.div>
@@ -85,20 +84,18 @@ export default function PlayerGuess({ room, sessionId }: PhaseComponentProps) {
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="rounded-xl bg-[var(--color-hunch)]/10 ring-1 ring-[var(--color-hunch)]/40 px-6 py-3"
+        className="rounded-xl bg-[var(--color-hunch)]/10 ring-1 ring-[var(--color-hunch)]/40 px-6 py-3 text-center"
       >
         <p className="text-xs uppercase tracking-widest text-[var(--color-text-muted)] mb-1">{da.hunch.clueIs}</p>
         <p className="font-display text-2xl font-bold">{clue ?? "..."}</p>
+        <p className="text-xs text-[var(--color-text-muted)] mt-2">{da.hunch.guessHint}</p>
       </motion.div>
 
-      <SpectrumBar
-        leftLabel={String(phaseData.leftLabel ?? "")}
-        rightLabel={String(phaseData.rightLabel ?? "")}
-        activePosition={position}
-        className="max-w-xs"
-      />
-
       <div className="w-full max-w-xs">
+        <div className="flex justify-between mb-2 px-1">
+          <span className="text-sm font-bold text-[var(--color-text)]">{String(phaseData.leftLabel ?? "")}</span>
+          <span className="text-sm font-bold text-[var(--color-text)]">{String(phaseData.rightLabel ?? "")}</span>
+        </div>
         <input
           type="range"
           min={1}

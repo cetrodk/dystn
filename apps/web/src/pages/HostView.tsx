@@ -12,10 +12,12 @@ import { PartyProvider, useRoom, useSend, usePartyConnection } from "@/providers
 import { gameComponents, type RoomSnapshot } from "@/games/registry";
 import { sfxFanfare } from "@/lib/sounds";
 import { useGameMusic } from "@/hooks/useGameMusic";
+import { useShowIntro } from "@/hooks/useShowIntro";
 import { useVolume } from "@/hooks/useVolume";
 import { ensureResumed } from "@/lib/audio/context";
 import { GameAvatar } from "@/components/GameAvatar";
 import { GamePicker, GAMES, GAME_ICONS } from "@/components/GamePicker";
+import { GameIntro } from "@/components/GameIntro";
 import { da } from "@/lib/da";
 import { getHostSession, clearHostSession } from "@/lib/session";
 
@@ -332,6 +334,7 @@ function HostViewInner() {
   const { connected } = usePartyConnection();
   const [confirmLeave, setConfirmLeave] = useState(false);
   const hostConnectSent = useRef(false);
+  const [showIntro, dismissIntro] = useShowIntro(room);
 
   useGameMusic(room);
 
@@ -390,6 +393,9 @@ function HostViewInner() {
     if (PhaseComponent) {
       return (
         <div className="flex h-screen flex-col items-center justify-center gap-8 overflow-hidden p-8 pt-16">
+          {showIntro && (
+            <GameIntro gameType={room.gameType} variant="host" onDone={dismissIntro} />
+          )}
           <HostToolbar
             room={room}
             sessionId={sessionId}

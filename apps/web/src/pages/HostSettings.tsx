@@ -231,12 +231,12 @@ function HostSettingsInner() {
     [sessionId, send],
   );
 
-  const handleDifficulty = useCallback(
-    (key: string, level: number) => {
+  const handleSetting = useCallback(
+    (key: string, value: number | boolean) => {
       send({
         type: "updateSettings",
         hostId: sessionId,
-        settings: { [key]: level },
+        settings: { [key]: value },
       });
     },
     [sessionId, send],
@@ -321,6 +321,35 @@ function HostSettingsInner() {
             <SoundSettings />
           ) : (
             <>
+              {activeTab === "general" && (
+                <div className="mb-8">
+                  <div className="rounded-2xl bg-[var(--color-surface)] p-5">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="text-base font-semibold">Vis spilleregler</span>
+                        <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
+                          Vis en regelintro på TV og telefoner når spillet starter
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => handleSetting("showIntro", !settings.showIntro)}
+                        className="relative h-7 w-12 rounded-full transition-colors cursor-pointer"
+                        style={{
+                          backgroundColor: settings.showIntro ? "var(--color-primary)" : "var(--color-surface-light)",
+                        }}
+                      >
+                        <div
+                          className="absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform"
+                          style={{
+                            transform: settings.showIntro ? "translateX(22px)" : "translateX(2px)",
+                          }}
+                        />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {currentTab.hasDifficulty && (
                 <div className="mb-8">
                   <DifficultySelector
@@ -331,7 +360,7 @@ function HostSettingsInner() {
                         ? (settings[currentTab.hasDifficulty.settingsKey] as number)
                         : 1
                     }
-                    onChange={(level) => handleDifficulty(currentTab.hasDifficulty!.settingsKey, level)}
+                    onChange={(level) => handleSetting(currentTab.hasDifficulty!.settingsKey, level)}
                   />
                 </div>
               )}
