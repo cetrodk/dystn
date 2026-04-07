@@ -138,31 +138,31 @@ function PlayerViewInner() {
     if (PhaseComponent) {
       return (
         <>
-          {showIntro && room.gameType && (
+          {showIntro && !!room.gameType && (
             <GameIntro gameType={room.gameType} variant="player" onDone={dismissIntro} />
           )}
           <AnimatePresence>
             {hostGone && <HostDisconnectedBanner />}
           </AnimatePresence>
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={room.currentPhase + "-" + room.roundNumber}
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -16 }}
-              transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-            >
-              <Suspense
-                fallback={
-                  <div className="flex min-h-screen items-center justify-center text-[var(--color-text-muted)] animate-gentle-pulse">
-                    Indlæser...
-                  </div>
-                }
+          <Suspense
+            fallback={
+              <div className="flex min-h-screen items-center justify-center text-[var(--color-text-muted)] animate-gentle-pulse">
+                Indlæser...
+              </div>
+            }
+          >
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={room.currentPhase + "-" + room.roundNumber}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -16 }}
+                transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
               >
                 <PhaseComponent room={room} sessionId={sessionId} />
-              </Suspense>
-            </motion.div>
-          </AnimatePresence>
+              </motion.div>
+            </AnimatePresence>
+          </Suspense>
         </>
       );
     }

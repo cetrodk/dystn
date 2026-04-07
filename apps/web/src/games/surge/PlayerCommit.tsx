@@ -19,10 +19,8 @@ export default function PlayerCommit({ room, sessionId }: PhaseComponentProps) {
 
   const [state, setState] = useState<PlayerState>({ type: "idle" });
   const stateRef = useRef(state);
+  stateRef.current = state;
   const transitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Keep ref in sync for stable handleTap callback
-  useEffect(() => { stateRef.current = state; }, [state]);
 
   const sendChoice = useCallback(
     (choice: "true" | "false" | "transit") => {

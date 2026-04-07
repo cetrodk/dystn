@@ -111,6 +111,7 @@ registerGameHandlers("blitz", {
     }> = [];
 
     const players = room.players;
+    const playerMap = new Map(players.map((p) => [p.id, p]));
 
     for (const answer of pdAnswers) {
       const voteCount = voteCounts.get(answer.id) ?? 0;
@@ -124,11 +125,11 @@ registerGameHandlers("blitz", {
         }
       }
 
-      const primaryPlayer = players.find((p) => p.id === answer.playerId);
+      const primaryPlayer = playerMap.get(answer.playerId);
       const coAuthors =
         authorIds.length > 1
           ? authorIds.slice(1).map((pid) => {
-              const p = players.find((pl) => pl.id === pid);
+              const p = playerMap.get(pid);
               return {
                 name: p?.name ?? "???",
                 avatarColor: p?.avatarColor ?? "#888",

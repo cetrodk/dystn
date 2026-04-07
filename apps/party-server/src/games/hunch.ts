@@ -20,8 +20,9 @@ registerGameHandlers("hunch", {
     const usedPromptIds = (pd.usedPromptIds as number[]) ?? [];
 
     // Filter out used prompts; recycle if exhausted
+    const usedSet = new Set(usedPromptIds);
     const indexed = allPrompts.map((p, idx) => ({ ...p, idx }));
-    const unused = indexed.filter((p) => !usedPromptIds.includes(p.idx));
+    const unused = indexed.filter((p) => !usedSet.has(p.idx));
     const available = unused.length > 0 ? unused : indexed;
     const prompt = available[Math.floor(Math.random() * available.length)];
 

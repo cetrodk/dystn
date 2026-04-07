@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Pencil } from "lucide-react";
 import { CountdownTimer } from "@festspil/ui/CountdownTimer";
@@ -17,10 +17,6 @@ export default function PlayerSubmit({ room, sessionId }: PhaseComponentProps) {
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // Seed input from server if we already have a submission
-  useEffect(() => {
-    if (myPrev && !submitted) setAnswer(myPrev);
-  }, [myPrev, submitted]);
 
   const handleTick = useCallback((s: number) => {
     if (s <= 5 && s > 0) sfxUrgent();
@@ -44,7 +40,7 @@ export default function PlayerSubmit({ room, sessionId }: PhaseComponentProps) {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          onClick={() => { setSubmitted(false); setSubmitting(false); }}
+          onClick={() => { setAnswer(myPrev ?? ""); setSubmitted(false); setSubmitting(false); }}
           className="flex items-center gap-2 rounded-xl bg-[var(--color-surface)] px-5 py-3 text-sm font-semibold text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors cursor-pointer"
         >
           <Pencil className="h-4 w-4" />

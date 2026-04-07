@@ -53,10 +53,10 @@ export const DrawingCanvas = forwardRef<DrawingCanvasRef, Props>(
     ref,
   ) {
     const [cachedStrokes, setCachedStrokes] = useState<CachedStroke[]>([]);
-    const [, setRenderTick] = useState(0);
     const [internalColor, setInternalColor] = useState(COLORS[0]);
     const [internalSize, setInternalSize] = useState(SIZES[0].value);
     const svgRef = useRef<SVGSVGElement>(null);
+    const livePathRef = useRef<SVGPathElement>(null);
     const pointsRef = useRef<number[][] | null>(null);
     const [viewBoxHeight, setViewBoxHeight] = useState(300);
 
@@ -82,7 +82,7 @@ export const DrawingCanvas = forwardRef<DrawingCanvasRef, Props>(
     useImperativeHandle(ref, () => ({
       getStrokes: () => strokes,
       getViewBoxHeight: () => viewBoxHeight,
-      clear: () => { setCachedStrokes([]); pointsRef.current = null; setRenderTick((t) => t + 1); },
+      clear: () => { setCachedStrokes([]); pointsRef.current = null; if (livePathRef.current) livePathRef.current.setAttribute("d", ""); },
       undo: () => setCachedStrokes((s) => s.slice(0, -1)),
     }));
 
@@ -99,15 +99,34 @@ export const DrawingCanvas = forwardRef<DrawingCanvasRef, Props>(
       [viewBoxHeight],
     );
 
+    const updateLivePath = useCallback(() => {
+      const pts = pointsRef.current;
+      if (!livePathRef.current) return;
+      if (!pts || pts.length < 2) {
+        livePathRef.current.setAttribute("d", "");
+        return;
+      }
+      const d = getSvgPathFromStroke(
+        getStroke(pts, {
+          size: activeSize,
+          thinning: 0.5,
+          smoothing: 0.5,
+          streamline: 0.5,
+          simulatePressure: true,
+        }),
+      );
+      livePathRef.current.setAttribute("d", d);
+    }, [activeSize]);
+
     const handlePointerDown = useCallback(
       (e: React.PointerEvent) => {
         if (disabled) return;
         e.preventDefault();
         (e.target as HTMLElement).setPointerCapture(e.pointerId);
         pointsRef.current = [getPoint(e)];
-        setRenderTick((t) => t + 1);
+        updateLivePath();
       },
-      [disabled, getPoint],
+      [disabled, getPoint, updateLivePath],
     );
 
     const handlePointerMove = useCallback(
@@ -115,37 +134,20 @@ export const DrawingCanvas = forwardRef<DrawingCanvasRef, Props>(
         if (!pointsRef.current || disabled) return;
         e.preventDefault();
         pointsRef.current.push(getPoint(e));
-        setRenderTick((t) => t + 1);
+        updateLivePath();
       },
-      [disabled, getPoint],
+      [disabled, getPoint, updateLivePath],
     );
 
     const handlePointerUp = useCallback(() => {
       const pts = pointsRef.current;
-      if (!pts || pts.length < 2) {
-        pointsRef.current = null;
-        setRenderTick((t) => t + 1);
-        return;
-      }
+      pointsRef.current = null;
+      if (livePathRef.current) livePathRef.current.setAttribute("d", "");
+      if (!pts || pts.length < 2) return;
       const stroke: Stroke = { points: [...pts], color: activeColor, size: activeSize };
       const path = strokeToPath(stroke);
       setCachedStrokes((s) => [...s, { stroke, path }]);
-      pointsRef.current = null;
-      setRenderTick((t) => t + 1);
     }, [activeColor, activeSize]);
-
-    const currentPoints = pointsRef.current;
-    const currentPath = currentPoints && currentPoints.length >= 2
-      ? getSvgPathFromStroke(
-          getStroke(currentPoints, {
-            size: activeSize,
-            thinning: 0.5,
-            smoothing: 0.5,
-            streamline: 0.5,
-            simulatePressure: true,
-          }),
-        )
-      : null;
 
     return (
       <div className={`flex flex-col ${className ?? ""}`}>
@@ -163,7 +165,7 @@ export const DrawingCanvas = forwardRef<DrawingCanvasRef, Props>(
           {cachedStrokes.map((cached, i) => (
             <path key={i} d={cached.path} fill={cached.stroke.color} />
           ))}
-          {currentPath ? <path d={currentPath} fill={activeColor} /> : null}
+          <path ref={livePathRef} fill={activeColor} />
         </svg>
         {showControls ? (
           <div className="mt-3 flex items-center justify-center gap-3">

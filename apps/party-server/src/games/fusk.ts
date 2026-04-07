@@ -29,7 +29,8 @@ registerGameHandlers("fusk", {
     }
 
     // Filter out already-used prompts; if all used, reset
-    let candidates = allPrompts.filter((_, i) => !usedPromptIds.includes(i));
+    const usedSet = new Set(usedPromptIds);
+    let candidates = allPrompts.filter((_, i) => !usedSet.has(i));
     if (candidates.length === 0) candidates = [...allPrompts];
 
     const chosenIndex = allPrompts.indexOf(
@@ -152,6 +153,7 @@ registerGameHandlers("fusk", {
     }> = [];
 
     // Process fakes using merged answers (not raw submissions) so co-authors get credit
+    const playerMap = new Map(players.map((p) => [p.id, p]));
     const pdAnswers = ((room.phaseData as any)?.answers ?? []) as Array<{
       id: string; text: string; playerId: string; mergedPlayerIds?: string[];
     }>;
@@ -159,7 +161,7 @@ registerGameHandlers("fusk", {
       if (answer.id === TRUTH_ID) continue;
       const voterIds = votesPerAnswer.get(answer.id) ?? [];
       const fooledCount = voterIds.length;
-      const player = players.find((p) => p.id === answer.playerId);
+      const player = playerMap.get(answer.playerId);
 
       // Credit all merged authors equally
       if (fooledCount > 0) {
@@ -178,7 +180,7 @@ registerGameHandlers("fusk", {
         avatarColor: player?.avatarColor ?? "#888",
         avatarImage: player?.avatarImage,
         voterNames: voterIds.map(
-          (vid) => players.find((p) => p.id === vid)?.name ?? "???",
+          (vid) => playerMap.get(vid)?.name ?? "???",
         ),
         fooledCount,
       });
@@ -193,7 +195,7 @@ registerGameHandlers("fusk", {
       playerName: null,
       avatarColor: null,
       voterNames: truthVoters.map(
-        (vid) => players.find((p) => p.id === vid)?.name ?? "???",
+        (vid) => playerMap.get(vid)?.name ?? "???",
       ),
       fooledCount: 0,
     });

@@ -29,17 +29,25 @@ function buildTrackPath(yCenter: number): string {
 }
 
 // Sample a point along an SVG path at a given fraction (0-1)
-// Uses a temporary SVG path element for accurate positioning
+// Reuses a persistent off-screen SVG element to avoid DOM churn and forced reflows
+let _sharedSvg: SVGSVGElement | null = null;
+let _sharedPath: SVGPathElement | null = null;
+
 function samplePath(pathD: string, fraction: number): { x: number; y: number } {
   if (typeof document === "undefined") return { x: TRACK_START_X + fraction * TRACK_WIDTH, y: 120 };
-  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-  path.setAttribute("d", pathD);
-  svg.appendChild(path);
-  document.body.appendChild(svg);
-  const totalLength = path.getTotalLength();
-  const point = path.getPointAtLength(fraction * totalLength);
-  document.body.removeChild(svg);
+  if (!_sharedSvg) {
+    _sharedSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    _sharedPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    _sharedSvg.style.position = "absolute";
+    _sharedSvg.style.visibility = "hidden";
+    _sharedSvg.style.width = "0";
+    _sharedSvg.style.height = "0";
+    _sharedSvg.appendChild(_sharedPath);
+    document.body.appendChild(_sharedSvg);
+  }
+  _sharedPath!.setAttribute("d", pathD);
+  const totalLength = _sharedPath!.getTotalLength();
+  const point = _sharedPath!.getPointAtLength(fraction * totalLength);
   return { x: point.x, y: point.y };
 }
 
@@ -49,6 +57,31 @@ interface RacetrackPlayer {
   avatarColor: string;
   avatarImage?: string;
 }
+
+// Static SVG defs hoisted to module scope to avoid re-creation on every render
+const TRACK_DEFS = (
+  <defs>
+    <filter id="finishGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="4" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+    <linearGradient id="trackAmbient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stopColor="var(--color-surge)" stopOpacity="0.03" />
+      <stop offset="50%" stopColor="var(--color-surge)" stopOpacity="0.06" />
+      <stop offset="100%" stopColor="var(--color-surge)" stopOpacity="0.12" />
+    </linearGradient>
+    <filter id="avatarGlow" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+);
 
 interface RacetrackProps {
   players: RacetrackPlayer[];
@@ -92,30 +125,7 @@ export const Racetrack = memo(function Racetrack({
         className="h-full w-full"
         preserveAspectRatio="xMidYMid meet"
       >
-        <defs>
-          {/* Finish line glow filter */}
-          <filter id="finishGlow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="4" result="blur" />
-            <feMerge>
-              <feMergeNode in="blur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-          {/* Subtle ambient glow for the track surface */}
-          <linearGradient id="trackAmbient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="var(--color-surge)" stopOpacity="0.03" />
-            <stop offset="50%" stopColor="var(--color-surge)" stopOpacity="0.06" />
-            <stop offset="100%" stopColor="var(--color-surge)" stopOpacity="0.12" />
-          </linearGradient>
-          {/* Player avatar glow */}
-          <filter id="avatarGlow" x="-100%" y="-100%" width="300%" height="300%">
-            <feGaussianBlur stdDeviation="3" result="blur" />
-            <feMerge>
-              <feMergeNode in="blur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-        </defs>
+        {TRACK_DEFS}
 
         {/* Ambient track surface glow */}
         <rect

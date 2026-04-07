@@ -84,7 +84,7 @@ export function PartyProvider({
       setConnected(false);
     });
 
-    ws.addEventListener("message", (event) => {
+    ws.addEventListener("message", (event: MessageEvent) => {
       try {
         const msg: ServerMessage = JSON.parse(event.data);
         switch (msg.type) {

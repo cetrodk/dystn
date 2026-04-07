@@ -43,7 +43,8 @@ registerGameHandlers("surge", {
     }
 
     // Filter out used prompts; recycle if exhausted
-    const unused = pool.filter((p) => !usedPromptIds.includes(p.idx));
+    const usedSet = new Set(usedPromptIds);
+    const unused = pool.filter((p) => !usedSet.has(p.idx));
     const available = unused.length > 0 ? unused : pool;
 
     if (available.length === 0) {

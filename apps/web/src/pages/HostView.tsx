@@ -185,10 +185,10 @@ function PauseBanner({
 
 /* -- Helpers ----------------------------------------------------- */
 
+const GAME_MAP = new Map<string, (typeof GAMES)[number]>(GAMES.map((g) => [g.id, g]));
+
 function getGameInfo(gameType: string) {
-  const game = GAMES.find((g) => g.id === gameType);
-  if (game) return game;
-  return GAMES[0];
+  return GAME_MAP.get(gameType) ?? GAMES[0];
 }
 
 /* -- Player Slots (grid of avatar cards) ------------------------- */
@@ -386,26 +386,26 @@ function HostViewInner() {
               />
             ) : null}
           </AnimatePresence>
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={room.currentPhase + "-" + room.roundNumber}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
-              className="flex w-full flex-1 min-h-0 flex-col items-center gap-8"
-            >
-              <Suspense
-                fallback={
-                  <div className="text-[var(--color-text-muted)] animate-gentle-pulse">
-                    Indlæser...
-                  </div>
-                }
+          <Suspense
+            fallback={
+              <div className="text-[var(--color-text-muted)] animate-gentle-pulse">
+                Indlæser...
+              </div>
+            }
+          >
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={room.currentPhase + "-" + room.roundNumber}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+                className="flex w-full flex-1 min-h-0 flex-col items-center gap-8"
               >
                 <PhaseComponent room={room} sessionId={sessionId} />
-              </Suspense>
-            </motion.div>
-          </AnimatePresence>
+              </motion.div>
+            </AnimatePresence>
+          </Suspense>
         </div>
       );
     }

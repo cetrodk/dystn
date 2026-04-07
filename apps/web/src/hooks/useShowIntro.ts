@@ -7,7 +7,7 @@ import type { RoomSnapshot } from "@/games/registry";
  */
 export function useShowIntro(room: RoomSnapshot | null) {
   const [show, setShow] = useState(false);
-  const prevStatusRef = useRef<string | undefined>();
+  const prevStatusRef = useRef<string | undefined>(undefined);
 
   const status = room?.status;
   const showIntroSetting = !!(room?.settings as Record<string, unknown> | undefined)?.showIntro;
