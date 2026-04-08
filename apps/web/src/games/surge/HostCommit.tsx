@@ -53,7 +53,7 @@ export default function HostCommit({ room }: PhaseComponentProps) {
         {/* SANDT zone */}
         <motion.div
           layout
-          className="flex-1 rounded-2xl bg-emerald-900/30 border-2 border-emerald-500/40 p-6 min-h-[140px]"
+          className="flex-1 rounded-2xl bg-emerald-900/30 border-2 border-emerald-500/40 p-3 sm:p-6 min-h-[80px] sm:min-h-[140px]"
         >
           <h3 className="mb-4 text-center font-display text-3xl font-bold text-emerald-400">
             {da.surge.sandt}
@@ -93,7 +93,7 @@ export default function HostCommit({ room }: PhaseComponentProps) {
         {/* FALSK zone */}
         <motion.div
           layout
-          className="flex-1 rounded-2xl bg-red-900/30 border-2 border-red-500/40 p-6 min-h-[140px]"
+          className="flex-1 rounded-2xl bg-red-900/30 border-2 border-red-500/40 p-3 sm:p-6 min-h-[80px] sm:min-h-[140px]"
         >
           <h3 className="mb-4 text-center font-display text-3xl font-bold text-red-400">
             {da.surge.falsk}
@@ -109,7 +109,7 @@ export default function HostCommit({ room }: PhaseComponentProps) {
       </div>
 
       {/* Timer */}
-      <div className="text-8xl font-mono font-bold text-[var(--color-surge)] glow-text">
+      <div className="text-5xl sm:text-8xl font-mono font-bold text-[var(--color-surge)] glow-text">
         <CountdownTimer
           deadline={room.phaseDeadline ?? null}
           onTick={handleTick}

@@ -37,7 +37,7 @@ export default function HostReveal({ room, sessionId }: PhaseComponentProps) {
   const chainOwner = currentChain[0];
 
   return (
-    <div className="fixed inset-0 flex flex-col items-center p-6 pt-14">
+    <div className="fixed inset-0 flex flex-col items-center p-4 sm:p-6 pt-14">
       {/* Top bar */}
       <div className="flex w-full items-center justify-between mb-6">
         <div className="text-sm uppercase tracking-widest text-[var(--color-text-muted)]">

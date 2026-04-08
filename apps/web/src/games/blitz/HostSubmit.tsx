@@ -16,7 +16,7 @@ export default function HostSubmit({ room }: PhaseComponentProps) {
   }, []);
 
   return (
-    <div className="flex flex-col items-center gap-10">
+    <div className="flex flex-col items-center gap-6 sm:gap-10">
       <div className="text-base uppercase tracking-widest text-[var(--color-text-muted)]">
         {da.round} {room.roundNumber} {da.of} {room.totalRounds}
       </div>
@@ -24,12 +24,12 @@ export default function HostSubmit({ room }: PhaseComponentProps) {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="max-w-4xl text-center font-display text-6xl font-bold leading-tight"
+        className="max-w-4xl text-center font-display text-3xl sm:text-6xl font-bold leading-tight"
       >
         {phaseData.promptText}
       </motion.div>
 
-      <div className="text-8xl font-mono font-bold text-[var(--color-primary)] glow-text">
+      <div className="text-5xl sm:text-8xl font-mono font-bold text-[var(--color-primary)] glow-text">
         <CountdownTimer
           deadline={room.phaseDeadline ?? null}
           onTick={handleTick}

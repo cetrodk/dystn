@@ -19,7 +19,7 @@ export default function HostGuess({ room }: PhaseComponentProps) {
   }, []);
 
   return (
-    <div className="flex flex-col items-center gap-10">
+    <div className="flex flex-col items-center gap-6 sm:gap-10">
       <div className="text-base uppercase tracking-widest text-[var(--color-text-muted)]">
         {da.hunch.clueIs}
       </div>
@@ -39,7 +39,7 @@ export default function HostGuess({ room }: PhaseComponentProps) {
       />
 
       <div className="flex items-center gap-8">
-        <div className="text-8xl font-mono font-bold text-[var(--color-hunch)] glow-text">
+        <div className="text-5xl sm:text-8xl font-mono font-bold text-[var(--color-hunch)] glow-text">
           <CountdownTimer deadline={room.phaseDeadline ?? null} onTick={handleTick} />
         </div>
         <div className="text-lg text-[var(--color-text-muted)]">

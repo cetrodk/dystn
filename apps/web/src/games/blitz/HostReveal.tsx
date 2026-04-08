@@ -126,7 +126,7 @@ export default function HostReveal({ room, sessionId }: PhaseComponentProps) {
                   <motion.div
                     className="h-10 rounded-full bg-[var(--color-primary)]"
                     initial={{ width: 0 }}
-                    animate={{ width: Math.max(result.votes * 50, 10) }}
+                    animate={{ width: Math.min(Math.max(result.votes * 50, 10), 200) }}
                     transition={{ duration: 0.8, ease: "easeOut" }}
                   />
                   <div className="text-right min-w-[4rem]">

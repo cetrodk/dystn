@@ -18,7 +18,7 @@ export default function HostVote({ room }: PhaseComponentProps) {
   }, []);
 
   return (
-    <div className="flex flex-col items-center gap-10">
+    <div className="flex flex-col items-center gap-6 sm:gap-10">
       <div className="text-base uppercase tracking-widest text-[var(--color-text-muted)]">
         {da.fusk.guessReal}
       </div>
@@ -32,7 +32,7 @@ export default function HostVote({ room }: PhaseComponentProps) {
       </motion.div>
 
       <div className="flex items-center gap-8">
-        <div className="text-8xl font-mono font-bold text-[var(--color-primary)] glow-text">
+        <div className="text-5xl sm:text-8xl font-mono font-bold text-[var(--color-primary)] glow-text">
           <CountdownTimer
             deadline={room.phaseDeadline ?? null}
             onTick={handleTick}
@@ -43,14 +43,14 @@ export default function HostVote({ room }: PhaseComponentProps) {
         </div>
       </div>
 
-      <div className="grid w-full max-w-5xl grid-cols-2 gap-6">
+      <div className="grid w-full max-w-5xl grid-cols-1 sm:grid-cols-2 gap-6">
         {answers.map((answer: any, i: number) => (
           <motion.div
             key={answer.id}
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: i * 0.1, type: "spring", stiffness: 200 }}
-            className="card-glow rounded-2xl bg-[var(--color-surface)] p-8 text-center text-2xl font-semibold"
+            className="card-glow rounded-2xl bg-[var(--color-surface)] p-4 sm:p-8 text-center text-lg sm:text-2xl font-semibold"
           >
             {answer.text}
           </motion.div>

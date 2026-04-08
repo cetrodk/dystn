@@ -16,11 +16,11 @@ export default function HostWrite({ room }: PhaseComponentProps) {
   }, []);
 
   return (
-    <div className="flex flex-col items-center gap-10">
+    <div className="flex flex-col items-center gap-6 sm:gap-10">
       <motion.h2
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="font-display text-6xl font-bold"
+        className="font-display text-3xl sm:text-6xl font-bold"
       >
         <Phone className="inline h-12 w-12 mr-2" style={{ color: "var(--color-morph)" }} /> {da.morph.name}
       </motion.h2>
@@ -29,7 +29,7 @@ export default function HostWrite({ room }: PhaseComponentProps) {
         {da.morph.everyoneIsWriting}
       </p>
 
-      <div className="text-8xl font-mono font-bold text-[var(--color-primary)] glow-text">
+      <div className="text-5xl sm:text-8xl font-mono font-bold text-[var(--color-primary)] glow-text">
         <CountdownTimer
           deadline={room.phaseDeadline ?? null}
           onTick={handleTick}

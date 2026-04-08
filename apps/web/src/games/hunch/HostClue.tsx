@@ -20,7 +20,7 @@ export default function HostClue({ room }: PhaseComponentProps) {
   const clueGiver = room.players?.find((p) => p._id === clueGiverId);
 
   return (
-    <div className="flex flex-col items-center gap-10">
+    <div className="flex flex-col items-center gap-6 sm:gap-10">
       <div className="text-base uppercase tracking-widest text-[var(--color-text-muted)]">
         {da.round} {room.roundNumber} {da.of} {room.totalRounds}
       </div>
@@ -30,7 +30,7 @@ export default function HostClue({ room }: PhaseComponentProps) {
         rightLabel={String(phaseData.rightLabel ?? "")}
       />
 
-      <div className="text-8xl font-mono font-bold text-[var(--color-hunch)] glow-text">
+      <div className="text-5xl sm:text-8xl font-mono font-bold text-[var(--color-hunch)] glow-text">
         <CountdownTimer deadline={room.phaseDeadline ?? null} onTick={handleTick} />
       </div>
 

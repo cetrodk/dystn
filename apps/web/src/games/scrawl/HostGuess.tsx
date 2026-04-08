@@ -20,7 +20,7 @@ export default function HostGuess({ room }: PhaseComponentProps) {
   }, []);
 
   return (
-    <div className="fixed inset-0 flex flex-col items-center p-6 pt-14 overflow-hidden">
+    <div className="fixed inset-0 flex flex-col items-center p-4 sm:p-6 pt-14 overflow-hidden">
       {/* Top bar */}
       <div className="flex w-full items-center justify-between mb-4">
         <div className="text-sm uppercase tracking-widest text-[var(--color-text-muted)]">
@@ -34,7 +34,7 @@ export default function HostGuess({ room }: PhaseComponentProps) {
           {da.scrawl.whatIsBeingDrawn}
         </motion.h2>
         <div className="flex items-center gap-4">
-          <div className="text-8xl font-mono font-bold text-[var(--color-primary)] glow-text">
+          <div className="text-5xl sm:text-8xl font-mono font-bold text-[var(--color-primary)] glow-text">
             <CountdownTimer
               deadline={room.phaseDeadline ?? null}
               onTick={handleTick}

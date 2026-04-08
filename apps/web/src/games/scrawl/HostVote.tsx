@@ -21,7 +21,7 @@ export default function HostVote({ room }: PhaseComponentProps) {
   }, []);
 
   return (
-    <div className="fixed inset-0 flex p-6 pt-14 gap-8 overflow-hidden">
+    <div className="fixed inset-0 flex flex-col lg:flex-row p-4 sm:p-6 pt-14 gap-8 overflow-hidden">
       {/* Left: drawing takes ~60% */}
       <div className="flex-[3] flex flex-col min-h-0 min-w-0">
         <div className="text-sm uppercase tracking-widest text-[var(--color-text-muted)] mb-3">
@@ -35,7 +35,7 @@ export default function HostVote({ room }: PhaseComponentProps) {
       {/* Right: answers + timer */}
       <div className="flex-[2] flex flex-col items-center justify-center gap-6">
         <div className="flex items-center gap-4">
-          <div className="text-8xl font-mono font-bold text-[var(--color-primary)] glow-text">
+          <div className="text-5xl sm:text-8xl font-mono font-bold text-[var(--color-primary)] glow-text">
             <CountdownTimer
               deadline={room.phaseDeadline ?? null}
               onTick={handleTick}
@@ -53,7 +53,7 @@ export default function HostVote({ room }: PhaseComponentProps) {
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: i * 0.1, type: "spring", stiffness: 200 }}
-              className="card-glow rounded-2xl bg-[var(--color-surface)] p-6 text-center text-2xl font-semibold"
+              className="card-glow rounded-2xl bg-[var(--color-surface)] p-4 sm:p-6 text-center text-2xl font-semibold"
             >
               {answer.text}
             </motion.div>

@@ -46,7 +46,7 @@ export default function HostReveal({ room, sessionId }: PhaseComponentProps) {
   const showTruth = stage === "final" || stage === "done";
 
   return (
-    <div className="fixed inset-0 flex p-6 pt-14 gap-8 overflow-hidden">
+    <div className="fixed inset-0 flex flex-col lg:flex-row p-4 sm:p-6 pt-14 gap-8 overflow-hidden">
       <div className="flex-[3] flex flex-col min-h-0 min-w-0">
         <div className="text-sm uppercase tracking-widest text-[var(--color-text-muted)] mb-3">
           {da.scrawl.drawing} {drawingIndex + 1} {da.of} {totalDrawings}
@@ -143,7 +143,7 @@ export default function HostReveal({ room, sessionId }: PhaseComponentProps) {
               initial={{ opacity: 0, scale: 0 }}
               animate={{ opacity: 1, scale: [0, 1.05, 1] }}
               transition={{ duration: 0.5, type: "spring", stiffness: 120 }}
-              className="rounded-2xl bg-[var(--color-primary)]/15 ring-2 ring-[var(--color-primary)] p-6 text-center"
+              className="rounded-2xl bg-[var(--color-primary)]/15 ring-2 ring-[var(--color-primary)] p-4 sm:p-6 text-center"
             >
               <p className="text-sm uppercase tracking-widest text-[var(--color-primary)]">
                 {da.scrawl.theWordWas}

@@ -104,7 +104,7 @@ function HostToolbar({
           className="rounded-lg bg-[var(--color-surface-light)] px-3 py-1.5 text-xs font-bold text-[var(--color-text)] hover:bg-[var(--color-primary)]/20 hover:text-[var(--color-primary-light)] transition-colors cursor-pointer"
           title="Spring videre"
         >
-          <span className="flex items-center gap-1">Skip <SkipForward className="h-3.5 w-3.5" /></span>
+          <span className="flex items-center gap-1"><span className="hidden sm:inline">Skip</span> <SkipForward className="h-3.5 w-3.5" /></span>
         </button>
         <MuteButton />
         <button
@@ -370,7 +370,7 @@ function HostViewInner() {
 
     if (PhaseComponent) {
       return (
-        <div className="flex h-screen flex-col items-center justify-center gap-8 overflow-hidden p-8 pt-16">
+        <div className="flex h-screen flex-col items-center justify-center gap-4 sm:gap-8 overflow-hidden p-4 sm:p-8 pt-14 sm:pt-16">
           {showIntro && (
             <GameIntro gameType={room.gameType} variant="host" onDone={dismissIntro} />
           )}
@@ -400,7 +400,7 @@ function HostViewInner() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.3 }}
-                className="flex w-full flex-1 min-h-0 flex-col items-center gap-8"
+                className="flex w-full flex-1 min-h-0 flex-col items-center gap-4 sm:gap-8"
               >
                 <PhaseComponent room={room} sessionId={sessionId} />
               </motion.div>
@@ -450,11 +450,11 @@ function HostViewInner() {
               transition={{ type: "spring", stiffness: 200 }}
               className="flex flex-col items-center gap-3"
             >
-              {Icon && <Icon className="h-20 w-20" style={{ color: game.color }} />}
-              <h2 className="font-display text-6xl font-bold" style={{ color: game.color }}>
+              {Icon && <Icon className="h-14 w-14 sm:h-20 sm:w-20" style={{ color: game.color }} />}
+              <h2 className="font-display text-4xl sm:text-6xl font-bold" style={{ color: game.color }}>
                 {game.name}
               </h2>
-              <p className="text-xl text-[var(--color-text-muted)]">{game.description}</p>
+              <p className="text-base sm:text-xl text-[var(--color-text-muted)]">{game.description}</p>
             </motion.div>
 
             {/* How to play */}
@@ -468,7 +468,7 @@ function HostViewInner() {
               <p className="mb-2 text-xs font-semibold uppercase tracking-widest" style={{ color: game.color }}>
                 {da.howToPlay}
               </p>
-              <p className="text-lg leading-relaxed text-[var(--color-text)]">
+              <p className="text-base sm:text-lg leading-relaxed text-[var(--color-text)]">
                 {game.howToPlay}
               </p>
               <p className="mt-3 text-sm text-[var(--color-text-muted)]">{game.expects}</p>
@@ -479,14 +479,14 @@ function HostViewInner() {
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.25 }}
-              className="flex items-center gap-5"
+              className="flex flex-col sm:flex-row items-center gap-3 sm:gap-5"
             >
               <motion.button
                 whileHover={canStart ? { scale: 1.05 } : undefined}
                 whileTap={canStart ? { scale: 0.95 } : undefined}
                 disabled={!canStart}
                 onClick={() => send({ type: "startGame", hostId: sessionId })}
-                className="rounded-2xl px-16 py-5 text-3xl font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                className="rounded-2xl px-8 sm:px-16 py-3 sm:py-5 text-xl sm:text-3xl font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                 style={{
                   backgroundColor: game.color,
                   color: game.textColor,
@@ -506,6 +506,13 @@ function HostViewInner() {
                 ← {da.changeGame}
               </button>
             </motion.div>
+          </div>
+
+          {/* Mobile: compact player count + room code */}
+          <div className="flex lg:hidden items-center justify-center gap-4 text-sm text-[var(--color-text-muted)]">
+            <span className="font-mono font-bold tracking-widest text-[var(--color-primary-light)]">{room.code}</span>
+            <span>·</span>
+            <span><span className="font-bold text-[var(--color-text)]">{room.players.length}</span>/{MAX_PLAYERS} {da.playersJoined}</span>
           </div>
 
           {/* Right: Room code (compact) + players */}
@@ -586,8 +593,17 @@ function HostViewInner() {
           <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[var(--color-text-muted)]">
             {da.roomCode}
           </p>
-          <div className="font-display text-[8rem] lg:text-[10rem] font-bold tracking-[0.25em] leading-none glow-text">
+          <div className="font-display text-[3.5rem] sm:text-[5rem] lg:text-[10rem] font-bold tracking-[0.1em] sm:tracking-[0.25em] leading-none glow-text">
             {room.code}
+          </div>
+          {/* Mobile: join URL + player count */}
+          <div className="flex lg:hidden flex-col items-center gap-2 mt-4">
+            <p className="text-xs text-[var(--color-primary-light)] font-bold">
+              {window.location.host}/join/{room.code}
+            </p>
+            <p className="text-sm text-[var(--color-text-muted)]">
+              <span className="font-bold text-[var(--color-text)]">{room.players.length}</span>/{MAX_PLAYERS} {da.playersJoined}
+            </p>
           </div>
         </motion.div>
 
@@ -709,7 +725,7 @@ function FinishedScreen({ room, sessionId }: { room: RoomSnapshot; sessionId: st
           className="text-center"
         >
           <p className="mb-4 text-lg text-[var(--color-text-muted)]">Uafgjort!</p>
-          <div className="flex justify-center gap-6">
+          <div className="flex flex-wrap justify-center gap-4 sm:gap-6">
             {winners.map((w) => (
               <div key={w._id} className="text-center">
                 <div className="mx-auto">
