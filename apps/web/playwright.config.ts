@@ -16,13 +16,14 @@ export default defineConfig({
       command: "cd ../party-server && npx partykit dev",
       port: 1999,
       reuseExistingServer: true,
-      timeout: 15_000,
+      // Generous window so a cold CI start (no warm cache) doesn't flake.
+      timeout: 120_000,
     },
     {
       command: "pnpm dev",
       port: 5173,
       reuseExistingServer: true,
-      timeout: 15_000,
+      timeout: 120_000,
     },
   ],
 });

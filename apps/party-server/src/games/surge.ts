@@ -10,6 +10,7 @@ registerGameHandlers("surge", {
   config: {
     initialPhase: "countdown",
     totalRoundsForPlayerCount: () => 100, // dynamic: game ends via victory check, not round limit
+    minPlayers: 2,
   },
 
   setupRound(room: RoomState): Record<string, unknown> {
@@ -23,7 +24,7 @@ registerGameHandlers("surge", {
     }
 
     // Track which prompt indices we've already used
-    const usedPromptIds = (pd.usedPromptIds as number[]) ?? [];
+    let usedPromptIds = (pd.usedPromptIds as number[]) ?? [];
 
     // Difficulty filtering
     const difficulty =
@@ -42,10 +43,16 @@ registerGameHandlers("surge", {
       if (allowed.length > 0) pool = allowed;
     }
 
-    // Filter out used prompts; recycle if exhausted
+    // Filter out used prompts; on exhaustion reset the used-list but never
+    // repeat the most recent prompt two rounds in a row.
     const usedSet = new Set(usedPromptIds);
-    const unused = pool.filter((p) => !usedSet.has(p.idx));
-    const available = unused.length > 0 ? unused : pool;
+    let available = pool.filter((p) => !usedSet.has(p.idx));
+    if (available.length === 0 && pool.length > 0) {
+      const lastUsed = usedPromptIds[usedPromptIds.length - 1];
+      usedPromptIds = [];
+      available = pool.filter((p) => p.idx !== lastUsed);
+      if (available.length === 0) available = pool;
+    }
 
     if (available.length === 0) {
       // Fallback if somehow no prompts exist
@@ -74,8 +81,11 @@ registerGameHandlers("surge", {
   },
 
   onSubmission(room: RoomState, player: Player, content: unknown): void {
-    const { choice } = content as { choice: "true" | "false" | "transit" };
-    if (!["true", "false", "transit"].includes(choice)) {
+    const choice = (content as { choice?: unknown } | null)?.choice as
+      | "true"
+      | "false"
+      | "transit";
+    if (typeof choice !== "string" || !["true", "false", "transit"].includes(choice)) {
       throw new Error("Ugyldigt valg");
     }
 
@@ -169,6 +179,23 @@ registerGameHandlers("surge", {
       .filter((p) => (trackPositions[p.id] ?? 0) >= FINISH_LINE)
       .map((p) => p.id);
 
+    // Victory is "first to the finish line", but the finished screens rank by
+    // score — give each track winner a bonus large enough to guarantee they
+    // also top the leaderboard.
+    if (winners.length > 0) {
+      const winnerSet = new Set(winners);
+      const finalScore = (p: Player) => p.score + (scoreDeltas.get(p.id) ?? 0);
+      const maxNonWinner = Math.max(
+        0,
+        ...room.players.filter((p) => !winnerSet.has(p.id)).map(finalScore),
+      );
+      for (const player of room.players) {
+        if (!winnerSet.has(player.id)) continue;
+        const bonus = Math.max(500, maxNonWinner + 500 - finalScore(player));
+        scoreDeltas.set(player.id, (scoreDeltas.get(player.id) ?? 0) + bonus);
+      }
+    }
+
     return {
       phaseData: {
         ...pd,
@@ -189,14 +216,16 @@ registerGameHandlers("surge", {
     const phase = room.currentPhase ?? "";
     const pd = (room.phaseData ?? {}) as Record<string, unknown>;
 
-    if (phase === "commit") {
-      // Hide correctAnswer during commit — everything else is visible (that's the game)
-      const { correctAnswer: _, usedPromptIds: __, ...visible } = pd;
+    if (phase === "reveal" || phase === "victory") {
+      // Show everything except internal tracking
+      const { usedPromptIds: _, ...visible } = pd;
       return visible;
     }
 
-    // reveal, victory: show everything except internal tracking
-    const { usedPromptIds: _, ...visible } = pd;
+    // commit, countdown and anything else: hide correctAnswer — during the 4s
+    // countdown the next statement is already in phaseData, so leaking it
+    // there gives everyone the answer before commit even starts.
+    const { correctAnswer: _, usedPromptIds: __, ...visible } = pd;
     return visible;
   },
 
@@ -219,6 +248,14 @@ registerGameHandlers("surge", {
             action: { type: "none" },
             timerOverride: 15_000,
           };
+        }
+        // No winner will ever emerge if everyone left or the round cap is
+        // reached — end the game instead of cycling commit/reveal forever.
+        if (
+          room.players.length === 0 ||
+          (room.roundNumber ?? 1) >= (room.totalRounds ?? 100)
+        ) {
+          return { nextPhase: "finished", action: { type: "finish" } };
         }
         return {
           nextPhase: "commit",

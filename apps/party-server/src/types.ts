@@ -29,6 +29,8 @@ export interface RoomState {
   hostConnected: boolean;
   hostLastSeen: number;
   hostDisconnectDeadline?: number;
+  /** Grace deadline: pause the game if the host is still gone when it fires */
+  hostPauseDeadline?: number;
   gameType?: string;
   status: RoomStatus;
   currentPhase?: string;
@@ -64,6 +66,8 @@ export interface PhaseTransition {
 export interface GameConfig {
   initialPhase?: string;
   totalRoundsForPlayerCount?: (playerCount: number) => number;
+  /** Minimum players for the game to make sense (vote games degenerate < 3) */
+  minPlayers?: number;
 }
 
 /**
@@ -103,7 +107,7 @@ export type ClientMessage =
   | { type: "rejoin"; sessionId: string }
   | { type: "changeGameType"; hostId: string; gameType: string }
   | { type: "startGame"; hostId: string }
-  | { type: "submitAnswer"; sessionId: string; content: unknown }
+  | { type: "submitAnswer"; sessionId: string; content: unknown; phase?: string }
   | { type: "hostAdvance"; hostId: string }
   | { type: "updateSettings"; hostId: string; settings: Record<string, unknown> }
   | { type: "backToLobby"; hostId: string }
@@ -120,6 +124,7 @@ export type ServerMessage =
   | { type: "room"; data: RoomSnapshot }
   | { type: "error"; message: string }
   | { type: "joined"; playerId: string; roomCode: string }
+  | { type: "rejoinFailed" }
   | { type: "kicked" }
   | { type: "hostClaimed"; success: boolean }
   | { type: "roomClosed"; reason: string };

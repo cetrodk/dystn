@@ -59,6 +59,9 @@ export const DrawingCanvas = forwardRef<DrawingCanvasRef, Props>(
     const livePathRef = useRef<SVGPathElement>(null);
     const pointsRef = useRef<number[][] | null>(null);
     const [viewBoxHeight, setViewBoxHeight] = useState(300);
+    // Existing strokes are in the current viewBox scale — updating the height
+    // after ink is on the canvas (e.g. phone rotation) distorts them.
+    const hasInkRef = useRef(false);
 
     const activeColor = colorProp ?? internalColor;
     const activeSize = sizeProp ?? internalSize;
@@ -68,6 +71,7 @@ export const DrawingCanvas = forwardRef<DrawingCanvasRef, Props>(
       const svg = svgRef.current;
       if (!svg) return;
       const observer = new ResizeObserver((entries) => {
+        if (hasInkRef.current) return; // locked once drawing has started
         const { width, height } = entries[0].contentRect;
         if (width > 0 && height > 0) {
           setViewBoxHeight(Math.round(VIEWBOX_WIDTH * (height / width)));
@@ -82,8 +86,12 @@ export const DrawingCanvas = forwardRef<DrawingCanvasRef, Props>(
     useImperativeHandle(ref, () => ({
       getStrokes: () => strokes,
       getViewBoxHeight: () => viewBoxHeight,
-      clear: () => { setCachedStrokes([]); pointsRef.current = null; if (livePathRef.current) livePathRef.current.setAttribute("d", ""); },
-      undo: () => setCachedStrokes((s) => s.slice(0, -1)),
+      clear: () => { setCachedStrokes([]); pointsRef.current = null; hasInkRef.current = false; if (livePathRef.current) livePathRef.current.setAttribute("d", ""); },
+      undo: () => setCachedStrokes((s) => {
+        const next = s.slice(0, -1);
+        if (next.length === 0) hasInkRef.current = false;
+        return next;
+      }),
     }));
 
     const getPoint = useCallback(
@@ -123,6 +131,7 @@ export const DrawingCanvas = forwardRef<DrawingCanvasRef, Props>(
         if (disabled) return;
         e.preventDefault();
         (e.target as HTMLElement).setPointerCapture(e.pointerId);
+        hasInkRef.current = true;
         pointsRef.current = [getPoint(e)];
         updateLivePath();
       },

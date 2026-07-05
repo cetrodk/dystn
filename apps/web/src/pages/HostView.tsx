@@ -1,5 +1,5 @@
 import { Suspense, lazy, useEffect, useState, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { Settings, SkipForward, Square, WifiOff, Volume2, VolumeX } from "lucide-react";
 
@@ -8,7 +8,7 @@ const QRCodeSVG = lazy(() =>
   import("qrcode.react").then((m) => ({ default: m.QRCodeSVG })),
 );
 import { useSessionId } from "@/providers/SessionProvider";
-import { PartyProvider, useRoom, useSend, usePartyConnection } from "@/providers/PartyProvider";
+import { useRoom, useSend, useHostClaimed } from "@/providers/PartyProvider";
 import { gameComponents, type RoomSnapshot } from "@/games/registry";
 import { sfxFanfare } from "@/lib/sounds";
 import { useGameMusic } from "@/hooks/useGameMusic";
@@ -18,10 +18,10 @@ import { ensureResumed } from "@/lib/audio/context";
 import { GameAvatar } from "@/components/GameAvatar";
 import { GamePicker, GAMES, GAME_ICONS } from "@/components/GamePicker";
 import { GameIntro } from "@/components/GameIntro";
+import { UnknownPhase } from "@/components/UnknownPhase";
 import { da } from "@/lib/da";
-import { getHostSession, clearHostSession } from "@/lib/session";
+import { clearHostSession } from "@/lib/session";
 
-const MIN_PLAYERS = 1;
 const MAX_PLAYERS = 8;
 
 const DEFAULT_GAME_META = { id: "none", color: "var(--color-primary)", textColor: "#fff" } as const;
@@ -302,30 +302,19 @@ function LobbyTopBar({
   );
 }
 
-/* -- Main Host View (inner, inside PartyProvider) ---------------- */
+/* -- Main Host View (rendered inside HostLayout's PartyProvider;
+      hostConnect is sent by HostConnectionManager there) ---------- */
 
-function HostViewInner() {
+export function HostView() {
   const sessionId = useSessionId();
   const navigate = useNavigate();
   const room = useRoom();
   const send = useSend();
-  const { connected } = usePartyConnection();
+  const hostClaimed = useHostClaimed();
   const [confirmLeave, setConfirmLeave] = useState(false);
-  const hostConnectSent = useRef(false);
   const [showIntro, dismissIntro] = useShowIntro(room);
 
   useGameMusic(room);
-
-  // Send hostConnect when websocket connects
-  useEffect(() => {
-    if (!connected || hostConnectSent.current) return;
-    hostConnectSent.current = true;
-
-    const session = getHostSession();
-    if (session) {
-      send({ type: "hostConnect", sessionId, hostSecret: session.secret });
-    }
-  }, [connected, send, sessionId]);
 
   // Warn before closing/refreshing — only when game is active (lobby or playing)
   const beforeUnloadRef = useRef<((e: BeforeUnloadEvent) => void) | null>(null);
@@ -344,6 +333,27 @@ function HostViewInner() {
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
   }, [isFinished]);
+
+  // Claim rejected: the room already has another host (code collision) or the
+  // stored hostSecret is wrong. Without this screen every click is silently
+  // ignored by the server.
+  if (hostClaimed === false) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-6 p-8 text-center">
+        <h2 className="font-display text-3xl font-bold">{da.notHostOfRoom}</h2>
+        <p className="max-w-md text-[var(--color-text-muted)]">{da.notHostOfRoomHint}</p>
+        <button
+          onClick={() => {
+            clearHostSession();
+            navigate("/");
+          }}
+          className="rounded-xl bg-[var(--color-primary)] px-6 py-3 font-bold text-white cursor-pointer"
+        >
+          {da.createNewRoom}
+        </button>
+      </div>
+    );
+  }
 
   if (!room) {
     return (
@@ -409,6 +419,9 @@ function HostViewInner() {
         </div>
       );
     }
+    // Server phase this bundle doesn't know (skewed deploy) — don't fall
+    // through to the lobby screen mid-game.
+    return <UnknownPhase gameType={room.gameType} phase={room.currentPhase} />;
   }
 
   // -- Finished --
@@ -418,7 +431,8 @@ function HostViewInner() {
 
   // -- Lobby --
   const hasGame = !!room.gameType;
-  const canStart = hasGame && room.players.length >= MIN_PLAYERS;
+  const minPlayers = hasGame ? getGameInfo(room.gameType!).minPlayers : 1;
+  const canStart = hasGame && room.players.length >= minPlayers;
 
   function handleLeave() {
     if (beforeUnloadRef.current) window.removeEventListener("beforeunload", beforeUnloadRef.current);
@@ -495,8 +509,8 @@ function HostViewInner() {
                     : undefined,
                 }}
               >
-                {room.players.length < MIN_PLAYERS
-                  ? `${da.needMorePlayers} (${room.players.length}/${MIN_PLAYERS})`
+                {room.players.length < minPlayers
+                  ? `${da.needMorePlayers(minPlayers)} (${room.players.length}/${minPlayers})`
                   : da.startGame}
               </motion.button>
               <button
@@ -637,27 +651,6 @@ function HostViewInner() {
   );
 }
 
-/* -- Main Host View (outer, wraps in PartyProvider) -------------- */
-
-export function HostView() {
-  const { code } = useParams<{ code: string }>();
-  const sessionId = useSessionId();
-
-  if (!code) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p className="text-[var(--color-text-muted)]">Intet rumkode angivet.</p>
-      </div>
-    );
-  }
-
-  return (
-    <PartyProvider roomCode={code} sessionId={sessionId}>
-      <HostViewInner />
-    </PartyProvider>
-  );
-}
-
 /* -- Finished Screen --------------------------------------------- */
 
 function FinishedScreen({ room, sessionId }: { room: RoomSnapshot; sessionId: string }) {
@@ -767,7 +760,8 @@ function FinishedScreen({ room, sessionId }: { room: RoomSnapshot; sessionId: st
               className="flex items-center gap-4 rounded-xl bg-[var(--color-surface)] p-3"
             >
               <span className="text-lg font-bold text-[var(--color-text-muted)] w-6">
-                {winners.length + i + 1}
+                {/* Competition ranking so ties match the players' phones */}
+                {1 + players.filter((p) => p.score > player.score).length}
               </span>
               <GameAvatar name={player.name} avatarColor={player.avatarColor} avatarImage={player.avatarImage} />
               <span className="flex-1 font-semibold">{player.name}</span>

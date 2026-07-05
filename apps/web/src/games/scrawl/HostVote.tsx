@@ -8,12 +8,14 @@ import type { PhaseComponentProps } from "../registry";
 
 export default function HostVote({ room }: PhaseComponentProps) {
   const phaseData = room.phaseData ?? {};
-  const answers = phaseData.answers ?? [];
+  // Server strips raw `answers` for the host; use the anonymized {id, text} list.
+  const answers = phaseData.answersAnonymized ?? phaseData.answers ?? [];
   const drawingData = phaseData.drawingData ?? [];
   const drawingIndex = (phaseData.drawingIndex ?? 0) + 1;
   const totalDrawings = phaseData.totalDrawings ?? 1;
   const submittedCount = room.players?.filter((p: any) => p.hasSubmitted).length ?? 0;
-  const totalPlayers = room.players?.length ?? 0;
+  // The artist can't vote, so the denominator is everyone else.
+  const totalPlayers = Math.max((room.players?.length ?? 1) - 1, 0);
 
   const handleTick = useCallback((s: number) => {
     if (s <= 5 && s > 0) sfxUrgent();

@@ -1,13 +1,30 @@
 import { registerGameHandlers } from "../registry";
 import type { RoomState, Player, PhaseTransition } from "../types";
-import { getSubmissions, upsertSubmission } from "../submissions";
+import { getSubmissions, upsertSubmission, validateVote } from "../submissions";
 import { scrawlPrompts as allPrompts } from "./prompts/loader";
-import { TRUTH_ID } from "../constants";
+import { TRUTH_ID, MAX_STROKES, MAX_DRAWING_BYTES } from "../constants";
+import { shuffle } from "../shuffle";
+
+/**
+ * Find the next drawing index (>= from) whose artist actually submitted a
+ * drawing. A player who disconnected or timed out with an empty canvas has no
+ * draw submission — guessing/voting on a blank image wastes a full sub-round.
+ */
+function nextDrawnIndex(room: RoomState, from: number): number {
+  const pd = (room.phaseData ?? {}) as any;
+  const order: string[] = pd?.drawingOrder ?? [];
+  const drawn = new Set(getSubmissions(room, "draw").map((s) => s.playerId));
+  for (let i = from; i < order.length; i++) {
+    if (drawn.has(order[i])) return i;
+  }
+  return -1;
+}
 
 registerGameHandlers("scrawl", {
   config: {
     initialPhase: "draw",
     totalRoundsForPlayerCount: () => 1,
+    minPlayers: 3, // with 2, the only votable option is the truth
   },
 
   setupRound(room: RoomState): Record<string, unknown> {
@@ -22,12 +39,10 @@ registerGameHandlers("scrawl", {
     const prompts = allowed.length > 0 ? [...allowed] : [...allPrompts];
 
     // Shuffle players to determine drawing order
-    const drawingOrder = room.players
-      .map((p) => p.id)
-      .sort(() => Math.random() - 0.5);
+    const drawingOrder = shuffle(room.players.map((p) => p.id));
 
     // Pick one word per player (no repeats)
-    const shuffledPrompts = prompts.sort(() => Math.random() - 0.5);
+    const shuffledPrompts = shuffle(prompts);
     const drawingWords: Record<string, string> = {};
 
     for (let i = 0; i < drawingOrder.length; i++) {
@@ -56,6 +71,12 @@ registerGameHandlers("scrawl", {
       if (!Array.isArray(strokes) || strokes.length === 0) {
         throw new Error("Tegn noget først");
       }
+      if (
+        strokes.length > MAX_STROKES ||
+        JSON.stringify(content).length > MAX_DRAWING_BYTES
+      ) {
+        throw new Error("Tegningen er for stor");
+      }
 
       upsertSubmission(room, player.id, "draw", content);
     } else if (basePhase === "guess") {
@@ -64,7 +85,8 @@ registerGameHandlers("scrawl", {
         throw new Error("Kunstnere gætter ikke");
       }
 
-      let text = String(content).trim().slice(0, 80);
+      if (typeof content !== "string") throw new Error("Ugyldigt gæt");
+      let text = content.trim().slice(0, 80);
       if (!text) throw new Error("Tomt gæt");
       // Lowercase first char to match prompt word casing
       text = text[0].toLowerCase() + text.slice(1);
@@ -138,7 +160,7 @@ registerGameHandlers("scrawl", {
     });
 
     // Shuffle
-    const shuffled = options.sort(() => Math.random() - 0.5);
+    const shuffled = shuffle(options);
 
     const answers = shuffled.map((o) => ({
       id: o.id,
@@ -163,7 +185,7 @@ registerGameHandlers("scrawl", {
 
     const drawingIndex = phaseData?.drawingIndex ?? 0;
     const votePhase = `vote_${drawingIndex}`;
-    const vote = String(content);
+    const vote = validateVote(room, player, content);
 
     upsertSubmission(room, player.id, votePhase, vote);
   },
@@ -409,15 +431,19 @@ registerGameHandlers("scrawl", {
   getNextPhase(currentPhase: string, _event: string, room: RoomState): PhaseTransition {
     const [base, idxStr] = currentPhase.split("_");
     const idx = idxStr !== undefined ? parseInt(idxStr, 10) : 0;
-    const pd = (room.phaseData ?? {}) as any;
     const roundNumber = room.roundNumber ?? 1;
     const totalRounds = room.totalRounds ?? 1;
 
     if (currentPhase === "draw") {
-      // draw -> guess_0
+      // draw -> first sub-round with an actual drawing
+      const first = nextDrawnIndex(room, 0);
+      if (first === -1) {
+        // Nobody submitted a drawing — nothing to guess on
+        return { nextPhase: "scores", action: { type: "none" } };
+      }
       return {
-        nextPhase: "guess_0",
-        action: { type: "buildGuess", drawingIndex: 0 },
+        nextPhase: `guess_${first}`,
+        action: { type: "buildGuess", drawingIndex: first },
       };
     }
     if (base === "guess") {
@@ -432,12 +458,12 @@ registerGameHandlers("scrawl", {
       };
     }
     if (base === "reveal" && idxStr !== undefined) {
-      // reveal_K -> guess_(K+1) or scores
-      const totalDrawings = pd?.totalDrawings ?? 1;
-      if (idx < totalDrawings - 1) {
+      // reveal_K -> next sub-round with an actual drawing, or scores
+      const next = nextDrawnIndex(room, idx + 1);
+      if (next !== -1) {
         return {
-          nextPhase: `guess_${idx + 1}`,
-          action: { type: "buildGuess", drawingIndex: idx + 1 },
+          nextPhase: `guess_${next}`,
+          action: { type: "buildGuess", drawingIndex: next },
         };
       }
       return { nextPhase: "scores", action: { type: "none" } };

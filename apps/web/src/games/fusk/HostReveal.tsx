@@ -86,7 +86,7 @@ export default function HostReveal({ room, sessionId }: PhaseComponentProps) {
                   transition={{ delay: 0.4 }}
                   className="text-base text-[var(--color-text-muted)]"
                 >
-                  {result.playerName} {da.fusk.wroteThis}
+                  {(result.authorNames ?? [result.playerName]).join(" + ")} {da.fusk.wroteThis}
                 </motion.p>
                 {result.voterNames.length > 0 && (
                   <motion.p

@@ -1,6 +1,8 @@
 import { registerGameHandlers } from "../registry";
 import { getSubmissions, upsertSubmission } from "../submissions";
 import type { Player, RoomState, PhaseTransition } from "../types";
+import { MAX_STROKES, MAX_DRAWING_BYTES } from "../constants";
+import { shuffle } from "../shuffle";
 
 /**
  * Telefon (Gartic Phone clone) — chain-based telephone drawing game.
@@ -8,20 +10,21 @@ import type { Player, RoomState, PhaseTransition } from "../types";
  * Flow: write → draw_0 → guess_0 → draw_1 → guess_1 → ... → reveal → finished
  *
  * With N players there are N chains, each of length 2*(N-1)+1 items.
- * Chain assignment: at draw_K, player[j] draws from chain (j-K-1+N)%N.
- * At guess_K, player[j] guesses from player[(j-1+N)%N]'s draw_K submission.
+ * The chain rotates by exactly one player at every step: at both draw_K and
+ * guess_K, player[j] works on the submission produced by player[(j-1+N)%N] in
+ * the previous phase. So chain c (owned by playerIds[c]) is drawn at draw_K by
+ * playerIds[(c+2K+1)%N] and guessed at guess_K by playerIds[(c+2K+2)%N].
  */
 
 registerGameHandlers("morph", {
   config: {
     initialPhase: "write",
     totalRoundsForPlayerCount: () => 1,
+    minPlayers: 3, // chains need at least write → draw → guess by 3 different players
   },
 
   setupRound(room: RoomState): Record<string, unknown> {
-    const playerIds = room.players
-      .map((p) => p.id)
-      .sort(() => Math.random() - 0.5);
+    const playerIds = shuffle(room.players.map((p) => p.id));
     const N = playerIds.length;
     return {
       playerIds,
@@ -35,7 +38,8 @@ registerGameHandlers("morph", {
     const basePhase = phase.split("_")[0];
 
     if (basePhase === "write") {
-      const text = String(content).trim().slice(0, 120);
+      if (typeof content !== "string") throw new Error("Ugyldigt svar");
+      const text = content.trim().slice(0, 120);
       if (!text) throw new Error("Skriv noget først");
       upsertSubmission(room, player.id, "write", text);
     } else if (basePhase === "draw") {
@@ -45,9 +49,16 @@ registerGameHandlers("morph", {
       if (!Array.isArray(strokes) || strokes.length === 0) {
         throw new Error("Tegn noget først");
       }
+      if (
+        strokes.length > MAX_STROKES ||
+        JSON.stringify(content).length > MAX_DRAWING_BYTES
+      ) {
+        throw new Error("Tegningen er for stor");
+      }
       upsertSubmission(room, player.id, phase, content);
     } else if (basePhase === "guess") {
-      const text = String(content).trim().slice(0, 120);
+      if (typeof content !== "string") throw new Error("Ugyldigt gæt");
+      const text = content.trim().slice(0, 120);
       if (!text) throw new Error("Tomt gæt");
       upsertSubmission(room, player.id, phase, text);
     }
@@ -114,8 +125,9 @@ registerGameHandlers("morph", {
       });
 
       for (let K = 0; K < stepCount; K++) {
-        // Who drew for chain c at draw_K?
-        const drawerIdx = (c + K + 1) % N;
+        // Who drew for chain c at draw_K? The chain rotates +1 player per phase,
+        // and each step is a draw+guess pair, so draw_K is 2K+1 hops from the owner.
+        const drawerIdx = (c + 2 * K + 1) % N;
         const drawerId = playerIds[drawerIdx];
         const drawerPlayer = playerMap.get(drawerId);
         chain.push({
@@ -147,13 +159,24 @@ registerGameHandlers("morph", {
     // Score: 500 points if final guess matches original write (case-insensitive)
     const scoreDeltas = new Map<string, number>();
     for (let c = 0; c < N; c++) {
-      const original = String(chains[c][0].content).toLowerCase().trim();
-      const finalGuess = String(chains[c][chains[c].length - 1].content)
-        .toLowerCase()
-        .trim();
-      if (original === finalGuess && chains[c].length > 1) {
-        const guesserId = chains[c][chains[c].length - 1].playerId;
-        scoreDeltas.set(guesserId, (scoreDeltas.get(guesserId) ?? 0) + 500);
+      const chain = chains[c];
+      if (chain.length <= 1) continue;
+      const firstContent = chain[0].content;
+      const lastItem = chain[chain.length - 1];
+      // Skip missing submissions: "???" is the display sentinel for an absent
+      // write/guess and null is an absent drawing — never treat those as a match.
+      if (firstContent == null || lastItem.content == null) continue;
+      const original = String(firstContent).toLowerCase().trim();
+      const finalGuess = String(lastItem.content).toLowerCase().trim();
+      if (!original || !finalGuess) continue;
+      if (original === "???" || finalGuess === "???") continue;
+      // The chain owner must not score for guessing their own prompt.
+      if (lastItem.playerId === chain[0].playerId) continue;
+      if (original === finalGuess) {
+        scoreDeltas.set(
+          lastItem.playerId,
+          (scoreDeltas.get(lastItem.playerId) ?? 0) + 500,
+        );
       }
     }
 
@@ -175,7 +198,9 @@ registerGameHandlers("morph", {
     const basePhase = room.currentPhase?.split("_")[0];
 
     if (basePhase === "write" || basePhase === "guess") {
-      // Building assignments for draw_K
+      // Building assignments for draw_K — source is the previous player's
+      // write (K=0) or guess_{K-1}. Always the immediately preceding player so
+      // the chain rotates by exactly one at every step (see computeResults).
       const sourcePhase = stepK === 0 ? "write" : `guess_${stepK - 1}`;
       const sourceSubmissions = getSubmissions(room, sourcePhase);
       const subByPlayer = new Map(
@@ -184,7 +209,7 @@ registerGameHandlers("morph", {
 
       const assignments: Record<string, { myPrompt: string }> = {};
       for (let j = 0; j < N; j++) {
-        const sourceIdx = (((j - stepK - 1) % N) + N) % N;
+        const sourceIdx = (((j - 1) % N) + N) % N;
         const sourcePlayerId = playerIds[sourceIdx];
         assignments[playerIds[j]] = {
           myPrompt: String(subByPlayer.get(sourcePlayerId) ?? "???"),

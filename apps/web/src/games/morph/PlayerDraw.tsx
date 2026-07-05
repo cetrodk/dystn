@@ -29,7 +29,7 @@ export default function PlayerDraw({ room, sessionId }: PhaseComponentProps) {
     const viewBoxHeight = canvasRef.current?.getViewBoxHeight() ?? 300;
 
     sfxWhoosh();
-    send({ type: "submitAnswer", sessionId, content: { strokes, viewBoxHeight } });
+    send({ type: "submitAnswer", sessionId, content: { strokes, viewBoxHeight }, phase: room.currentPhase });
     setSubmitted(true);
   }
 

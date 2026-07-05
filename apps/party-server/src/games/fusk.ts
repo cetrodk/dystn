@@ -1,8 +1,9 @@
 import { registerGameHandlers } from "../registry";
-import { getSubmissions, upsertSubmission } from "../submissions";
+import { getSubmissions, upsertSubmission, validateVote } from "../submissions";
 import type { RoomState, Player, PhaseTransition } from "../types";
 import { fuskPrompts as allPrompts } from "./prompts/loader";
 import { TRUTH_ID } from "../constants";
+import { shuffle } from "../shuffle";
 
 /** Normalize an answer so player fakes and the truth look identical in style. */
 function normalizeAnswer(raw: string): string {
@@ -15,6 +16,10 @@ function normalizeAnswer(raw: string): string {
 }
 
 registerGameHandlers("fusk", {
+  config: {
+    minPlayers: 3, // voting degenerates with 1-2 players (own/only answer)
+  },
+
   setupRound(room: RoomState): Record<string, unknown> {
     // Track which prompts have been used across all rounds in this game
     const usedPromptIds: number[] = ((room.phaseData as any)?.usedPromptIds ?? []);
@@ -46,7 +51,8 @@ registerGameHandlers("fusk", {
   },
 
   onSubmission(room: RoomState, player: Player, content: unknown): void {
-    const text = normalizeAnswer(String(content));
+    if (typeof content !== "string") throw new Error("Ugyldigt svar");
+    const text = normalizeAnswer(content);
     if (!text) throw new Error("Tomt svar");
 
     // Reject if it matches the real answer after normalization
@@ -89,7 +95,7 @@ registerGameHandlers("fusk", {
     });
 
     // Shuffle
-    const shuffled = options.sort(() => Math.random() - 0.5);
+    const shuffled = shuffle(options);
 
     const answers = shuffled.map((o) => ({
       id: o.id,
@@ -107,7 +113,7 @@ registerGameHandlers("fusk", {
   },
 
   onVote(room: RoomState, player: Player, content: unknown): void {
-    const vote = String(content);
+    const vote = validateVote(room, player, content);
     upsertSubmission(room, player.id, "vote", vote);
   },
 
@@ -146,6 +152,8 @@ registerGameHandlers("fusk", {
       isReal: boolean;
       playerId: string | null;
       playerName: string | null;
+      /** All authors incl. merged co-authors — each was awarded the points */
+      authorNames?: string[];
       avatarColor: string | null;
       avatarImage?: string;
       voterNames: string[];
@@ -162,10 +170,10 @@ registerGameHandlers("fusk", {
       const voterIds = votesPerAnswer.get(answer.id) ?? [];
       const fooledCount = voterIds.length;
       const player = playerMap.get(answer.playerId);
+      const authorIds = answer.mergedPlayerIds ?? [answer.playerId];
 
       // Credit all merged authors equally
       if (fooledCount > 0) {
-        const authorIds = answer.mergedPlayerIds ?? [answer.playerId];
         for (const pid of authorIds) {
           scoreDeltas.set(pid, (scoreDeltas.get(pid) ?? 0) + fooledCount * 500);
         }
@@ -177,6 +185,7 @@ registerGameHandlers("fusk", {
         isReal: false,
         playerId: answer.playerId,
         playerName: player?.name ?? "???",
+        authorNames: authorIds.map((pid) => playerMap.get(pid)?.name ?? "???"),
         avatarColor: player?.avatarColor ?? "#888",
         avatarImage: player?.avatarImage,
         voterNames: voterIds.map(
@@ -186,10 +195,11 @@ registerGameHandlers("fusk", {
       });
     }
 
-    // Add the truth entry (normalized to match player answer style)
+    // Add the truth entry — the reveal shows the original text (proper nouns
+    // keep their casing); only the vote options are normalized to blend in.
     results.push({
       answerId: TRUTH_ID,
-      text: normalizeAnswer(realAnswer),
+      text: realAnswer,
       isReal: true,
       playerId: null,
       playerName: null,
@@ -229,8 +239,11 @@ registerGameHandlers("fusk", {
       );
       return {
         ...pd,
-        // Strip the real answer so it is never sent to clients
+        // Strip the real answer so it is never sent to clients.
+        // usedPromptIds carries the current prompt's index — enough to look
+        // the answer up — so it never leaves the server either.
         realAnswer: undefined,
+        usedPromptIds: undefined,
         mySubmission: mySubmission?.content ?? null,
         submittedCount: submissions.length,
       };
@@ -252,6 +265,7 @@ registerGameHandlers("fusk", {
         // Strip secrets from vote phase data
         answers: undefined,
         realAnswer: undefined,
+        usedPromptIds: undefined,
         answersAnonymized: answers.map((a) => ({ ...a, isOwn: a.id === myAnswerId })),
         myVote: myVote?.content ?? null,
       };

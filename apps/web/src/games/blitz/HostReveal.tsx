@@ -13,6 +13,11 @@ import { da } from "@/lib/da";
 import { useStaggeredReveal } from "@/hooks/useStaggeredReveal";
 import type { PhaseComponentProps } from "../registry";
 
+/** Author names incl. merged co-authors — they earned the same points */
+function authorLabel(r: any): string {
+  return [r.playerName, ...(r.coAuthors ?? []).map((c: any) => c.name)].join(" & ");
+}
+
 function getWinnerAnnouncement(results: any[]): {
   type: "winner" | "tie" | "none";
   names: string[];
@@ -24,9 +29,9 @@ function getWinnerAnnouncement(results: any[]): {
 
   const winners = results.filter((r: any) => r.votes === topVotes);
   if (winners.length > 1) {
-    return { type: "tie", names: winners.map((w: any) => w.playerName) };
+    return { type: "tie", names: winners.map(authorLabel) };
   }
-  return { type: "winner", names: [results[0].playerName] };
+  return { type: "winner", names: [authorLabel(results[0])] };
 }
 
 function getHostReaction(
@@ -103,12 +108,23 @@ export default function HostReveal({ room, sessionId }: PhaseComponentProps) {
               transition={{ type: "spring", stiffness: 180, damping: 18 }}
               className="flex items-center gap-5 rounded-2xl bg-[var(--color-surface)] p-6"
             >
-              <GameAvatar
-                name={result.playerName}
-                avatarColor={result.avatarColor}
-                avatarImage={result.avatarImage}
-                className="h-16 w-16"
-              />
+              <div className="flex -space-x-4">
+                <GameAvatar
+                  name={result.playerName}
+                  avatarColor={result.avatarColor}
+                  avatarImage={result.avatarImage}
+                  className="h-16 w-16"
+                />
+                {(result.coAuthors ?? []).map((c: any) => (
+                  <GameAvatar
+                    key={c.name}
+                    name={c.name}
+                    avatarColor={c.avatarColor}
+                    avatarImage={c.avatarImage}
+                    className="h-16 w-16 ring-2 ring-[var(--color-surface)]"
+                  />
+                ))}
+              </div>
               <div className="flex-1 min-w-0">
                 <p className="text-2xl font-bold">{result.text}</p>
                 <motion.p
@@ -117,7 +133,7 @@ export default function HostReveal({ room, sessionId }: PhaseComponentProps) {
                   transition={{ delay: 0.5 }}
                   className="text-base text-[var(--color-text-muted)]"
                 >
-                  {result.playerName}
+                  {authorLabel(result)}
                 </motion.p>
               </div>
 

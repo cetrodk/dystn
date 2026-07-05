@@ -9,8 +9,8 @@ export default function HostGuess({ room }: PhaseComponentProps) {
   const submittedCount = room.players?.filter((p: any) => p.hasSubmitted).length ?? 0;
   const totalPlayers = room.players?.length ?? 0;
   const phaseData = room.phaseData ?? {};
-  const step = (phaseData.currentStep ?? 0) + 1;
-  const totalSteps = phaseData.stepCount ?? 1;
+  const step = (phaseData.stepIndex ?? 0) + 1;
+  const totalSteps = phaseData.totalSteps ?? 1;
 
   const handleTick = useCallback((s: number) => {
     if (s <= 5 && s > 0) sfxUrgent();

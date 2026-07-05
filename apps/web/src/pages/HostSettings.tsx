@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { ArrowLeft, Swords, Paintbrush, Phone, Scale, Settings, Volume2, VolumeX } from "lucide-react";
 
 import { useSessionId } from "@/providers/SessionProvider";
-import { PartyProvider, useRoom, useSend } from "@/providers/PartyProvider";
+import { useRoom, useSend } from "@/providers/PartyProvider";
 import { da } from "@/lib/da";
 import { useVolume } from "@/hooks/useVolume";
 
@@ -204,9 +204,10 @@ function SoundSettings() {
   );
 }
 
-/* -- Settings Inner (inside PartyProvider) -------------------------- */
+/* -- Settings page (rendered inside HostLayout's PartyProvider, so the
+      host's websocket survives opening settings mid-game) ------------ */
 
-function HostSettingsInner() {
+export function HostSettingsPage() {
   const navigate = useNavigate();
   const { code } = useParams<{ code: string }>();
   const sessionId = useSessionId();
@@ -393,23 +394,3 @@ function HostSettingsInner() {
   );
 }
 
-/* -- Exported page (wraps in PartyProvider) ------------------------- */
-
-export function HostSettingsPage() {
-  const { code } = useParams<{ code: string }>();
-  const sessionId = useSessionId();
-
-  if (!code) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p className="text-[var(--color-text-muted)]">Intet rumkode angivet.</p>
-      </div>
-    );
-  }
-
-  return (
-    <PartyProvider roomCode={code} sessionId={sessionId}>
-      <HostSettingsInner />
-    </PartyProvider>
-  );
-}
