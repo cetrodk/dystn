@@ -219,61 +219,60 @@ function PlayerViewInner() {
       <AnimatePresence>
         {hostGone && <HostDisconnectedBanner />}
       </AnimatePresence>
-      <motion.h2
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="font-display text-4xl font-bold"
-      >
-        {da.youreIn}
-      </motion.h2>
-      <motion.p
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.1 }}
-        className="font-mono text-2xl font-bold tracking-widest text-[var(--color-primary-light)]"
-      >
-        {room.code}
-      </motion.p>
 
       <motion.div
-        initial={{ opacity: 0, y: 10 }}
+        initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-        className="w-full max-w-xs"
+        transition={{ type: "spring", stiffness: 150, damping: 18 }}
+        className="nb-card flex w-full max-w-sm flex-col gap-5 rounded-[28px] p-6"
       >
-        <p className="mb-3 text-center text-sm text-[var(--color-text-muted)]">
-          {room.players.length} {da.playersJoined}
-        </p>
-        <ul className="flex flex-col gap-2">
-          <AnimatePresence>
-            {room.players.map((player) => {
-              const isMe = player._id === room.currentPlayerId;
-              return (
-                <motion.li
-                  key={player._id}
-                  layout
-                  initial={{ opacity: 0, x: -15 }}
-                  animate={{ opacity: 1, x: 0 }}
-                >
-                  <div
-                    onClick={isMe ? () => setAvatarModalOpen(true) : undefined}
-                    className={`flex items-center gap-3 rounded-xl bg-[var(--color-surface)] p-2.5 transition-all ${
-                      isMe ? "cursor-pointer ring-1 ring-[var(--color-primary)]/40 hover:ring-[var(--color-primary)]/70" : ""
-                    }`}
+        <div className="flex items-center justify-between font-mono text-[10px] tracking-[0.15em] text-[var(--color-text-muted)]">
+          <span>FESTSPIL.PARTY</span>
+          <span>RUM {room.code}</span>
+        </div>
+
+        <div>
+          <h2 className="font-display text-4xl leading-none">{da.youreIn}</h2>
+          <p className="mt-1.5 text-sm text-[var(--color-text-muted)]">
+            {room.gameType ? da.waitingForHost : da.noGameSelected}
+          </p>
+        </div>
+
+        <div>
+          <p className="mb-2.5 font-mono text-[11px] uppercase tracking-[0.15em] text-[var(--color-text-muted)]">
+            {room.players.length} {da.playersJoined}
+          </p>
+          <ul className="flex flex-col gap-2">
+            <AnimatePresence>
+              {room.players.map((player) => {
+                const isMe = player._id === room.currentPlayerId;
+                return (
+                  <motion.li
+                    key={player._id}
+                    layout
+                    initial={{ opacity: 0, x: -15 }}
+                    animate={{ opacity: 1, x: 0 }}
                   >
-                    <GameAvatar name={player.name} avatarColor={player.avatarColor} avatarImage={player.avatarImage} className="h-8 w-8" />
-                    <span className="text-sm font-semibold">{player.name}</span>
-                    {isMe ? (
-                      <span className="ml-auto text-xs font-medium text-[var(--color-primary-light)]">
-                        dig
-                      </span>
-                    ) : null}
-                  </div>
-                </motion.li>
-              );
-            })}
-          </AnimatePresence>
-        </ul>
+                    <div
+                      onClick={isMe ? () => setAvatarModalOpen(true) : undefined}
+                      className={`flex items-center gap-3 rounded-xl border-2 border-[var(--color-ink)] bg-[var(--color-surface-light)] p-2.5 transition-all ${
+                        isMe ? "cursor-pointer hover:bg-[var(--color-primary)]/15" : ""
+                      }`}
+                    >
+                      <GameAvatar name={player.name} avatarColor={player.avatarColor} avatarImage={player.avatarImage} className="h-9 w-9" />
+                      <span className="font-display text-base">{player.name}</span>
+                      {isMe ? (
+                        <span className="ml-auto rounded-full border-2 border-[var(--color-ink)] bg-[var(--color-primary)] px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-white">
+                          dig
+                        </span>
+                      ) : null}
+                    </div>
+                  </motion.li>
+                );
+              })}
+            </AnimatePresence>
+          </ul>
+        </div>
       </motion.div>
 
       <AnimatePresence>
@@ -288,7 +287,7 @@ function PlayerViewInner() {
         ) : null}
       </AnimatePresence>
 
-      <p className="text-sm text-[var(--color-text-muted)] animate-gentle-pulse">
+      <p className="font-mono text-[11px] uppercase tracking-[0.15em] text-[var(--color-text-muted)] animate-gentle-pulse">
         {room.gameType ? da.waitingForHost : da.noGameSelected}
       </p>
       <PlayerNav sessionId={sessionId} />

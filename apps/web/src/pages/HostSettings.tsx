@@ -1,12 +1,13 @@
 import { useState, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Swords, Paintbrush, Phone, Scale, Settings, Volume2, VolumeX } from "lucide-react";
+import { ArrowLeft, Swords, Paintbrush, Phone, Scale, Settings, Volume2, VolumeX, Palette } from "lucide-react";
 
 import { useSessionId } from "@/providers/SessionProvider";
 import { PartyProvider, useRoom, useSend } from "@/providers/PartyProvider";
 import { da } from "@/lib/da";
 import { useVolume } from "@/hooks/useVolume";
+import { THEMES, useTheme } from "@/lib/theme";
 
 /* -- Timer & tab definitions ---------------------------------------- */
 
@@ -57,6 +58,7 @@ interface TabDef {
 
 const TABS: TabDef[] = [
   { id: "sound", label: "Lyd", Icon: Volume2, color: "var(--color-primary)", timers: [] },
+  { id: "appearance", label: "Udseende", Icon: Palette, color: "var(--color-primary)", timers: [] },
   { id: "general", label: "Generelt", Icon: Settings, color: "var(--color-primary)", timers: GENERAL_TIMERS },
   { id: "blitz", label: "Blitz", Icon: Swords, color: "var(--color-blitz)", timers: BLITZ_TIMERS },
   {
@@ -204,6 +206,47 @@ function SoundSettings() {
   );
 }
 
+/* -- Appearance / theme settings ------------------------------------ */
+
+function ThemeSettings() {
+  const [theme, setTheme] = useTheme();
+
+  return (
+    <div>
+      <p className="text-sm text-[var(--color-text-muted)] mb-4">
+        Vælg en farvepalet. Ændringen gælder med det samme på alle skærme.
+      </p>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {THEMES.map((t) => {
+          const isActive = theme === t.id;
+          return (
+            <button
+              key={t.id}
+              onClick={() => setTheme(t.id)}
+              className="nb-card nb-press flex flex-col items-center gap-3 rounded-2xl p-4 cursor-pointer"
+              style={{
+                outline: isActive ? `4px solid ${t.swatch}` : "none",
+                outlineOffset: 3,
+              }}
+            >
+              <span
+                className="h-14 w-14 rounded-full border-[3px] border-[var(--color-ink)]"
+                style={{ backgroundColor: t.swatch }}
+              />
+              <span className="font-display text-lg">{t.label}</span>
+              {isActive && (
+                <span className="font-mono text-[10px] tracking-[0.15em] uppercase text-[var(--color-text-muted)]">
+                  valgt
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 /* -- Settings Inner (inside PartyProvider) -------------------------- */
 
 function HostSettingsInner() {
@@ -264,7 +307,7 @@ function HostSettingsInner() {
       <motion.nav
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
-        className="flex w-56 shrink-0 flex-col bg-[var(--color-surface)] border-r border-white/5"
+        className="flex w-56 shrink-0 flex-col bg-[var(--color-surface)] border-r-2 border-[var(--color-ink)]/15"
       >
         {/* Back + title */}
         <div className="p-5 pb-4">
@@ -319,6 +362,8 @@ function HostSettingsInner() {
 
           {activeTab === "sound" ? (
             <SoundSettings />
+          ) : activeTab === "appearance" ? (
+            <ThemeSettings />
           ) : (
             <>
               {activeTab === "general" && (

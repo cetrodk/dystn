@@ -98,36 +98,53 @@ export function GamePicker({
       transition={{ duration: 0.25 }}
       className="flex w-full flex-col items-center gap-4"
     >
-      <p className="text-xs font-semibold uppercase tracking-widest text-[var(--color-text-muted)]">
-        {da.pickGame}
+      <p className="font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--color-text-muted)]">
+        ── {da.pickGame} ──
       </p>
 
       <div
         ref={emblaRef}
-        className="w-full overflow-hidden"
+        className="w-full overflow-hidden py-2"
         style={{ mask: "linear-gradient(to right, transparent, black 10%, black 90%, transparent)", WebkitMask: "linear-gradient(to right, transparent, black 10%, black 90%, transparent)" }}
       >
-        <div className="flex gap-4">
-          {GAMES.map((game, i) => (
-            <motion.button
-              key={game.id}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.05 + i * 0.06, type: "spring", stiffness: 200 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => onSelect(game.id)}
-              className="card-glow shrink-0 w-[240px] flex flex-col items-center gap-3 rounded-2xl bg-[var(--color-surface)] p-6 cursor-pointer transition-shadow hover:shadow-lg"
-              style={{ "--tw-shadow-color": game.glow } as any}
-            >
-              <game.Icon className="h-12 w-12" style={{ color: game.color }} />
-              <span className="font-display text-xl font-bold" style={{ color: game.color }}>
-                {game.name}
-              </span>
-              <span className="text-xs text-[var(--color-text-muted)] leading-relaxed text-center">
-                {game.description}
-              </span>
-            </motion.button>
-          ))}
+        <div className="flex gap-4 px-2">
+          {GAMES.map((game, i) => {
+            const active = i === activeIndex;
+            return (
+              <motion.button
+                key={game.id}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.05 + i * 0.06, type: "spring", stiffness: 200 }}
+                whileTap={{ scale: 0.96 }}
+                onClick={() => onSelect(game.id)}
+                className="nb-press shrink-0 w-[230px] flex flex-col items-start gap-3 rounded-2xl border-[3px] border-[var(--color-ink)] p-5 cursor-pointer"
+                style={{
+                  background: active ? game.color : "var(--color-paper)",
+                  color: active ? game.textColor : "var(--color-ink)",
+                  boxShadow: active ? "6px 6px 0 var(--color-ink)" : "4px 4px 0 var(--color-ink)",
+                  transform: active ? "translateY(-4px)" : "none",
+                }}
+              >
+                <div
+                  className="grid h-14 w-14 place-items-center rounded-xl border-[3px]"
+                  style={{
+                    background: active ? "rgba(255,255,255,0.2)" : game.color,
+                    borderColor: active ? game.textColor : "var(--color-ink)",
+                  }}
+                >
+                  <game.Icon className="h-7 w-7" style={{ color: "#fff" }} />
+                </div>
+                <span className="font-display text-2xl leading-none">{game.name}</span>
+                <span
+                  className="text-xs leading-relaxed text-left"
+                  style={{ color: active ? game.textColor : "var(--color-text-muted)", opacity: active ? 0.9 : 1 }}
+                >
+                  {game.description}
+                </span>
+              </motion.button>
+            );
+          })}
 
           {showExternalGames && (
             <motion.a
@@ -137,15 +154,20 @@ export function GamePicker({
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.05 + GAMES.length * 0.06, type: "spring", stiffness: 200 }}
-              whileTap={{ scale: 0.95 }}
-              className="card-glow shrink-0 w-[240px] flex flex-col items-center gap-3 rounded-2xl bg-[var(--color-surface)] p-6 cursor-pointer transition-shadow hover:shadow-lg"
-              style={{ "--tw-shadow-color": "var(--color-pris-glow)" } as any}
+              whileTap={{ scale: 0.96 }}
+              className="nb-press shrink-0 w-[230px] flex flex-col items-start gap-3 rounded-2xl border-[3px] border-[var(--color-ink)] bg-[var(--color-paper)] p-5 cursor-pointer"
+              style={{ boxShadow: "4px 4px 0 var(--color-ink)" }}
             >
-              <Tag className="h-12 w-12" style={{ color: "var(--color-pris)" }} />
-              <span className="font-display text-xl font-bold" style={{ color: "var(--color-pris)" }}>
+              <div
+                className="grid h-14 w-14 place-items-center rounded-xl border-[3px] border-[var(--color-ink)]"
+                style={{ background: "var(--color-pris)" }}
+              >
+                <Tag className="h-7 w-7" style={{ color: "#fff" }} />
+              </div>
+              <span className="font-display text-2xl leading-none" style={{ color: "var(--color-pris)" }}>
                 {da.pris.name}
               </span>
-              <span className="text-xs text-[var(--color-text-muted)] leading-relaxed text-center">
+              <span className="text-xs leading-relaxed text-left text-[var(--color-text-muted)]">
                 {da.pris.description}
               </span>
               <ExternalLink className="h-3.5 w-3.5 text-[var(--color-text-muted)]" />
@@ -160,10 +182,10 @@ export function GamePicker({
           <button
             key={i}
             onClick={() => emblaApi?.scrollTo(i)}
-            className="h-1.5 rounded-full transition-all duration-300 cursor-pointer"
+            className="h-2 rounded-full border-2 border-[var(--color-ink)] transition-all duration-300 cursor-pointer"
             style={{
-              width: i === activeIndex ? 16 : 6,
-              backgroundColor: i === activeIndex ? "var(--color-primary)" : "var(--color-surface-light)",
+              width: i === activeIndex ? 22 : 8,
+              backgroundColor: i === activeIndex ? "var(--color-primary)" : "var(--color-paper)",
             }}
           />
         ))}
