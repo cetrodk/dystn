@@ -71,7 +71,7 @@ function FeedbackToast({ message }: { message: string }) {
       initial={{ opacity: 0, y: -16 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -16 }}
-      className="fixed top-4 left-1/2 z-[60] -translate-x-1/2 rounded-xl bg-[var(--color-danger)] px-5 py-3 text-center text-sm font-semibold text-white shadow-lg"
+      className="fixed top-4 left-1/2 z-[60] -translate-x-1/2 rounded-xl bg-[var(--color-danger)] px-5 py-3 text-center text-sm font-semibold text-[var(--color-paper)] shadow-lg"
     >
       {message}
     </motion.div>
@@ -314,7 +314,7 @@ function PlayerViewInner({ sessionId }: { sessionId: string }) {
                       <GameAvatar name={player.name} avatarColor={player.avatarColor} avatarImage={player.avatarImage} className="h-9 w-9" />
                       <span className="font-display text-base">{player.name}</span>
                       {isMe ? (
-                        <span className="ml-auto rounded-full border-2 border-[var(--color-ink)] bg-[var(--color-primary)] px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-white">
+                        <span className="ml-auto rounded-full border-2 border-[var(--color-ink)] bg-[var(--color-primary)] px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--color-paper)]">
                           dig
                         </span>
                       ) : null}
@@ -339,9 +339,6 @@ function PlayerViewInner({ sessionId }: { sessionId: string }) {
         ) : null}
       </AnimatePresence>
 
-      <p className="font-mono text-[11px] uppercase tracking-[0.15em] text-[var(--color-text-muted)] animate-gentle-pulse">
-        {room.gameType ? da.waitingForHost : da.noGameSelected}
-      </p>
       <PlayerNav sessionId={sessionId} />
     </div>
   );

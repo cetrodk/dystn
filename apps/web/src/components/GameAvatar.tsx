@@ -61,8 +61,8 @@ function BlobAvatar({ seed, color }: { seed: string; color: string }) {
       {hat === 3 && <path d="M30 30 Q50 18 70 30" stroke="currentColor" strokeWidth="3" fill="none" />}
       <circle cx={40 + eyeOffset} cy="48" r="4.5" fill="currentColor" />
       <circle cx={62 + eyeOffset} cy="48" r="4.5" fill="currentColor" />
-      <circle cx={41 + eyeOffset} cy="47" r="1.4" fill="#fff" />
-      <circle cx={63 + eyeOffset} cy="47" r="1.4" fill="#fff" />
+      <circle cx={41 + eyeOffset} cy="47" r="1.4" fill="var(--color-paper)" />
+      <circle cx={63 + eyeOffset} cy="47" r="1.4" fill="var(--color-paper)" />
       {smile === 0 && (
         <path d="M38 64 Q50 74 62 64" stroke="currentColor" strokeWidth="3" fill="none" strokeLinecap="round" />
       )}

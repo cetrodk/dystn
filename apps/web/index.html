@@ -6,6 +6,22 @@
     <title>Festspil — Sjove partyspil for venner og familie</title>
     <meta name="description" content="Spil sjove partyspil sammen med venner og familie. Blitz, Fusk, Scrawl, Morph, Surge, Hunch og mere — direkte i browseren." />
     <meta name="theme-color" content="#f3ecdc" />
+    <script>
+      /* Apply the saved theme before first paint to avoid a FOUC. Runs
+         synchronously in <head>, before the render-blocking CSS. The colour
+         map must stay in sync with META_COLORS in src/lib/theme.ts. */
+      (function () {
+        try {
+          var t = localStorage.getItem("festspil-theme");
+          var bg = { tomato: "#f3ecdc", cobalt: "#eae8f5", midnight: "#171622", mint: "#e6efe7" };
+          if (bg[t]) {
+            document.documentElement.dataset.theme = t;
+            var m = document.querySelector('meta[name="theme-color"]');
+            if (m) m.setAttribute("content", bg[t]);
+          }
+        } catch (e) {}
+      })();
+    </script>
     <meta property="og:type" content="website" />
     <meta property="og:title" content="Festspil" />
     <meta property="og:description" content="Sjove partyspil for venner og familie — direkte i browseren." />

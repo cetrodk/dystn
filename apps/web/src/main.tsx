@@ -7,7 +7,9 @@ import { applyTheme, getStoredTheme } from "@/lib/theme";
 import App from "./App";
 import "./index.css";
 
-// Apply the saved colour theme before first paint to avoid a flash.
+// The inline script in index.html sets data-theme before first paint (avoiding
+// a FOUC); this re-applies it through the app so the theme-color meta stays in
+// sync as the module boots.
 applyTheme(getStoredTheme());
 
 // Init synchronously: ErrorBoundary imports Sentry statically so it is in the

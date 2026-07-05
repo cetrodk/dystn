@@ -225,7 +225,9 @@ function ThemeSettings() {
               onClick={() => setTheme(t.id)}
               className="nb-card nb-press flex flex-col items-center gap-3 rounded-2xl p-4 cursor-pointer"
               style={{
-                outline: isActive ? `4px solid ${t.swatch}` : "none",
+                // Only draw the active swatch outline inline; leaving the
+                // inactive case unset lets the global :focus-visible ring show.
+                ...(isActive ? { outline: `4px solid ${t.swatch}` } : {}),
                 outlineOffset: 3,
               }}
             >

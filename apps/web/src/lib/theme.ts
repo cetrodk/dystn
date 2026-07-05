@@ -16,6 +16,15 @@ export type ThemeId = (typeof THEMES)[number]["id"];
 const STORAGE_KEY = "festspil-theme";
 const DEFAULT_THEME: ThemeId = "tomato";
 
+/** Browser-chrome colour per theme (matches --color-bg in index.css). Kept in
+ *  sync with the inline pre-paint script in index.html. */
+const META_COLORS: Record<ThemeId, string> = {
+  tomato: "#f3ecdc",
+  cobalt: "#eae8f5",
+  midnight: "#171622",
+  mint: "#e6efe7",
+};
+
 const isValid = (v: string | null): v is ThemeId =>
   !!v && THEMES.some((t) => t.id === v);
 
@@ -29,9 +38,14 @@ export function getStoredTheme(): ThemeId {
   return DEFAULT_THEME;
 }
 
-/** Apply a theme to <html>. Call once at startup (in main.tsx) to avoid FOUC. */
+/** Apply a theme to <html> and sync the browser-chrome meta colour. The initial
+ *  pre-paint apply happens via the inline script in index.html; this keeps the
+ *  app and the meta tag in sync on runtime switches. */
 export function applyTheme(theme: ThemeId) {
   document.documentElement.dataset.theme = theme;
+  document
+    .querySelector('meta[name="theme-color"]')
+    ?.setAttribute("content", META_COLORS[theme]);
 }
 
 const listeners = new Set<() => void>();

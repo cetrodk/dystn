@@ -223,7 +223,7 @@ function PlayerSlots({ room, sessionId }: { room: RoomSnapshot; sessionId: strin
                     send({ type: "kickPlayer", hostId: sessionId, playerId: player._id });
                     setConfirmKick(null);
                   }}
-                  className="rounded-md border-2 border-[var(--color-ink)] bg-[var(--color-danger)] px-2 py-0.5 font-mono text-[10px] font-bold text-white cursor-pointer"
+                  className="rounded-md border-2 border-[var(--color-ink)] bg-[var(--color-danger)] px-2 py-0.5 font-mono text-[10px] font-bold text-[var(--color-paper)] cursor-pointer"
                 >
                   Fjern
                 </button>
@@ -237,7 +237,7 @@ function PlayerSlots({ room, sessionId }: { room: RoomSnapshot; sessionId: strin
             ) : (
               <button
                 onClick={() => setConfirmKick(player._id)}
-                className="grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 border-[var(--color-ink)] text-xs text-[var(--color-ink)] opacity-50 hover:opacity-100 hover:bg-[var(--color-danger)] hover:text-white transition-all cursor-pointer"
+                className="grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 border-[var(--color-ink)] text-xs text-[var(--color-ink)] opacity-50 hover:opacity-100 hover:bg-[var(--color-danger)] hover:text-[var(--color-paper)] transition-all cursor-pointer"
                 aria-label={`Fjern ${player.name}`}
               >
                 ✕
@@ -283,7 +283,7 @@ function LobbyTopBar({
         {confirmLeave ? (
           <div className="flex items-center gap-2">
             <span className="text-xs text-[var(--color-text-muted)]">{da.leaveRoomConfirm}</span>
-            <button onClick={onLeave} className="rounded-lg border-2 border-[var(--color-ink)] bg-[var(--color-danger)] px-3 py-1.5 text-xs font-bold text-white cursor-pointer">
+            <button onClick={onLeave} className="rounded-lg border-2 border-[var(--color-ink)] bg-[var(--color-danger)] px-3 py-1.5 text-xs font-bold text-[var(--color-paper)] cursor-pointer">
               {da.leaveAnyway}
             </button>
             <button onClick={onToggleLeave} className="rounded-lg border-2 border-[var(--color-ink)] px-3 py-1.5 text-xs font-bold text-[var(--color-text-muted)] cursor-pointer">
@@ -364,7 +364,7 @@ export function HostView() {
             clearHostSession();
             navigate("/");
           }}
-          className="rounded-xl bg-[var(--color-primary)] px-6 py-3 font-bold text-white cursor-pointer"
+          className="rounded-xl bg-[var(--color-primary)] px-6 py-3 font-bold text-[var(--color-paper)] cursor-pointer"
         >
           {da.createNewRoom}
         </button>
@@ -738,7 +738,11 @@ function FinishedScreen({ room, sessionId }: { room: RoomSnapshot; sessionId: st
         {order.map((idx) => {
           const p = podium[idx];
           if (!p) return <div key={idx} />;
-          const place = idx + 1;
+          // Competition ranking so tied players share height, colour and place
+          // number — matching their phones and the "og resten" scoreboard below.
+          const place = 1 + players.filter((x) => x.score > p.score).length;
+          const tier = Math.min(place - 1, 2);
+          const isFirst = place === 1;
           return (
             <motion.div
               key={p._id}
@@ -755,7 +759,7 @@ function FinishedScreen({ room, sessionId }: { room: RoomSnapshot; sessionId: st
                   name={p.name}
                   avatarColor={p.avatarColor}
                   avatarImage={p.avatarImage}
-                  className={idx === 0 ? "h-24 w-24" : "h-[72px] w-[72px]"}
+                  className={isFirst ? "h-24 w-24" : "h-[72px] w-[72px]"}
                 />
               </div>
               <div className="font-display text-xl sm:text-2xl leading-none text-center">{p.name}</div>
@@ -765,10 +769,10 @@ function FinishedScreen({ room, sessionId }: { room: RoomSnapshot; sessionId: st
               <div
                 className="grid w-full place-items-center rounded-t-xl border-[3px] border-[var(--color-ink)] font-display italic text-[var(--color-paper)]"
                 style={{
-                  height: pillarHeights[idx],
-                  background: pillarColors[idx],
+                  height: pillarHeights[tier],
+                  background: pillarColors[tier],
                   boxShadow: "5px 5px 0 var(--color-ink)",
-                  fontSize: idx === 0 ? 84 : 60,
+                  fontSize: isFirst ? 84 : 60,
                 }}
               >
                 {place}
