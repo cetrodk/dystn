@@ -1,6 +1,6 @@
 import { registerGameHandlers } from "../registry";
 import type { RoomState, Player, PhaseTransition } from "../types";
-import { getSubmissions, upsertSubmission } from "../submissions";
+import { getSubmissions, upsertSubmission, validateVote } from "../submissions";
 import { scrawlPrompts as allPrompts } from "./prompts/loader";
 import { TRUTH_ID } from "../constants";
 
@@ -163,7 +163,7 @@ registerGameHandlers("scrawl", {
 
     const drawingIndex = phaseData?.drawingIndex ?? 0;
     const votePhase = `vote_${drawingIndex}`;
-    const vote = String(content);
+    const vote = validateVote(room, player, content);
 
     upsertSubmission(room, player.id, votePhase, vote);
   },

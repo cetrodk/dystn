@@ -1,6 +1,11 @@
 const MIN_PLAYERS = 1;
 const MAX_PLAYERS = 8;
 
+/** Danish plural for "spiller" — "1 spiller", "2 spillere". */
+export function pluralPlayers(n: number): string {
+  return n === 1 ? "spiller" : "spillere";
+}
+
 export const da = {
   // App
   title: "Festspil",
@@ -26,7 +31,7 @@ export const da = {
   startGame: "Start Spil",
   playersJoined: "spillere tilsluttet",
   youreIn: "Du er med!",
-  needMorePlayers: `Mindst ${MIN_PLAYERS} spiller(e)`,
+  needMorePlayers: `Mindst ${MIN_PLAYERS} ${pluralPlayers(MIN_PLAYERS)}`,
   roomCode: "Rumkode",
 
   // Game common

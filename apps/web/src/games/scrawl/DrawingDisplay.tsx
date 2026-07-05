@@ -14,8 +14,10 @@ interface Props {
 }
 
 export function DrawingDisplay({ data, className = "" }: Props) {
-  const strokes = Array.isArray(data) ? data : data.strokes;
-  const viewBoxHeight = Array.isArray(data) ? 300 : (data.viewBoxHeight ?? 300);
+  // data can be null/undefined when a player never submitted a drawing (timeout,
+  // disconnect, empty canvas) — Morph feeds those straight in. Never deref blind.
+  const strokes = Array.isArray(data) ? data : (data?.strokes ?? []);
+  const viewBoxHeight = Array.isArray(data) ? 300 : (data?.viewBoxHeight ?? 300);
 
   const paths = useMemo(
     () => strokes.map((stroke) => ({

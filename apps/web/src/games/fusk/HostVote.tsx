@@ -7,7 +7,9 @@ import type { PhaseComponentProps } from "../registry";
 
 export default function HostVote({ room }: PhaseComponentProps) {
   const phaseData = room.phaseData ?? {};
-  const answers = phaseData.answers ?? [];
+  // Server strips raw `answers` for the host; the anonymized list carries the
+  // {id, text} the TV needs to show the options being voted on.
+  const answers = phaseData.answersAnonymized ?? phaseData.answers ?? [];
   const promptText = phaseData.promptText ?? "";
   const submittedCount = room.players?.filter((p: any) => p.hasSubmitted).length ?? 0;
   const totalPlayers = room.players?.length ?? 0;

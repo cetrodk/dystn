@@ -3,24 +3,35 @@ import { motion } from "framer-motion";
 import { Pencil } from "lucide-react";
 import { CountdownTimer } from "@festspil/ui/CountdownTimer";
 import { WaitingScreen } from "@/components/WaitingScreen";
-import { useSend } from "@/providers/PartyProvider";
+import { useSend, usePartyConnection } from "@/providers/PartyProvider";
 import { sfxWhoosh, sfxUrgent } from "@/lib/sounds";
 import { da } from "@/lib/da";
 import type { PhaseComponentProps } from "../registry";
 
 export default function PlayerSubmit({ room, sessionId }: PhaseComponentProps) {
   const send = useSend();
+  const { error: serverError } = usePartyConnection();
   const phaseData = room.phaseData ?? {};
   const myPrev = phaseData.mySubmission as string | null;
 
   const [answer, setAnswer] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [editing, setEditing] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
     if (myPrev && !submitted) setAnswer(myPrev);
   }, [myPrev, submitted]);
+
+  // If the server rejects the answer, drop the optimistic "submitted" state so
+  // the player returns to the form instead of an eternal waiting screen.
+  useEffect(() => {
+    if (serverError) {
+      setSubmitted(false);
+      setSubmitting(false);
+    }
+  }, [serverError]);
 
   const handleTick = useCallback((s: number) => {
     if (s <= 5 && s > 0) sfxUrgent();
@@ -34,11 +45,12 @@ export default function PlayerSubmit({ room, sessionId }: PhaseComponentProps) {
     sfxWhoosh();
     send({ type: "submitAnswer", sessionId, content: answer.trim() });
     setSubmitted(true);
+    setEditing(false);
     setError("");
     setSubmitting(false);
   }
 
-  if (submitted || myPrev) {
+  if ((submitted || myPrev) && !editing) {
     const myAnswer = myPrev ?? answer;
     return (
       <WaitingScreen deadline={room.phaseDeadline} players={room.players}>
@@ -59,7 +71,7 @@ export default function PlayerSubmit({ room, sessionId }: PhaseComponentProps) {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
-          onClick={() => { setSubmitted(false); setSubmitting(false); }}
+          onClick={() => { setEditing(true); setSubmitted(false); setSubmitting(false); }}
           className="flex items-center gap-2 rounded-xl bg-[var(--color-surface)] px-5 py-3 text-sm font-semibold text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors cursor-pointer"
         >
           <Pencil className="h-4 w-4" />

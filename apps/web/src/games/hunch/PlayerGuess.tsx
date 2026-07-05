@@ -18,6 +18,7 @@ export default function PlayerGuess({ room, sessionId }: PhaseComponentProps) {
 
   const [position, setPosition] = useState(myPrevGuess ?? 5);
   const [submitted, setSubmitted] = useState(false);
+  const [editing, setEditing] = useState(false);
 
   const handleTick = useCallback((s: number) => {
     if (s <= 5 && s > 0) sfxUrgent();
@@ -41,7 +42,7 @@ export default function PlayerGuess({ room, sessionId }: PhaseComponentProps) {
     );
   }
 
-  if (submitted || myPrevGuess != null) {
+  if ((submitted || myPrevGuess != null) && !editing) {
     const guess = myPrevGuess ?? position;
     return (
       <WaitingScreen deadline={room.phaseDeadline} players={room.players}>
@@ -59,7 +60,7 @@ export default function PlayerGuess({ room, sessionId }: PhaseComponentProps) {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          onClick={() => { setSubmitted(false); }}
+          onClick={() => { setEditing(true); setPosition(myPrevGuess ?? position); }}
           className="flex items-center gap-2 rounded-xl bg-[var(--color-surface)] px-5 py-3 text-sm font-semibold text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors cursor-pointer"
         >
           <Pencil className="h-4 w-4" />
@@ -73,6 +74,7 @@ export default function PlayerGuess({ room, sessionId }: PhaseComponentProps) {
     sfxClick();
     send({ type: "submitAnswer", sessionId, content: position });
     setSubmitted(true);
+    setEditing(false);
   }
 
   return (

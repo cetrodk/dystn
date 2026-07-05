@@ -1,5 +1,5 @@
 import { registerGameHandlers } from "../registry";
-import { getSubmissions, upsertSubmission } from "../submissions";
+import { getSubmissions, upsertSubmission, validateVote } from "../submissions";
 import type { PhaseTransition, Player, RoomState } from "../types";
 import { blitzPrompts } from "./prompts/loader";
 
@@ -70,7 +70,7 @@ registerGameHandlers("blitz", {
   },
 
   onVote(room: RoomState, player: Player, content: unknown): void {
-    const vote = String(content); // submission ID they voted for
+    const vote = validateVote(room, player, content); // submission ID they voted for
     upsertSubmission(room, player.id, "vote", vote);
   },
 
@@ -209,8 +209,11 @@ registerGameHandlers("blitz", {
               (a.mergedPlayerIds ?? []).includes(currentPlayer.id),
           )?.id
         : undefined;
+      // Strip the raw answers (they carry playerId/mergedPlayerIds) so voters
+      // can't see who authored what in devtools during the vote.
+      const { answers: _hidden, ...rest } = pd;
       return {
-        ...pd,
+        ...rest,
         answersAnonymized: answers.map((a) => ({
           ...a,
           isOwn: a.id === myAnswerId,

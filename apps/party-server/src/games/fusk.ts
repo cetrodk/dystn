@@ -1,5 +1,5 @@
 import { registerGameHandlers } from "../registry";
-import { getSubmissions, upsertSubmission } from "../submissions";
+import { getSubmissions, upsertSubmission, validateVote } from "../submissions";
 import type { RoomState, Player, PhaseTransition } from "../types";
 import { fuskPrompts as allPrompts } from "./prompts/loader";
 import { TRUTH_ID } from "../constants";
@@ -107,7 +107,7 @@ registerGameHandlers("fusk", {
   },
 
   onVote(room: RoomState, player: Player, content: unknown): void {
-    const vote = String(content);
+    const vote = validateVote(room, player, content);
     upsertSubmission(room, player.id, "vote", vote);
   },
 

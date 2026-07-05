@@ -17,6 +17,7 @@ export default function PlayerGuess({ room, sessionId }: PhaseComponentProps) {
   const [guess, setGuess] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [editing, setEditing] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -37,18 +38,19 @@ export default function PlayerGuess({ room, sessionId }: PhaseComponentProps) {
     sfxWhoosh();
     send({ type: "submitAnswer", sessionId, content: guess.trim() });
     setSubmitted(true);
+    setEditing(false);
     setError("");
     setSubmitting(false);
   }
 
-  if (submitted || myPrev) {
+  if ((submitted || myPrev) && !editing) {
     return (
       <WaitingScreen deadline={room.phaseDeadline} players={room.players}>
         <motion.button
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          onClick={() => { setSubmitted(false); setSubmitting(false); }}
+          onClick={() => { setEditing(true); setSubmitted(false); setSubmitting(false); }}
           className="flex items-center gap-2 rounded-xl bg-[var(--color-surface)] px-5 py-3 text-sm font-semibold text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors cursor-pointer"
         >
           <Pencil className="h-4 w-4" />
