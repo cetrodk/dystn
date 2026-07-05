@@ -6,3 +6,9 @@ dist
 .env.local
 *.log
 .vercel
+
+# Local tooling artifacts
+test-results/
+.playwright-mcp/
+/*.png
+.claude/worktrees/
