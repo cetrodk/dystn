@@ -7,6 +7,7 @@ import { gameComponents } from "@/games/registry";
 import { GameAvatar } from "@/components/GameAvatar";
 import { AvatarPickerModal } from "@/components/AvatarPickerModal";
 import { GameIntro } from "@/components/GameIntro";
+import { UnknownPhase } from "@/components/UnknownPhase";
 import { useShowIntro } from "@/hooks/useShowIntro";
 import { da, pluralPlayers } from "@/lib/da";
 import { PLAYER_NAME_KEY, PLAYER_AVATAR_KEY, getRoomSessionId } from "@/lib/session";
@@ -214,6 +215,9 @@ function PlayerViewInner({ sessionId }: { sessionId: string }) {
         </>
       );
     }
+    // Server phase this bundle doesn't know (skewed deploy) — don't fall
+    // through to the lobby screen mid-game.
+    return <UnknownPhase gameType={room.gameType} phase={room.currentPhase} />;
   }
 
   const currentPlayer = room.players?.find(
@@ -222,12 +226,11 @@ function PlayerViewInner({ sessionId }: { sessionId: string }) {
 
   // -- Finished --
   if (room.status === "finished") {
-    const sorted = [...(room.players ?? [])].sort(
-      (a, b) => b.score - a.score,
-    );
-    const rank = sorted.findIndex(
-      (p) => p._id === room.currentPlayerId,
-    ) + 1;
+    // Competition ranking (1 + players with strictly higher score) so tied
+    // players see the same placement as the host's finished screen.
+    const myScore = currentPlayer?.score ?? 0;
+    const rank =
+      1 + (room.players ?? []).filter((p) => p.score > myScore).length;
 
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-6 p-4">

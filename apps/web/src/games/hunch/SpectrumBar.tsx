@@ -58,11 +58,13 @@ export function SpectrumBar({
         {/* Target marker */}
         {showTarget && target != null && (
           <motion.div
-            initial={{ scale: 0, y: -20 }}
-            animate={{ scale: 1, y: 0 }}
+            // Centering must live in motion's own x/y — a raw transform in
+            // `style` is clobbered by the animated transform.
+            initial={{ scale: 0, x: "-50%", y: "calc(-50% - 20px)" }}
+            animate={{ scale: 1, x: "-50%", y: "-50%" }}
             transition={{ type: "spring", stiffness: 200, damping: 15 }}
-            className="absolute top-1/2 -translate-y-1/2"
-            style={{ left: `${((target - 1) / 9) * 100}%`, transform: `translateX(-50%) translateY(-50%)` }}
+            className="absolute top-1/2"
+            style={{ left: `${((target - 1) / 9) * 100}%` }}
           >
             <div className="w-10 h-10 rounded-full bg-[var(--color-hunch)] ring-4 ring-[var(--color-hunch)]/30 flex items-center justify-center shadow-lg shadow-[var(--color-hunch)]/20">
               <span className="text-sm font-bold text-[#0d0b1a]">{target}</span>
@@ -73,9 +75,10 @@ export function SpectrumBar({
         {/* Active position indicator (for player input) */}
         {activePosition != null && !showTarget && (
           <motion.div
-            layout
             className="absolute top-1/2"
-            style={{ left: `${((activePosition - 1) / 9) * 100}%`, transform: `translateX(-50%) translateY(-50%)` }}
+            initial={false}
+            animate={{ left: `${((activePosition - 1) / 9) * 100}%`, x: "-50%", y: "-50%" }}
+            transition={{ type: "spring", stiffness: 300, damping: 25 }}
           >
             <div className="w-8 h-8 rounded-full bg-[var(--color-primary)] ring-2 ring-[var(--color-primary)]/40 flex items-center justify-center">
               <span className="text-xs font-bold">{activePosition}</span>
@@ -87,13 +90,12 @@ export function SpectrumBar({
         {guesses?.map((g, i) => (
           <motion.div
             key={g.playerName}
-            initial={{ scale: 0, y: 20 }}
-            animate={{ scale: 1, y: 0 }}
+            initial={{ scale: 0, x: "-50%", y: 20 }}
+            animate={{ scale: 1, x: "-50%", y: 0 }}
             transition={{ delay: i * 0.15 + 0.3, type: "spring", stiffness: 200 }}
             className="absolute"
             style={{
               left: `${((g.position - 1) / 9) * 100}%`,
-              transform: "translateX(-50%)",
               top: -36 - (i % 2) * 28,
             }}
           >

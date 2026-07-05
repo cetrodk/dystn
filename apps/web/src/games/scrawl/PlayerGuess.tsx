@@ -64,7 +64,7 @@ export default function PlayerGuess({ room, sessionId }: PhaseComponentProps) {
     setSubmitting(true);
 
     sfxWhoosh();
-    send({ type: "submitAnswer", sessionId, content: guess.trim() });
+    send({ type: "submitAnswer", sessionId, content: guess.trim(), phase: room.currentPhase });
     setSubmitted(true);
     setEditing(false);
     setError("");

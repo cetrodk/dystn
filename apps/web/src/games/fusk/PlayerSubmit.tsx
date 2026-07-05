@@ -43,7 +43,7 @@ export default function PlayerSubmit({ room, sessionId }: PhaseComponentProps) {
     setSubmitting(true);
 
     sfxWhoosh();
-    send({ type: "submitAnswer", sessionId, content: answer.trim() });
+    send({ type: "submitAnswer", sessionId, content: answer.trim(), phase: room.currentPhase });
     setSubmitted(true);
     setEditing(false);
     setError("");

@@ -67,7 +67,7 @@ export default function PlayerClue({ room, sessionId }: PhaseComponentProps) {
     e.preventDefault();
     if (!clue.trim()) return;
     sfxWhoosh();
-    send({ type: "submitAnswer", sessionId, content: clue.trim() });
+    send({ type: "submitAnswer", sessionId, content: clue.trim(), phase: room.currentPhase });
     setSubmitted(true);
   }
 

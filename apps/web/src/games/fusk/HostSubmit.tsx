@@ -30,13 +30,18 @@ export default function HostSubmit({ room }: PhaseComponentProps) {
         className="max-w-4xl text-center font-display text-3xl sm:text-6xl font-bold leading-tight"
       >
         {parts.length > 1 ? (
-          <>
-            {parts[0]}
-            <span className="border-b-4 border-[var(--color-primary)] px-2">
-              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+          // Render every segment so a prompt with more than one ___ never
+          // silently drops its tail text.
+          parts.map((part: string, i: number) => (
+            <span key={i}>
+              {part}
+              {i < parts.length - 1 && (
+                <span className="border-b-4 border-[var(--color-primary)] px-2">
+                  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                </span>
+              )}
             </span>
-            {parts[1]}
-          </>
+          ))
         ) : (
           promptText
         )}

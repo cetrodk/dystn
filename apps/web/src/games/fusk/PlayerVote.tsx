@@ -1,16 +1,26 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { CountdownTimer } from "@festspil/ui/CountdownTimer";
 import { WaitingScreen } from "@/components/WaitingScreen";
-import { useSend } from "@/providers/PartyProvider";
+import { useSend, usePartyConnection } from "@/providers/PartyProvider";
 import { sfxClick } from "@/lib/sounds";
 import { da } from "@/lib/da";
 import type { PhaseComponentProps } from "../registry";
 
 export default function PlayerVote({ room, sessionId }: PhaseComponentProps) {
   const send = useSend();
+  const { error: serverError } = usePartyConnection();
   const [voted, setVoted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  // voted is optimistic — if the server rejected the vote, return to the
+  // ballot instead of stranding the player on the waiting screen.
+  useEffect(() => {
+    if (serverError) {
+      setVoted(false);
+      setSubmitting(false);
+    }
+  }, [serverError]);
 
   const phaseData = room.phaseData ?? {};
   const allAnswers = phaseData.answersAnonymized ?? [];
@@ -25,7 +35,7 @@ export default function PlayerVote({ room, sessionId }: PhaseComponentProps) {
     if (submitting) return;
     setSubmitting(true);
     sfxClick();
-    send({ type: "submitAnswer", sessionId, content: answerId });
+    send({ type: "submitAnswer", sessionId, content: answerId, phase: room.currentPhase });
     setVoted(true);
   }
 

@@ -17,14 +17,29 @@ export default function PlayerCommit({ room, sessionId }: PhaseComponentProps) {
   const send = useSend();
   const pd = room.phaseData ?? {};
 
-  const [state, setState] = useState<PlayerState>({ type: "idle" });
+  // Seed from the server's currentChoices so a reload/reconnect mid-commit
+  // shows the committed side instead of resetting to idle (where a new tap
+  // would downgrade the committed answer to "transit").
+  const [state, setState] = useState<PlayerState>(() => {
+    const myChoice = (pd.currentChoices as Record<string, string> | undefined)?.[
+      room.currentPlayerId ?? ""
+    ];
+    return myChoice === "true" || myChoice === "false"
+      ? { type: "committed", side: myChoice }
+      : { type: "idle" };
+  });
   const stateRef = useRef(state);
   stateRef.current = state;
   const transitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const deadlineRef = useRef(room.phaseDeadline ?? null);
+  deadlineRef.current = room.phaseDeadline ?? null;
 
   const sendChoice = useCallback(
     (choice: "true" | "false" | "transit") => {
-      send({ type: "submitAnswer", sessionId, content: { choice } });
+      // This component only exists during the "commit" phase — stamp it
+      // explicitly so a choice fired from the transit timeout is never
+      // miscounted if it lands after the phase flips.
+      send({ type: "submitAnswer", sessionId, content: { choice }, phase: "commit" });
     },
     [send, sessionId],
   );
@@ -58,12 +73,18 @@ export default function PlayerCommit({ room, sessionId }: PhaseComponentProps) {
       setState({ type: "transit", from, to: side, startedAt: Date.now() });
       sendChoice("transit");
 
-      // Complete transit after duration
+      // Complete transit after duration. Near the deadline the full transit
+      // would land the real choice after the phase has flipped (and be
+      // rejected) — shorten it so the commit reaches the server in time.
+      const timeLeft = deadlineRef.current
+        ? deadlineRef.current - Date.now()
+        : Infinity;
+      const delay = Math.max(0, Math.min(TRANSIT_DURATION, timeLeft - 300));
       transitTimerRef.current = setTimeout(() => {
         setState({ type: "committed", side });
         sendChoice(side);
         transitTimerRef.current = null;
-      }, TRANSIT_DURATION);
+      }, delay);
     },
     [sendChoice],
   );

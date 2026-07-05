@@ -13,6 +13,8 @@ export default defineConfig({
       project: process.env.SENTRY_PROJECT,
       authToken: process.env.SENTRY_AUTH_TOKEN,
       disable: !process.env.SENTRY_AUTH_TOKEN,
+      // Sourcemaps are only for Sentry — never serve *.map publicly
+      sourcemaps: { filesToDeleteAfterUpload: "**/*.map" },
     }),
   ],
   build: {

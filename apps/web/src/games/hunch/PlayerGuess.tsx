@@ -72,7 +72,7 @@ export default function PlayerGuess({ room, sessionId }: PhaseComponentProps) {
 
   function handleSubmit() {
     sfxClick();
-    send({ type: "submitAnswer", sessionId, content: position });
+    send({ type: "submitAnswer", sessionId, content: position, phase: room.currentPhase });
     setSubmitted(true);
     setEditing(false);
   }
