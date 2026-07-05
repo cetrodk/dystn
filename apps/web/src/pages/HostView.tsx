@@ -1,5 +1,5 @@
 import { Suspense, lazy, useEffect, useState, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { Settings, SkipForward, Square, WifiOff, Volume2, VolumeX } from "lucide-react";
 
@@ -8,7 +8,7 @@ const QRCodeSVG = lazy(() =>
   import("qrcode.react").then((m) => ({ default: m.QRCodeSVG })),
 );
 import { useSessionId } from "@/providers/SessionProvider";
-import { PartyProvider, useRoom, useSend, usePartyConnection } from "@/providers/PartyProvider";
+import { useRoom, useSend } from "@/providers/PartyProvider";
 import { gameComponents, type RoomSnapshot } from "@/games/registry";
 import { sfxFanfare } from "@/lib/sounds";
 import { useGameMusic } from "@/hooks/useGameMusic";
@@ -19,7 +19,7 @@ import { GameAvatar } from "@/components/GameAvatar";
 import { GamePicker, GAMES, GAME_ICONS } from "@/components/GamePicker";
 import { GameIntro } from "@/components/GameIntro";
 import { da } from "@/lib/da";
-import { getHostSession, clearHostSession } from "@/lib/session";
+import { clearHostSession } from "@/lib/session";
 
 const MIN_PLAYERS = 1;
 const MAX_PLAYERS = 8;
@@ -302,30 +302,18 @@ function LobbyTopBar({
   );
 }
 
-/* -- Main Host View (inner, inside PartyProvider) ---------------- */
+/* -- Main Host View (rendered inside HostLayout's PartyProvider;
+      hostConnect is sent by HostConnectionManager there) ---------- */
 
-function HostViewInner() {
+export function HostView() {
   const sessionId = useSessionId();
   const navigate = useNavigate();
   const room = useRoom();
   const send = useSend();
-  const { connected } = usePartyConnection();
   const [confirmLeave, setConfirmLeave] = useState(false);
-  const hostConnectSent = useRef(false);
   const [showIntro, dismissIntro] = useShowIntro(room);
 
   useGameMusic(room);
-
-  // Send hostConnect when websocket connects
-  useEffect(() => {
-    if (!connected || hostConnectSent.current) return;
-    hostConnectSent.current = true;
-
-    const session = getHostSession();
-    if (session) {
-      send({ type: "hostConnect", sessionId, hostSecret: session.secret });
-    }
-  }, [connected, send, sessionId]);
 
   // Warn before closing/refreshing — only when game is active (lobby or playing)
   const beforeUnloadRef = useRef<((e: BeforeUnloadEvent) => void) | null>(null);
@@ -634,27 +622,6 @@ function HostViewInner() {
         />
       </div>
     </div>
-  );
-}
-
-/* -- Main Host View (outer, wraps in PartyProvider) -------------- */
-
-export function HostView() {
-  const { code } = useParams<{ code: string }>();
-  const sessionId = useSessionId();
-
-  if (!code) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p className="text-[var(--color-text-muted)]">Intet rumkode angivet.</p>
-      </div>
-    );
-  }
-
-  return (
-    <PartyProvider roomCode={code} sessionId={sessionId}>
-      <HostViewInner />
-    </PartyProvider>
   );
 }
 

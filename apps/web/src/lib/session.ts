@@ -2,6 +2,10 @@ const SESSION_KEY = "festspil_session_id";
 export const PLAYER_NAME_KEY = "festspil-player-name";
 export const PLAYER_AVATAR_KEY = "festspil-player-avatar";
 
+function generateSessionId(): string {
+  return crypto.randomUUID?.() ?? Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, "0")).join("");
+}
+
 /** Cached in module scope — only reads sessionStorage once */
 let cachedSessionId: string | null = null;
 
@@ -10,11 +14,35 @@ export function getSessionId(): string {
 
   let id = sessionStorage.getItem(SESSION_KEY);
   if (!id) {
-    id = crypto.randomUUID?.() ?? Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, "0")).join("");
+    id = generateSessionId();
     sessionStorage.setItem(SESSION_KEY, id);
   }
 
   cachedSessionId = id;
+  return id;
+}
+
+/* -- Player session, scoped per room (localStorage) ------------- */
+
+const ROOM_SESSION_PREFIX = "festspil_session_";
+const roomSessionCache = new Map<string, string>();
+
+/**
+ * Player identity scoped to a room code, in localStorage so it survives the
+ * browser killing the tab (locked phone between rounds). A new room gets a
+ * new id; the same room always resolves to the same id on this device.
+ */
+export function getRoomSessionId(roomCode: string): string {
+  const key = ROOM_SESSION_PREFIX + roomCode.toUpperCase();
+  const cached = roomSessionCache.get(key);
+  if (cached) return cached;
+
+  // Migration: reuse the old tab-scoped id so live sessions survive the deploy
+  let id = localStorage.getItem(key) ?? sessionStorage.getItem(SESSION_KEY);
+  if (!id) id = generateSessionId();
+  localStorage.setItem(key, id);
+
+  roomSessionCache.set(key, id);
   return id;
 }
 

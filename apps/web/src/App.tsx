@@ -4,6 +4,7 @@ import { ConfettiBackground } from "@/components/ConfettiBackground";
 
 const LandingPage = lazy(() => import("@/pages/LandingPage").then((m) => ({ default: m.LandingPage })));
 const JoinPage = lazy(() => import("@/pages/JoinPage").then((m) => ({ default: m.JoinPage })));
+const HostLayout = lazy(() => import("@/pages/HostLayout").then((m) => ({ default: m.HostLayout })));
 const HostView = lazy(() => import("@/pages/HostView").then((m) => ({ default: m.HostView })));
 const HostSettingsPage = lazy(() => import("@/pages/HostSettings").then((m) => ({ default: m.HostSettingsPage })));
 const PlayerView = lazy(() => import("@/pages/PlayerView").then((m) => ({ default: m.PlayerView })));
@@ -27,8 +28,10 @@ export default function App() {
           <Route path="/play" element={<JoinPage />} />
           <Route path="/join/:code" element={<JoinPage />} />
           <Route path="/play/:code" element={<PlayerView />} />
-          <Route path="/host/:code" element={<HostView />} />
-          <Route path="/host/:code/settings" element={<HostSettingsPage />} />
+          <Route path="/host/:code" element={<HostLayout />}>
+            <Route index element={<HostView />} />
+            <Route path="settings" element={<HostSettingsPage />} />
+          </Route>
           {import.meta.env.DEV && (
             <Route path="/simulator" element={<SimulatorPage />} />
           )}

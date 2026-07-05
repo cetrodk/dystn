@@ -20,6 +20,22 @@ import "./games/hunch";
 
 const MAX_PLAYERS = 8;
 const MIN_PLAYERS = 1;
+const MAX_AVATAR_LEN = 64;
+/** Minimum gap between accepted host-advance messages (kills double-clicks) */
+const HOST_ADVANCE_DEBOUNCE_MS = 500;
+
+/** Host-only message types — authorized by the connection, not a payload field */
+const HOST_ONLY_TYPES = new Set([
+  "changeGameType",
+  "startGame",
+  "hostAdvance",
+  "updateSettings",
+  "backToLobby",
+  "restartGame",
+  "continueGame",
+  "kickPlayer",
+  "morphAdvanceReveal",
+]);
 
 /** Generate a 4-char room code from the party room ID */
 function roomCodeFromId(id: string): string {
@@ -33,11 +49,17 @@ function generateId(): string {
 export default class FestspilServer implements Party.Server {
   state: RoomState;
   private readonly roomId: string;
+  /** Timestamp of the last accepted phase advance — debounces host double-clicks */
+  private lastAdvanceAt = 0;
 
   constructor(readonly room: Party.Room) {
     this.roomId = room.id;
-    this.state = {
-      code: roomCodeFromId(room.id),
+    this.state = this.freshState();
+  }
+
+  private freshState(): RoomState {
+    return {
+      code: roomCodeFromId(this.roomId),
       hostId: "",
       hostSecret: "",
       hostConnected: false,
@@ -51,6 +73,39 @@ export default class FestspilServer implements Party.Server {
     };
   }
 
+  /**
+   * Restore persisted state so a redeploy/eviction mid-game doesn't reset the
+   * room to an empty lobby (which would also blank hostSecret and let anyone
+   * claim the room).
+   */
+  async onStart() {
+    const saved = await this.room.storage.get<RoomState>("state");
+    if (!saved) return;
+    this.state = saved;
+
+    // All sockets are gone after a restart — connection flags are transient
+    this.state.hostConnected = false;
+    this.state.hostPauseDeadline = undefined;
+    for (const p of this.state.players) p.isConnected = false;
+
+    // The host must reclaim the room within the usual window
+    if (this.state.status !== "finished") {
+      this.state.hostDisconnectDeadline ??= Date.now() + 5 * 60 * 1000;
+    }
+
+    // Deadlines are absolute epoch-ms and still apply; if the phase expired
+    // while we were down, advance it once before re-arming the alarm.
+    if (
+      this.state.status === "playing" &&
+      !this.state.settings.paused &&
+      this.state.phaseDeadline &&
+      Date.now() >= this.state.phaseDeadline
+    ) {
+      advancePhase(this.state, "TIMER_EXPIRED");
+    }
+    this.scheduleNextAlarm();
+  }
+
   /** ── Connection lifecycle ── */
 
   onConnect(conn: Party.Connection, ctx: Party.ConnectionContext) {
@@ -60,10 +115,9 @@ export default class FestspilServer implements Party.Server {
     if (conn.id === this.state.hostId) {
       this.state.hostConnected = true;
       this.state.hostLastSeen = Date.now();
-      // Cancel host disconnect deadline if pending
-      if (this.state.hostDisconnectDeadline) {
-        this.state.hostDisconnectDeadline = undefined;
-      }
+      // Cancel pending host-disconnect/pause deadlines
+      this.state.hostDisconnectDeadline = undefined;
+      this.state.hostPauseDeadline = undefined;
     }
 
     // Reconnecting player — mark as connected
@@ -84,15 +138,13 @@ export default class FestspilServer implements Party.Server {
       this.state.hostLastSeen = Date.now();
       // Schedule room cleanup in 5 minutes
       this.state.hostDisconnectDeadline = Date.now() + 5 * 60 * 1000;
-      this.scheduleNextAlarm();
-      // Auto-pause if playing
+      // Grace period before auto-pause so a WS blink (network switch, page
+      // navigation) doesn't pause the game for everyone. onAlarm pauses if
+      // the host is still gone when this fires.
       if (this.state.status === "playing" && !this.state.settings.paused && this.state.phaseDeadline) {
-        const remaining = Math.max(0, this.state.phaseDeadline - Date.now());
-        this.state.settings.paused = true;
-        this.state.settings.pausedAt = Date.now();
-        this.state.settings.pausedRemaining = remaining;
-        this.state.phaseDeadline = undefined;
+        this.state.hostPauseDeadline = Date.now() + 2500;
       }
+      this.scheduleNextAlarm();
       this.broadcastState();
       return; // host is not in players array, so skip the rest
     }
@@ -130,6 +182,15 @@ export default class FestspilServer implements Party.Server {
     }
 
     // console.log(`[${this.state.code}] ${msg.type} from ${sender.id}`, msg.type === "join" ? msg.name : "");
+
+    // Authorize host-only actions by the connection identity, never by a
+    // client-supplied hostId. conn.id === the sessionId the socket connected
+    // with, and hostConnect binds hostId to that sessionId, so the real host's
+    // connection is the only one whose id equals hostId. This makes the hostId
+    // that ships in every snapshot useless for impersonation.
+    if (HOST_ONLY_TYPES.has(msg.type) && sender.id !== this.state.hostId) {
+      return;
+    }
 
     try {
       switch (msg.type) {
@@ -189,6 +250,16 @@ export default class FestspilServer implements Party.Server {
   async onAlarm() {
     const now = Date.now();
 
+    // A stale alarm woke an empty room (nobody connected, no game running) —
+    // treat it as closed instead of keeping a dead room alive in storage.
+    const hasConnections = [...this.room.getConnections()].length > 0;
+    if (!hasConnections && this.state.status !== "playing") {
+      await this.room.storage.deleteAll();
+      await this.room.storage.deleteAlarm();
+      this.state = this.freshState();
+      return;
+    }
+
     // Check host disconnect timeout
     if (this.state.hostDisconnectDeadline && now >= this.state.hostDisconnectDeadline && !this.state.hostConnected) {
       // Host gone too long — notify all clients and close room
@@ -197,6 +268,7 @@ export default class FestspilServer implements Party.Server {
       }
       this.state.status = "finished";
       this.state.hostDisconnectDeadline = undefined;
+      this.state.hostPauseDeadline = undefined;
       this.broadcastState();
       return;
     }
@@ -205,9 +277,36 @@ export default class FestspilServer implements Party.Server {
       this.state.hostDisconnectDeadline = undefined;
     }
 
-    // Existing phase timer logic
-    if (this.state.status !== "playing") return;
-    if (this.state.settings.paused) return;
+    // Host-disconnect grace expired — pause if the host is still gone
+    if (this.state.hostPauseDeadline && now >= this.state.hostPauseDeadline) {
+      this.state.hostPauseDeadline = undefined;
+      if (
+        !this.state.hostConnected &&
+        this.state.status === "playing" &&
+        !this.state.settings.paused &&
+        this.state.phaseDeadline
+      ) {
+        this.state.settings.paused = true;
+        this.state.settings.pausedAt = now;
+        this.state.settings.pausedRemaining = Math.max(0, this.state.phaseDeadline - now);
+        this.state.phaseDeadline = undefined;
+        this.scheduleNextAlarm();
+        this.broadcastState();
+        return;
+      }
+    }
+
+    // Phase timer
+    if (this.state.status !== "playing" || this.state.settings.paused) {
+      this.scheduleNextAlarm();
+      return;
+    }
+    // Staleness guard: only advance when the current deadline has actually
+    // passed — an alarm armed for an older phase must not skip the new one.
+    if (!this.state.phaseDeadline || now < this.state.phaseDeadline - 50) {
+      this.scheduleNextAlarm();
+      return;
+    }
 
     advancePhase(this.state, "TIMER_EXPIRED");
     this.scheduleNextAlarm();
@@ -231,7 +330,23 @@ export default class FestspilServer implements Party.Server {
       return;
     }
 
-    if (this.state.status !== "lobby") throw new Error("Spillet er allerede i gang");
+    if (this.state.status !== "lobby") {
+      // Safety net: a player whose session was lost (new device/cleared
+      // storage) can reclaim their disconnected seat by name mid-game.
+      const reclaim = this.state.players.find(
+        (p) => p.name.toLowerCase() === trimmedName.toLowerCase() && !p.isConnected,
+      );
+      if (reclaim) {
+        reclaim.sessionId = sessionId;
+        reclaim.isConnected = true;
+        reclaim.lastSeen = Date.now();
+        const response: ServerMessage = { type: "joined", playerId: reclaim.id, roomCode: this.state.code };
+        conn.send(JSON.stringify(response));
+        this.broadcastState();
+        return;
+      }
+      throw new Error("Spillet er allerede i gang");
+    }
     if (this.state.players.length >= MAX_PLAYERS) throw new Error(`Rummet er fuldt (max ${MAX_PLAYERS})`);
 
     // Check name uniqueness
@@ -244,7 +359,7 @@ export default class FestspilServer implements Party.Server {
       name: trimmedName,
       sessionId,
       avatarColor: getAvatarColor(this.state.players.length),
-      avatarImage,
+      avatarImage: avatarImage?.slice(0, MAX_AVATAR_LEN),
       score: 0,
       isConnected: true,
       lastSeen: Date.now(),
@@ -266,11 +381,19 @@ export default class FestspilServer implements Party.Server {
       const response: ServerMessage = { type: "joined", playerId: player.id, roomCode: this.state.code };
       conn.send(JSON.stringify(response));
       this.broadcastState();
+      return;
     }
+    // Unknown session — tell the client explicitly so it can fall back to the
+    // join screen instead of waiting forever on a silent no-op.
+    const response: ServerMessage = { type: "rejoinFailed" };
+    conn.send(JSON.stringify(response));
   }
 
   private handleChangeGameType(hostId: string, gameType: string) {
     if (this.state.hostId !== hostId) return;
+    // Only selectable in the lobby — switching mid-game would feed the new
+    // game's handlers the old game's phase/phaseData and corrupt the state.
+    if (this.state.status !== "lobby") return;
     this.state.gameType = gameType || undefined;
     this.broadcastState();
   }
@@ -328,14 +451,20 @@ export default class FestspilServer implements Party.Server {
       handlers.onSubmission(this.state, player, content);
     }
 
-    // Check if all expected players have submitted
+    // Check if all expected players have submitted. Only count players who
+    // are connected (or already submitted) — otherwise a dropped player makes
+    // the phase wait out the full timer even after "fortsæt alligevel".
     const currentPhase = this.state.currentPhase ?? "";
     const phaseSubmissions = this.state.submissions.filter(
       (s) => s.round === this.state.roundNumber && s.phase === currentPhase,
     );
+    const submittedIds = new Set(phaseSubmissions.map((s) => s.playerId));
+    const presentCount = this.state.players.filter(
+      (p) => p.isConnected || submittedIds.has(p.id),
+    ).length;
     const expectedCount = handlers.getExpectedSubmitterCount
-      ? handlers.getExpectedSubmitterCount(this.state)
-      : this.state.players.length;
+      ? Math.min(handlers.getExpectedSubmitterCount(this.state), presentCount)
+      : presentCount;
 
     if (phaseSubmissions.length >= expectedCount) {
       advancePhase(this.state, "ALL_SUBMITTED");
@@ -348,6 +477,12 @@ export default class FestspilServer implements Party.Server {
   private handleHostAdvance(hostId: string) {
     if (this.state.hostId !== hostId) return;
     if (this.state.status !== "playing") return;
+    // Ignore a second advance fired right after the first (double-click / the
+    // reveal button plus the always-visible Skip button) so a whole phase or
+    // round is never skipped in one burst.
+    const now = Date.now();
+    if (now - this.lastAdvanceAt < HOST_ADVANCE_DEBOUNCE_MS) return;
+    this.lastAdvanceAt = now;
     advancePhase(this.state, "HOST_ADVANCE");
     this.scheduleNextAlarm();
     this.broadcastState();
@@ -391,14 +526,22 @@ export default class FestspilServer implements Party.Server {
     if (!this.state.settings.paused) return;
 
     const remaining = (this.state.settings.pausedRemaining as number) ?? 0;
-    this.state.phaseDeadline = remaining > 0 ? Date.now() + remaining : undefined;
 
     // Clear host disconnect deadline when host reconnects and unpauses
     this.state.hostDisconnectDeadline = undefined;
+    this.state.hostPauseDeadline = undefined;
 
     delete this.state.settings.paused;
     delete this.state.settings.pausedAt;
     delete this.state.settings.pausedRemaining;
+
+    if (remaining > 0) {
+      this.state.phaseDeadline = Date.now() + remaining;
+    } else if (this.state.status === "playing") {
+      // Resuming with no time left: an undefined deadline while playing would
+      // leave the phase hanging forever — advance it immediately instead.
+      advancePhase(this.state, "TIMER_EXPIRED");
+    }
 
     this.scheduleNextAlarm();
     this.broadcastState();
@@ -428,7 +571,7 @@ export default class FestspilServer implements Party.Server {
   private handleChangeAvatar(sessionId: string, avatarImage: string) {
     const player = this.state.players.find((p) => p.sessionId === sessionId);
     if (!player) return;
-    player.avatarImage = avatarImage || undefined;
+    player.avatarImage = avatarImage ? avatarImage.slice(0, MAX_AVATAR_LEN) : undefined;
     this.broadcastState();
   }
 
@@ -445,6 +588,9 @@ export default class FestspilServer implements Party.Server {
     if (this.state.hostId !== hostId) return;
     if (this.state.gameType !== "morph") return;
     if (this.state.currentPhase !== "reveal") return;
+    const now = Date.now();
+    if (now - this.lastAdvanceAt < HOST_ADVANCE_DEBOUNCE_MS) return;
+    this.lastAdvanceAt = now;
 
     const pd = (this.state.phaseData ?? {}) as any;
     const chains: any[] = pd.chains ?? [];
@@ -473,6 +619,7 @@ export default class FestspilServer implements Party.Server {
       this.state.hostConnected = true;
       this.state.hostLastSeen = Date.now();
       this.state.hostDisconnectDeadline = undefined;
+      this.state.hostPauseDeadline = undefined;
       conn.send(JSON.stringify({ type: "hostClaimed", success: true }));
       this.broadcastState();
       return;
@@ -484,6 +631,7 @@ export default class FestspilServer implements Party.Server {
       this.state.hostConnected = true;
       this.state.hostLastSeen = Date.now();
       this.state.hostDisconnectDeadline = undefined;
+      this.state.hostPauseDeadline = undefined;
       conn.send(JSON.stringify({ type: "hostClaimed", success: true }));
       this.scheduleNextAlarm(); // reschedule without the host disconnect deadline
       this.broadcastState();
@@ -500,6 +648,16 @@ export default class FestspilServer implements Party.Server {
     for (const conn of this.room.getConnections()) {
       this.sendToConnection(conn);
     }
+    this.persist();
+  }
+
+  /**
+   * Persist state so redeploys/evictions don't reset the room. Every state
+   * mutation ends in broadcastState(), so this is the single write point.
+   * Fire-and-forget: DO output gates coalesce and order the writes.
+   */
+  private persist() {
+    void this.room.storage.put("state", this.state);
   }
 
   private sendToConnection(conn: Party.Connection) {
@@ -571,6 +729,9 @@ export default class FestspilServer implements Party.Server {
     }
     if (this.state.hostDisconnectDeadline && this.state.hostDisconnectDeadline > now) {
       deadlines.push(this.state.hostDisconnectDeadline);
+    }
+    if (this.state.hostPauseDeadline && this.state.hostPauseDeadline > now) {
+      deadlines.push(this.state.hostPauseDeadline);
     }
     if (deadlines.length > 0) {
       this.room.storage.setAlarm(Math.min(...deadlines));

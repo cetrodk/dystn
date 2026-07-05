@@ -2,15 +2,14 @@ import { Suspense, useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { WifiOff } from "lucide-react";
-import { useSessionId } from "@/providers/SessionProvider";
-import { PartyProvider, useRoom, useSend, usePartyConnection, useRoomClosed } from "@/providers/PartyProvider";
+import { PartyProvider, useRoom, useSend, usePartyConnection, useRoomClosed, useRejoinFailed } from "@/providers/PartyProvider";
 import { gameComponents } from "@/games/registry";
 import { GameAvatar } from "@/components/GameAvatar";
 import { AvatarPickerModal } from "@/components/AvatarPickerModal";
 import { GameIntro } from "@/components/GameIntro";
 import { useShowIntro } from "@/hooks/useShowIntro";
-import { da } from "@/lib/da";
-import { PLAYER_NAME_KEY, PLAYER_AVATAR_KEY } from "@/lib/session";
+import { da, pluralPlayers } from "@/lib/da";
+import { PLAYER_NAME_KEY, PLAYER_AVATAR_KEY, getRoomSessionId } from "@/lib/session";
 
 function PlayerNav({ sessionId }: { sessionId: string }) {
   const send = useSend();
@@ -65,18 +64,66 @@ function HostDisconnectedBanner() {
   );
 }
 
-function PlayerViewInner() {
-  const sessionId = useSessionId();
+function FeedbackToast({ message }: { message: string }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -16 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -16 }}
+      className="fixed top-4 left-1/2 z-[60] -translate-x-1/2 rounded-xl bg-[var(--color-danger)] px-5 py-3 text-center text-sm font-semibold text-white shadow-lg"
+    >
+      {message}
+    </motion.div>
+  );
+}
+
+function ConnectionLostBanner() {
+  return (
+    <div className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-center gap-2 bg-[var(--color-warning)]/15 py-2 text-xs font-semibold text-[var(--color-warning)] backdrop-blur-md">
+      <WifiOff className="h-4 w-4" />
+      {da.connectionLost}
+    </div>
+  );
+}
+
+function PlayerViewInner({ sessionId }: { sessionId: string }) {
+  const { code } = useParams<{ code: string }>();
   const room = useRoom();
   const send = useSend();
   const navigate = useNavigate();
-  const { connected } = usePartyConnection();
+  const { connected, error } = usePartyConnection();
   const roomClosed = useRoomClosed();
+  const rejoinFailed = useRejoinFailed();
   const hasJoined = useRef(false);
   const prevConnected = useRef(false);
 
   const [avatarModalOpen, setAvatarModalOpen] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
   const [showIntro, dismissIntro] = useShowIntro(room);
+
+  // Surface server rejections ("Prøv et andet svar", "Rummet er fuldt", …) that
+  // were previously swallowed — the player used to see an eternal waiting screen.
+  useEffect(() => {
+    if (!error) return;
+    setToast(error);
+    const t = setTimeout(() => setToast(null), 4000);
+    return () => clearTimeout(t);
+  }, [error]);
+
+  // Unknown session on the server (room was reset or storage cleared) — fall
+  // back to the join screen with the code prefilled instead of hanging.
+  useEffect(() => {
+    if (rejoinFailed) {
+      navigate(`/join/${code ?? ""}`, { replace: true });
+    }
+  }, [rejoinFailed, code, navigate]);
+
+  const overlays = (
+    <>
+      <AnimatePresence>{toast && <FeedbackToast message={toast} />}</AnimatePresence>
+      {!connected && room ? <ConnectionLostBanner /> : null}
+    </>
+  );
 
   // Send join on first connect, rejoin on reconnect
   useEffect(() => {
@@ -138,6 +185,7 @@ function PlayerViewInner() {
     if (PhaseComponent) {
       return (
         <>
+          {overlays}
           {showIntro && !!room.gameType && (
             <GameIntro gameType={room.gameType} variant="player" onDone={dismissIntro} />
           )}
@@ -216,6 +264,7 @@ function PlayerViewInner() {
   // -- Lobby --
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-6 p-4">
+      {overlays}
       <AnimatePresence>
         {hostGone && <HostDisconnectedBanner />}
       </AnimatePresence>
@@ -242,7 +291,7 @@ function PlayerViewInner() {
         className="w-full max-w-xs"
       >
         <p className="mb-3 text-center text-sm text-[var(--color-text-muted)]">
-          {room.players.length} {da.playersJoined}
+          {room.players.length} {pluralPlayers(room.players.length)} tilsluttet
         </p>
         <ul className="flex flex-col gap-2">
           <AnimatePresence>
@@ -298,7 +347,6 @@ function PlayerViewInner() {
 
 export function PlayerView() {
   const { code } = useParams<{ code: string }>();
-  const sessionId = useSessionId();
 
   if (!code) {
     return (
@@ -308,9 +356,13 @@ export function PlayerView() {
     );
   }
 
+  // Room-scoped identity in localStorage: survives the mobile browser killing
+  // the tab while the phone is locked between rounds.
+  const sessionId = getRoomSessionId(code);
+
   return (
     <PartyProvider roomCode={code} sessionId={sessionId}>
-      <PlayerViewInner />
+      <PlayerViewInner sessionId={sessionId} />
     </PartyProvider>
   );
 }

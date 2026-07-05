@@ -29,6 +29,8 @@ export interface RoomState {
   hostConnected: boolean;
   hostLastSeen: number;
   hostDisconnectDeadline?: number;
+  /** Grace deadline: pause the game if the host is still gone when it fires */
+  hostPauseDeadline?: number;
   gameType?: string;
   status: RoomStatus;
   currentPhase?: string;
@@ -120,6 +122,7 @@ export type ServerMessage =
   | { type: "room"; data: RoomSnapshot }
   | { type: "error"; message: string }
   | { type: "joined"; playerId: string; roomCode: string }
+  | { type: "rejoinFailed" }
   | { type: "kicked" }
   | { type: "hostClaimed"; success: boolean }
   | { type: "roomClosed"; reason: string };
