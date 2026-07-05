@@ -10,7 +10,7 @@
  *  - Cross-game overlap detection
  */
 
-import { blitzPrompts, fuskPrompts, scrawlPrompts, surgePrompts, getPromptStats } from "./loader";
+import { blitzPrompts, fuskPrompts, scrawlPrompts, surgePrompts, hunchPrompts, getPromptStats } from "./loader";
 
 let errors = 0;
 let warnings = 0;
@@ -133,6 +133,27 @@ for (const cat of ["1", "2", "3"] as const) {
   info(`Category ${cat}: ${total} total, ${trueCount} true / ${falseCount} false (${truePercent}% true)`);
   if (truePercent > 75) warn(`Category ${cat}: too many 'true' answers (${truePercent}%) — game becomes predictable`);
   if (truePercent < 25) warn(`Category ${cat}: too many 'false' answers (${100 - truePercent}%) — game becomes predictable`);
+}
+
+// ── Hunch ───────────────────────────────────────────────────────────
+
+console.log("\n=== HUNCH ===");
+info(`Total prompts: ${hunchPrompts.length}`);
+
+findDuplicates(
+  hunchPrompts.map((p) => `${p.leftLabel}|${p.rightLabel}`),
+  "hunch (leftLabel|rightLabel)",
+);
+
+if (hunchPrompts.length < 15) {
+  warn(`Hunch has fewer than 15 cards (${hunchPrompts.length}) — prompts repeat quickly across rounds`);
+}
+
+for (let i = 0; i < hunchPrompts.length; i++) {
+  const p = hunchPrompts[i];
+  if (!p.leftLabel?.trim() || !p.rightLabel?.trim()) {
+    error(`hunch[${i}]: empty leftLabel/rightLabel`);
+  }
 }
 
 // ── Cross-game overlap ──────────────────────────────────────────────

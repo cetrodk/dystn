@@ -2,8 +2,13 @@ import { registerGameHandlers } from "../registry";
 import { getSubmissions, upsertSubmission, validateVote } from "../submissions";
 import type { PhaseTransition, Player, RoomState } from "../types";
 import { blitzPrompts } from "./prompts/loader";
+import { shuffle } from "../shuffle";
 
 registerGameHandlers("blitz", {
+  config: {
+    minPlayers: 3, // voting degenerates with 1-2 players (own/only answer)
+  },
+
   setupRound(room: RoomState): Record<string, unknown> {
     if (blitzPrompts.length === 0) {
       return {
@@ -20,7 +25,8 @@ registerGameHandlers("blitz", {
   },
 
   onSubmission(room: RoomState, player: Player, content: unknown): void {
-    const text = String(content).trim().slice(0, 280);
+    if (typeof content !== "string") throw new Error("Ugyldigt svar");
+    const text = content.trim().slice(0, 280);
     if (!text) throw new Error("Tomt svar");
 
     upsertSubmission(room, player.id, "submit", text);
@@ -39,7 +45,7 @@ registerGameHandlers("blitz", {
       mergedPlayerIds?: string[];
     }> = [];
 
-    const shuffled = [...submissions].sort(() => Math.random() - 0.5);
+    const shuffled = shuffle(submissions);
     for (const s of shuffled) {
       const key = String(s.content).toLowerCase();
       const existing = seen.get(key);
@@ -237,8 +243,16 @@ registerGameHandlers("blitz", {
     switch (currentPhase) {
       case "submit":
         return { nextPhase: "present", action: { type: "buildVote" } };
-      case "present":
+      case "present": {
+        // With fewer than 2 merged answers nobody has anything to vote on
+        // (identical answers merge into one that is "own" for every author) —
+        // skip straight to reveal instead of a dead vote phase.
+        const answers = ((room.phaseData as any)?.answers ?? []) as unknown[];
+        if (answers.length < 2) {
+          return { nextPhase: "reveal", action: { type: "computeResults" } };
+        }
         return { nextPhase: "vote", action: { type: "none" } };
+      }
       case "vote":
         return { nextPhase: "reveal", action: { type: "computeResults" } };
       case "reveal":

@@ -1,6 +1,8 @@
 import { registerGameHandlers } from "../registry";
 import { getSubmissions, upsertSubmission } from "../submissions";
 import type { Player, RoomState, PhaseTransition } from "../types";
+import { MAX_STROKES, MAX_DRAWING_BYTES } from "../constants";
+import { shuffle } from "../shuffle";
 
 /**
  * Telefon (Gartic Phone clone) — chain-based telephone drawing game.
@@ -18,12 +20,11 @@ registerGameHandlers("morph", {
   config: {
     initialPhase: "write",
     totalRoundsForPlayerCount: () => 1,
+    minPlayers: 3, // chains need at least write → draw → guess by 3 different players
   },
 
   setupRound(room: RoomState): Record<string, unknown> {
-    const playerIds = room.players
-      .map((p) => p.id)
-      .sort(() => Math.random() - 0.5);
+    const playerIds = shuffle(room.players.map((p) => p.id));
     const N = playerIds.length;
     return {
       playerIds,
@@ -37,7 +38,8 @@ registerGameHandlers("morph", {
     const basePhase = phase.split("_")[0];
 
     if (basePhase === "write") {
-      const text = String(content).trim().slice(0, 120);
+      if (typeof content !== "string") throw new Error("Ugyldigt svar");
+      const text = content.trim().slice(0, 120);
       if (!text) throw new Error("Skriv noget først");
       upsertSubmission(room, player.id, "write", text);
     } else if (basePhase === "draw") {
@@ -47,9 +49,16 @@ registerGameHandlers("morph", {
       if (!Array.isArray(strokes) || strokes.length === 0) {
         throw new Error("Tegn noget først");
       }
+      if (
+        strokes.length > MAX_STROKES ||
+        JSON.stringify(content).length > MAX_DRAWING_BYTES
+      ) {
+        throw new Error("Tegningen er for stor");
+      }
       upsertSubmission(room, player.id, phase, content);
     } else if (basePhase === "guess") {
-      const text = String(content).trim().slice(0, 120);
+      if (typeof content !== "string") throw new Error("Ugyldigt gæt");
+      const text = content.trim().slice(0, 120);
       if (!text) throw new Error("Tomt gæt");
       upsertSubmission(room, player.id, phase, text);
     }

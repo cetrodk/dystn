@@ -13,17 +13,29 @@ registerGameHandlers("hunch", {
   config: {
     initialPhase: "clue",
     totalRoundsForPlayerCount: (n) => Math.min(Math.max(6, n * 2), 12),
+    minPlayers: 2, // clue-giver + at least one guesser
   },
 
   setupRound(room: RoomState): Record<string, unknown> {
-    const pd = (room.phaseData ?? {}) as Record<string, unknown>;
-    const usedPromptIds = (pd.usedPromptIds as number[]) ?? [];
+    if (room.players.length === 0) {
+      // Everyone left mid-game — the server's safeAdvance finishes the game.
+      throw new Error("Ingen spillere tilbage i rummet");
+    }
 
-    // Filter out used prompts; recycle if exhausted
+    const pd = (room.phaseData ?? {}) as Record<string, unknown>;
+    let usedPromptIds = (pd.usedPromptIds as number[]) ?? [];
+
+    // Filter out used prompts; on exhaustion reset the used-list but never
+    // repeat the most recent prompt two rounds in a row.
     const usedSet = new Set(usedPromptIds);
     const indexed = allPrompts.map((p, idx) => ({ ...p, idx }));
-    const unused = indexed.filter((p) => !usedSet.has(p.idx));
-    const available = unused.length > 0 ? unused : indexed;
+    let available = indexed.filter((p) => !usedSet.has(p.idx));
+    if (available.length === 0) {
+      const lastUsed = usedPromptIds[usedPromptIds.length - 1];
+      usedPromptIds = [];
+      available = indexed.filter((p) => p.idx !== lastUsed);
+      if (available.length === 0) available = indexed;
+    }
     const prompt = available[Math.floor(Math.random() * available.length)];
 
     // Rotate clue-giver through players
@@ -52,7 +64,8 @@ registerGameHandlers("hunch", {
       if (player.id !== clueGiverId) {
         throw new Error("Kun fingerpegsgiveren kan indsende");
       }
-      const clue = String(content).trim().slice(0, 60);
+      if (typeof content !== "string") throw new Error("Ugyldigt fingerpeg");
+      const clue = content.trim().slice(0, 60);
       if (!clue) throw new Error("Tomt fingerpeg");
       upsertSubmission(room, player.id, "clue", clue);
       room.phaseData = { ...pd, clue };
@@ -69,17 +82,23 @@ registerGameHandlers("hunch", {
   },
 
   buildVoteData(): Record<string, unknown> {
-    throw new Error("Ord & Klap har ingen afstemningsfase");
+    throw new Error("Hunch har ingen afstemningsfase");
   },
 
   onVote(): void {
-    throw new Error("Ord & Klap har ingen afstemningsfase");
+    throw new Error("Hunch har ingen afstemningsfase");
   },
 
   getExpectedSubmitterCount(room: RoomState): number {
     const base = (room.currentPhase ?? "").split("_")[0];
     if (base === "clue") return 1;
-    if (base === "guess") return room.players.length - 1;
+    if (base === "guess") {
+      // Count actual guessers — the clue-giver may have left mid-round, in
+      // which case players.length - 1 would wait on a guess that never comes.
+      const clueGiverId = (room.phaseData as Record<string, unknown> | undefined)
+        ?.clueGiverId as string | undefined;
+      return room.players.filter((p) => p.id !== clueGiverId).length;
+    }
     return room.players.length;
   },
 
@@ -196,13 +215,25 @@ registerGameHandlers("hunch", {
     const totalRounds = room.totalRounds ?? 1;
 
     switch (currentPhase) {
-      case "clue":
+      case "clue": {
+        // Clue-giver went AFK (timer/host advanced with no clue): there is
+        // nothing to guess on, so skip the round instead of a blind guess phase.
+        const hasClue = getSubmissions(room, "clue").length > 0;
+        if (!hasClue) {
+          if (roundNumber >= totalRounds) {
+            return { nextPhase: "finished", action: { type: "finish" } };
+          }
+          return { nextPhase: "clue", action: { type: "setup" }, advanceRound: true };
+        }
         return { nextPhase: "guess", action: { type: "none" } };
+      }
       case "guess":
         return {
           nextPhase: "reveal",
           action: { type: "computeResults" },
-          timerOverride: 30_000,
+          // HostReveal staggers each guesser ~3.5s plus an outro — 30s flat cut
+          // off the bonus at full rooms.
+          timerOverride: 12_000 + Math.max(0, room.players.length - 1) * 4_000,
         };
       case "reveal":
         if (roundNumber >= totalRounds) {

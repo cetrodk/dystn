@@ -24,6 +24,23 @@ const MAX_AVATAR_LEN = 64;
 /** Minimum gap between accepted host-advance messages (kills double-clicks) */
 const HOST_ADVANCE_DEBOUNCE_MS = 500;
 
+/** Settings keys the host may change — the pause keys are server-managed */
+const ALLOWED_SETTINGS_KEYS = new Set([
+  "submitTime",
+  "presentTime",
+  "voteTime",
+  "revealTime",
+  "scoresTime",
+  "drawTime",
+  "guessTime",
+  "writeTime",
+  "commitTime",
+  "clueTime",
+  "showIntro",
+  "scrawlDifficulty",
+  "surgeDifficulty",
+]);
+
 /** Host-only message types — authorized by the connection, not a payload field */
 const HOST_ONLY_TYPES = new Set([
   "changeGameType",
@@ -74,6 +91,31 @@ export default class FestspilServer implements Party.Server {
   }
 
   /**
+   * advancePhase can throw if a game handler hits unrecoverable state (e.g.
+   * every player left mid-game and setupRound has nobody to pick from). An
+   * uncaught throw mid-mutation would freeze the room in a broken phase —
+   * finish the game instead so clients land on a sane screen.
+   */
+  private safeAdvance(event: string) {
+    try {
+      advancePhase(this.state, event);
+    } catch {
+      this.state.status = "finished";
+      this.state.currentPhase = "finished";
+      this.state.phaseDeadline = undefined;
+    }
+    // Advancing while paused (host skip / all-submitted during a pause) must
+    // not leave a live deadline behind — continueGame would clobber it with
+    // the OLD phase's remaining time. Convert it to pausedRemaining so the
+    // new phase resumes with its full duration.
+    if (this.state.settings.paused && this.state.phaseDeadline) {
+      this.state.settings.pausedRemaining = Math.max(0, this.state.phaseDeadline - Date.now());
+      this.state.settings.pausedAt = Date.now();
+      this.state.phaseDeadline = undefined;
+    }
+  }
+
+  /**
    * Restore persisted state so a redeploy/eviction mid-game doesn't reset the
    * room to an empty lobby (which would also blank hostSecret and let anyone
    * claim the room).
@@ -101,7 +143,7 @@ export default class FestspilServer implements Party.Server {
       this.state.phaseDeadline &&
       Date.now() >= this.state.phaseDeadline
     ) {
-      advancePhase(this.state, "TIMER_EXPIRED");
+      this.safeAdvance("TIMER_EXPIRED");
     }
     this.scheduleNextAlarm();
   }
@@ -127,8 +169,14 @@ export default class FestspilServer implements Party.Server {
       player.lastSeen = Date.now();
     }
 
-    // Send current state to the new connection
-    this.sendToConnection(conn);
+    if (player || conn.id === this.state.hostId) {
+      // Known reconnect: everyone should see the player/host flip back to
+      // connected now, not at the next unrelated broadcast.
+      this.broadcastState();
+    } else {
+      // Send current state to the new connection
+      this.sendToConnection(conn);
+    }
   }
 
   onClose(conn: Party.Connection) {
@@ -173,11 +221,18 @@ export default class FestspilServer implements Party.Server {
   /** ── Message handling ── */
 
   onMessage(raw: string, sender: Party.Connection) {
+    // Global inbound cap before JSON.parse — larger than any legal payload
+    // (drawings are capped at MAX_DRAWING_BYTES in the game handlers).
+    if (raw.length > 512_000) {
+      this.sendError(sender, "Beskeden er for stor");
+      return;
+    }
+
     let msg: ClientMessage;
     try {
       msg = JSON.parse(raw);
     } catch {
-      this.sendError(sender, "Invalid message");
+      this.sendError(sender, "Ugyldig besked");
       return;
     }
 
@@ -207,7 +262,9 @@ export default class FestspilServer implements Party.Server {
           this.handleStartGame(msg.hostId);
           break;
         case "submitAnswer":
-          this.handleSubmitAnswer(msg.sessionId, msg.content);
+          // Player actions are keyed on the connection identity (conn.id ===
+          // sessionId), never the payload field — same rationale as hostId.
+          this.handleSubmitAnswer(sender.id, msg.content, msg.phase);
           break;
         case "hostAdvance":
           this.handleHostAdvance(msg.hostId);
@@ -228,10 +285,10 @@ export default class FestspilServer implements Party.Server {
           this.handleKickPlayer(msg.hostId, msg.playerId);
           break;
         case "changeAvatar":
-          this.handleChangeAvatar(msg.sessionId, msg.avatarImage);
+          this.handleChangeAvatar(sender.id, msg.avatarImage);
           break;
         case "leaveRoom":
-          this.handleLeaveRoom(sender, msg.sessionId);
+          this.handleLeaveRoom(sender, sender.id);
           break;
         case "morphAdvanceReveal":
           this.handleMorphAdvanceReveal(msg.hostId);
@@ -241,7 +298,7 @@ export default class FestspilServer implements Party.Server {
           break;
       }
     } catch (err) {
-      this.sendError(sender, err instanceof Error ? err.message : "Server error");
+      this.sendError(sender, err instanceof Error ? err.message : "Serverfejl");
     }
   }
 
@@ -308,7 +365,7 @@ export default class FestspilServer implements Party.Server {
       return;
     }
 
-    advancePhase(this.state, "TIMER_EXPIRED");
+    this.safeAdvance("TIMER_EXPIRED");
     this.scheduleNextAlarm();
     this.broadcastState();
   }
@@ -358,7 +415,7 @@ export default class FestspilServer implements Party.Server {
       id: generateId(),
       name: trimmedName,
       sessionId,
-      avatarColor: getAvatarColor(this.state.players.length),
+      avatarColor: getAvatarColor(this.state.players.map((p) => p.avatarColor)),
       avatarImage: avatarImage?.slice(0, MAX_AVATAR_LEN),
       score: 0,
       isConnected: true,
@@ -399,13 +456,16 @@ export default class FestspilServer implements Party.Server {
   }
 
   private handleStartGame(hostId: string) {
-    if (this.state.hostId !== hostId) throw new Error("Only the host can start");
-    if (this.state.status !== "lobby") throw new Error("Game already started");
-    if (!this.state.gameType) throw new Error("No game selected");
-    if (this.state.players.length < MIN_PLAYERS) throw new Error("Not enough players");
+    if (this.state.hostId !== hostId) throw new Error("Kun værten kan starte spillet");
+    if (this.state.status !== "lobby") throw new Error("Spillet er allerede i gang");
+    if (!this.state.gameType) throw new Error("Der er ikke valgt et spil");
 
     const handlers = getGameHandlers(this.state.gameType);
     const config = handlers.config ?? {};
+    const minPlayers = config.minPlayers ?? MIN_PLAYERS;
+    if (this.state.players.length < minPlayers) {
+      throw new Error(`Kræver mindst ${minPlayers} spillere`);
+    }
     const firstPhase = config.initialPhase ?? "submit";
     const totalRounds = config.totalRoundsForPlayerCount
       ? config.totalRoundsForPlayerCount(this.state.players.length)
@@ -422,20 +482,29 @@ export default class FestspilServer implements Party.Server {
     this.state.phaseData = roundData;
 
     const duration = getPhaseDuration(firstPhase, this.state.settings);
-    this.state.phaseDeadline = Date.now() + duration;
+    // The GameIntro overlay covers clients for ~6.4s after start — give the
+    // first phase that time back so the intro doesn't eat answer time.
+    const introDelay = this.state.settings.showIntro ? 6_500 : 0;
+    this.state.phaseDeadline = Date.now() + duration + introDelay;
 
     this.scheduleNextAlarm();
     this.broadcastState();
   }
 
-  private handleSubmitAnswer(sessionId: string, content: unknown) {
+  private handleSubmitAnswer(sessionId: string, content: unknown, clientPhase?: string) {
     const player = this.state.players.find((p) => p.sessionId === sessionId);
-    if (!player) throw new Error("Player not found");
+    if (!player) throw new Error("Spilleren blev ikke fundet");
     if (this.state.status !== "playing" || !this.state.gameType) return;
 
     const phase = this.state.currentPhase ?? "";
     const base = phase.split("_")[0];
     if (!["submit", "vote", "draw", "guess", "write", "commit", "clue"].includes(base)) return;
+
+    // A submission that raced a phase flip must not count toward the new
+    // phase (e.g. a fusk fake-text stored as a vote, or a drawing object
+    // String()'ed into a guess). Clients stamp the phase they answered in;
+    // drop mismatches silently — the results for that phase are already final.
+    if (clientPhase !== undefined && clientPhase !== phase) return;
 
     // Check deadline (2s grace), skip if paused
     if (!this.state.settings.paused && this.state.phaseDeadline && Date.now() > this.state.phaseDeadline + 2000) {
@@ -451,9 +520,23 @@ export default class FestspilServer implements Party.Server {
       handlers.onSubmission(this.state, player, content);
     }
 
-    // Check if all expected players have submitted. Only count players who
-    // are connected (or already submitted) — otherwise a dropped player makes
-    // the phase wait out the full timer even after "fortsæt alligevel".
+    this.checkAllSubmitted();
+    this.broadcastState();
+  }
+
+  /**
+   * Advance the phase early when every expected submitter has delivered. Only
+   * count players who are connected (or already submitted) — otherwise a
+   * dropped player makes the phase wait out the full timer even after
+   * "fortsæt alligevel". Also called when a player leaves mid-phase: if the
+   * last outstanding player leaves, the rest shouldn't wait out the timer.
+   */
+  private checkAllSubmitted() {
+    if (this.state.status !== "playing" || !this.state.gameType) return;
+    const base = (this.state.currentPhase ?? "").split("_")[0];
+    if (!["submit", "vote", "draw", "guess", "write", "commit", "clue"].includes(base)) return;
+
+    const handlers = getGameHandlers(this.state.gameType);
     const currentPhase = this.state.currentPhase ?? "";
     const phaseSubmissions = this.state.submissions.filter(
       (s) => s.round === this.state.roundNumber && s.phase === currentPhase,
@@ -466,12 +549,10 @@ export default class FestspilServer implements Party.Server {
       ? Math.min(handlers.getExpectedSubmitterCount(this.state), presentCount)
       : presentCount;
 
-    if (phaseSubmissions.length >= expectedCount) {
-      advancePhase(this.state, "ALL_SUBMITTED");
+    if (expectedCount > 0 && phaseSubmissions.length >= expectedCount) {
+      this.safeAdvance("ALL_SUBMITTED");
       this.scheduleNextAlarm();
     }
-
-    this.broadcastState();
   }
 
   private handleHostAdvance(hostId: string) {
@@ -483,14 +564,20 @@ export default class FestspilServer implements Party.Server {
     const now = Date.now();
     if (now - this.lastAdvanceAt < HOST_ADVANCE_DEBOUNCE_MS) return;
     this.lastAdvanceAt = now;
-    advancePhase(this.state, "HOST_ADVANCE");
+    this.safeAdvance("HOST_ADVANCE");
     this.scheduleNextAlarm();
     this.broadcastState();
   }
 
   private handleUpdateSettings(hostId: string, settings: Record<string, unknown>) {
     if (this.state.hostId !== hostId) return;
-    Object.assign(this.state.settings, settings);
+    // Whitelist: a raw Object.assign would let a crafted message set the
+    // reserved pause keys (paused/pausedAt/pausedRemaining) or anything else.
+    for (const [key, value] of Object.entries(settings)) {
+      if (ALLOWED_SETTINGS_KEYS.has(key)) {
+        this.state.settings[key] = value;
+      }
+    }
     this.broadcastState();
   }
 
@@ -540,7 +627,7 @@ export default class FestspilServer implements Party.Server {
     } else if (this.state.status === "playing") {
       // Resuming with no time left: an undefined deadline while playing would
       // leave the phase hanging forever — advance it immediately instead.
-      advancePhase(this.state, "TIMER_EXPIRED");
+      this.safeAdvance("TIMER_EXPIRED");
     }
 
     this.scheduleNextAlarm();
@@ -579,6 +666,9 @@ export default class FestspilServer implements Party.Server {
     const idx = this.state.players.findIndex((p) => p.sessionId === sessionId);
     if (idx !== -1) {
       this.state.players.splice(idx, 1);
+      // If the leaver was the last outstanding submitter, advance now instead
+      // of making everyone else wait out the full phase timer.
+      this.checkAllSubmitted();
       this.broadcastState();
     }
     conn.close();
