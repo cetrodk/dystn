@@ -27,7 +27,9 @@ export async function joinRoom(browser: Browser, code: string, name: string): Pr
   const page = await ctx.newPage();
   await page.goto(`/join/${code}`);
   await page.fill('input[placeholder="Dit navn"]', name);
-  await page.click("text=Deltag");
+  // The redesigned join card has a decorative "DELTAG" header label as well as
+  // the submit button, so target the submit button specifically.
+  await page.click('button[type="submit"]');
   await page.waitForURL(`/play/${code}`);
   await expect(page.locator("text=Du er med!")).toBeVisible({ timeout: 5000 });
   return page;

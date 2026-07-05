@@ -3,8 +3,12 @@ import { createRoot } from "react-dom/client";
 import * as Sentry from "@sentry/react";
 import { SessionProvider } from "@/providers/SessionProvider";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { applyTheme, getStoredTheme } from "@/lib/theme";
 import App from "./App";
 import "./index.css";
+
+// Apply the saved colour theme before first paint to avoid a flash.
+applyTheme(getStoredTheme());
 
 // Init synchronously: ErrorBoundary imports Sentry statically so it is in the
 // bundle regardless, and a lazy init loses errors thrown before it resolves.

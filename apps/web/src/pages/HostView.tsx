@@ -19,6 +19,7 @@ import { GameAvatar } from "@/components/GameAvatar";
 import { GamePicker, GAMES, GAME_ICONS } from "@/components/GamePicker";
 import { GameIntro } from "@/components/GameIntro";
 import { UnknownPhase } from "@/components/UnknownPhase";
+import { Logo, Chip, RoomCodeTiles, SectionHeader } from "@/components/Brand";
 import { da } from "@/lib/da";
 import { clearHostSession } from "@/lib/session";
 
@@ -45,7 +46,7 @@ function HostToolbar({
     <motion.div
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between gap-4 px-4 py-2 bg-[var(--color-bg)]/80 backdrop-blur-md border-b border-white/5"
+      className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between gap-4 px-4 py-2 bg-[var(--color-bg)]/85 backdrop-blur-md border-b-2 border-[var(--color-ink)]/15"
     >
       <div className="flex items-center gap-3">
         {GameIcon && <GameIcon className="h-5 w-5" style={{ color: game.color }} />}
@@ -128,10 +129,10 @@ function MuteButton() {
         ensureResumed();
         toggleMute();
       }}
-      className="rounded-lg bg-[var(--color-surface-light)] p-1.5 hover:bg-[var(--color-primary)]/20 transition-colors cursor-pointer"
+      className="grid h-9 w-9 place-items-center rounded-full border-2 border-[var(--color-ink)] bg-[var(--color-paper)] text-[var(--color-ink)] hover:bg-[var(--color-surface-light)] transition-colors cursor-pointer"
       title={muted ? "Slå lyd til" : "Slå lyd fra"}
     >
-      <Icon className="h-4 w-4" />
+      <Icon className="h-[18px] w-[18px]" />
     </button>
   );
 }
@@ -199,7 +200,7 @@ function PlayerSlots({ room, sessionId }: { room: RoomSnapshot; sessionId: strin
   const slots = Array.from({ length: MAX_PLAYERS }, (_, i) => room.players[i] ?? null);
 
   return (
-    <div className="grid grid-cols-2 gap-2 w-full">
+    <div className="grid grid-cols-2 gap-2.5 w-full">
       {slots.map((player, i) =>
         player ? (
           <motion.div
@@ -207,10 +208,11 @@ function PlayerSlots({ room, sessionId }: { room: RoomSnapshot; sessionId: strin
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: i * 0.05, type: "spring", stiffness: 300 }}
-            className="flex items-center gap-2.5 rounded-xl bg-[var(--color-surface)] px-3 py-2.5"
+            className="nb-card relative flex items-center gap-2.5 rounded-xl px-3 py-2.5"
+            style={{ boxShadow: "4px 4px 0 var(--color-ink)" }}
           >
             <GameAvatar name={player.name} avatarColor={player.avatarColor} avatarImage={player.avatarImage} className="h-9 w-9 shrink-0" />
-            <span className="text-sm font-semibold truncate flex-1">{player.name}</span>
+            <span className="font-display text-base truncate flex-1">{player.name}</span>
             {!player.isConnected && (
               <span className="text-[10px] text-[var(--color-danger)] shrink-0">●</span>
             )}
@@ -221,13 +223,13 @@ function PlayerSlots({ room, sessionId }: { room: RoomSnapshot; sessionId: strin
                     send({ type: "kickPlayer", hostId: sessionId, playerId: player._id });
                     setConfirmKick(null);
                   }}
-                  className="rounded-md bg-[var(--color-danger)]/20 px-2 py-0.5 text-[10px] font-bold text-[var(--color-danger)] cursor-pointer"
+                  className="rounded-md border-2 border-[var(--color-ink)] bg-[var(--color-danger)] px-2 py-0.5 font-mono text-[10px] font-bold text-white cursor-pointer"
                 >
                   Fjern
                 </button>
                 <button
                   onClick={() => setConfirmKick(null)}
-                  className="rounded-md bg-[var(--color-surface-light)] px-2 py-0.5 text-[10px] font-bold text-[var(--color-text-muted)] cursor-pointer"
+                  className="rounded-md border-2 border-[var(--color-ink)] px-2 py-0.5 font-mono text-[10px] font-bold text-[var(--color-text-muted)] cursor-pointer"
                 >
                   Nej
                 </button>
@@ -235,7 +237,7 @@ function PlayerSlots({ room, sessionId }: { room: RoomSnapshot; sessionId: strin
             ) : (
               <button
                 onClick={() => setConfirmKick(player._id)}
-                className="shrink-0 rounded-md p-1 text-xs text-[var(--color-text-muted)]/40 hover:text-[var(--color-danger)] transition-colors cursor-pointer"
+                className="grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 border-[var(--color-ink)] text-xs text-[var(--color-ink)] opacity-50 hover:opacity-100 hover:bg-[var(--color-danger)] hover:text-white transition-all cursor-pointer"
                 aria-label={`Fjern ${player.name}`}
               >
                 ✕
@@ -245,10 +247,14 @@ function PlayerSlots({ room, sessionId }: { room: RoomSnapshot; sessionId: strin
         ) : (
           <div
             key={`empty-${i}`}
-            className="flex items-center gap-2.5 rounded-xl border border-dashed border-[var(--color-surface-light)]/40 px-3 py-2.5"
+            className="flex items-center gap-2.5 rounded-xl border-[3px] border-dashed border-[var(--color-ink)]/25 px-3 py-2.5"
           >
-            <div className="h-9 w-9 rounded-full bg-[var(--color-surface)]/30 shrink-0" />
-            <span className="text-sm text-[var(--color-text-muted)]/20 italic">ledig</span>
+            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full border-2 border-dashed border-[var(--color-ink)]/25 font-mono text-sm text-[var(--color-ink)]/30">
+              ?
+            </div>
+            <span className="font-mono text-[11px] uppercase tracking-[0.15em] text-[var(--color-ink)]/30">
+              ledig
+            </span>
           </div>
         ),
       )}
@@ -272,30 +278,41 @@ function LobbyTopBar({
   const navigate = useNavigate();
 
   return (
-    <div className="flex items-center justify-between shrink-0 px-6 lg:px-10 py-3">
-      {confirmLeave ? (
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-[var(--color-text-muted)]">{da.leaveRoomConfirm}</span>
-          <button onClick={onLeave} className="rounded-lg bg-[var(--color-danger)]/20 px-3 py-1.5 text-xs font-bold text-[var(--color-danger)] cursor-pointer">
-            {da.leaveAnyway}
+    <div className="flex items-center justify-between shrink-0 px-6 lg:px-10 py-4">
+      <div className="flex items-center gap-4">
+        {confirmLeave ? (
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-[var(--color-text-muted)]">{da.leaveRoomConfirm}</span>
+            <button onClick={onLeave} className="rounded-lg border-2 border-[var(--color-ink)] bg-[var(--color-danger)] px-3 py-1.5 text-xs font-bold text-white cursor-pointer">
+              {da.leaveAnyway}
+            </button>
+            <button onClick={onToggleLeave} className="rounded-lg border-2 border-[var(--color-ink)] px-3 py-1.5 text-xs font-bold text-[var(--color-text-muted)] cursor-pointer">
+              {da.stayHere}
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={onToggleLeave}
+            className="grid h-9 w-9 place-items-center rounded-full border-2 border-[var(--color-ink)] bg-[var(--color-paper)] text-[var(--color-ink)] hover:bg-[var(--color-surface-light)] transition-colors cursor-pointer"
+            aria-label={da.back}
+          >
+            ←
           </button>
-          <button onClick={onToggleLeave} className="rounded-lg bg-[var(--color-surface-light)] px-3 py-1.5 text-xs font-bold text-[var(--color-text-muted)] cursor-pointer">
-            {da.stayHere}
-          </button>
+        )}
+        <Logo />
+      </div>
+      <div className="flex items-center gap-2.5">
+        <div className="hidden sm:flex items-center gap-2">
+          <Chip>EP. 01 · VOL. ONE</Chip>
+          <Chip>LIVE LOBBY</Chip>
         </div>
-      ) : (
-        <button onClick={onToggleLeave} className="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors cursor-pointer">
-          ← {da.back}
-        </button>
-      )}
-      <div className="flex items-center gap-2">
         <MuteButton />
         <button
           onClick={() => navigate(`/host/${roomCode}/settings`)}
-          className="rounded-xl bg-[var(--color-surface)] p-2 text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface-light)] transition-all cursor-pointer"
+          className="grid h-9 w-9 place-items-center rounded-full border-2 border-[var(--color-ink)] bg-[var(--color-paper)] text-[var(--color-ink)] hover:bg-[var(--color-surface-light)] transition-all cursor-pointer"
           aria-label="Indstillinger"
         >
-          <Settings className="h-5 w-5" />
+          <Settings className="h-[18px] w-[18px]" />
         </button>
       </div>
     </div>
@@ -476,11 +493,10 @@ export function HostView() {
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.15 }}
-              className="w-full max-w-xl rounded-2xl bg-[var(--color-surface)] p-6 ring-1"
-              style={{ "--tw-ring-color": `color-mix(in srgb, ${game.color} 25%, transparent)` } as React.CSSProperties}
+              className="nb-card w-full max-w-xl rounded-2xl p-6"
             >
-              <p className="mb-2 text-xs font-semibold uppercase tracking-widest" style={{ color: game.color }}>
-                {da.howToPlay}
+              <p className="mb-2 font-mono text-[11px] font-bold uppercase tracking-[0.16em]" style={{ color: game.color }}>
+                ── {da.howToPlay} ──
               </p>
               <p className="text-base sm:text-lg leading-relaxed text-[var(--color-text)]">
                 {game.howToPlay}
@@ -495,27 +511,23 @@ export function HostView() {
               transition={{ delay: 0.25 }}
               className="flex flex-col sm:flex-row items-center gap-3 sm:gap-5"
             >
-              <motion.button
-                whileHover={canStart ? { scale: 1.05 } : undefined}
-                whileTap={canStart ? { scale: 0.95 } : undefined}
+              <button
                 disabled={!canStart}
                 onClick={() => send({ type: "startGame", hostId: sessionId })}
-                className="rounded-2xl px-8 sm:px-16 py-3 sm:py-5 text-xl sm:text-3xl font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                className="nb-press flex items-center justify-center gap-2 rounded-2xl border-[4px] border-[var(--color-ink)] px-8 sm:px-16 py-3 sm:py-5 font-display text-xl sm:text-3xl transition-all disabled:cursor-not-allowed cursor-pointer"
                 style={{
-                  backgroundColor: game.color,
-                  color: game.textColor,
-                  boxShadow: canStart
-                    ? `0 0 60px ${game.color}50, 0 0 120px ${game.color}20, 0 4px 24px ${game.color}30`
-                    : undefined,
+                  backgroundColor: canStart ? "var(--color-ink)" : "var(--color-surface-light)",
+                  color: canStart ? "var(--color-paper)" : "color-mix(in srgb, var(--color-ink) 45%, transparent)",
+                  boxShadow: canStart ? `6px 6px 0 ${game.color}` : "none",
                 }}
               >
                 {room.players.length < minPlayers
                   ? `${da.needMorePlayers(minPlayers)} (${room.players.length}/${minPlayers})`
-                  : da.startGame}
-              </motion.button>
+                  : `${da.startGame} →`}
+              </button>
               <button
                 onClick={() => send({ type: "changeGameType", hostId: sessionId, gameType: "" })}
-                className="rounded-xl bg-[var(--color-surface)] px-5 py-3 text-sm font-semibold text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface-light)] transition-colors cursor-pointer"
+                className="rounded-xl border-2 border-[var(--color-ink)] bg-[var(--color-paper)] px-5 py-3 text-sm font-semibold text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface-light)] transition-colors cursor-pointer"
               >
                 ← {da.changeGame}
               </button>
@@ -524,7 +536,7 @@ export function HostView() {
 
           {/* Mobile: compact player count + room code */}
           <div className="flex lg:hidden items-center justify-center gap-4 text-sm text-[var(--color-text-muted)]">
-            <span className="font-mono font-bold tracking-widest text-[var(--color-primary-light)]">{room.code}</span>
+            <span className="font-mono font-bold tracking-widest text-[var(--color-primary)]">{room.code}</span>
             <span>·</span>
             <span><span className="font-bold text-[var(--color-text)]">{room.players.length}</span>/{MAX_PLAYERS} {da.playersJoined}</span>
           </div>
@@ -533,26 +545,22 @@ export function HostView() {
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="hidden lg:flex flex-col gap-4 shrink-0 w-[340px] justify-center"
+            className="hidden lg:flex flex-col gap-5 shrink-0 w-[340px] justify-center"
           >
             {/* Compact room code */}
-            <div className="rounded-2xl bg-[var(--color-surface)] p-4 text-center">
-              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[var(--color-text-muted)]">
+            <div className="nb-card flex flex-col items-center gap-3 rounded-2xl p-5">
+              <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--color-text-muted)]">
                 {da.roomCode}
               </p>
-              <div className="font-display text-4xl font-bold tracking-[0.15em] glow-text mt-1">
-                {room.code}
-              </div>
+              <RoomCodeTiles code={room.code} size="sm" />
             </div>
 
             {/* Players */}
-            <div>
-              <p className="text-sm text-[var(--color-text-muted)] text-center mb-2">
-                <span className="font-bold text-[var(--color-text)] text-lg">{room.players.length}</span>
-                <span className="mx-1">/</span>
-                <span>{MAX_PLAYERS}</span>
-                {" "}{da.playersJoined}
-              </p>
+            <div className="flex flex-col gap-3">
+              <SectionHeader
+                n="03"
+                title={`SPILLERE · ${room.players.length}/${MAX_PLAYERS}`}
+              />
               <PlayerSlots room={room} sessionId={sessionId} />
             </div>
           </motion.div>
@@ -572,28 +580,28 @@ export function HostView() {
         />
 
       {/* Hero: Room code + QR + Players */}
-      <div className="flex flex-1 min-h-0 items-center px-6 lg:px-10">
+      <div className="flex flex-1 min-h-0 items-center px-6 lg:px-10 gap-8 lg:gap-12">
         {/* QR column */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="hidden lg:flex flex-col items-center gap-4 shrink-0 mr-12 rounded-2xl bg-[var(--color-surface)]/60 p-5"
+          className="hidden lg:flex flex-col items-center gap-2 shrink-0"
         >
-          <Suspense fallback={<div className="h-[120px] w-[120px] rounded-2xl bg-white/10" />}>
-            <div className="rounded-2xl bg-white p-3 shadow-xl shadow-black/30">
+          <Suspense fallback={<div className="h-[120px] w-[120px] rounded-xl bg-[var(--color-surface-light)]" />}>
+            <div
+              className="rounded-xl border-[3px] border-[var(--color-ink)] bg-white p-2"
+              style={{ boxShadow: "5px 5px 0 var(--color-ink)" }}
+            >
               <QRCodeSVG
                 value={`${window.location.origin}/join/${room.code}`}
-                size={96}
-                fgColor="#0d0b1a"
+                size={104}
+                fgColor="#1a1714"
                 bgColor="white"
               />
             </div>
           </Suspense>
-          <div className="text-center">
-            <p className="text-xs text-[var(--color-text-muted)]">Scan eller gå til</p>
-            <p className="text-sm font-bold text-[var(--color-primary-light)] mt-0.5">
-              {window.location.host}/join/{room.code}
-            </p>
+          <div className="mt-1 font-mono text-[10px] tracking-[0.15em] text-[var(--color-text-muted)]">
+            SCAN FOR AT DELTAGE
           </div>
         </motion.div>
 
@@ -602,23 +610,22 @@ export function HostView() {
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ type: "spring", stiffness: 200 }}
-          className="flex-1 text-center"
+          className="flex-1 flex flex-col items-center text-center"
         >
-          <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[var(--color-text-muted)]">
-            {da.roomCode}
+          <div className="font-mono text-xs tracking-[0.18em] text-[var(--color-text-muted)] mb-2">
+            ── TRIN ÉT ──&nbsp;&nbsp;DELTAG I RUMMET
+          </div>
+          <div className="text-sm font-semibold uppercase tracking-[0.12em] mb-4">
+            Gå til{" "}
+            <span className="text-[var(--color-primary)]">
+              {window.location.host}/join
+            </span>
+          </div>
+          <RoomCodeTiles code={room.code} size="lg" />
+          {/* Mobile: player count */}
+          <p className="lg:hidden text-sm text-[var(--color-text-muted)] mt-5">
+            <span className="font-bold text-[var(--color-text)]">{room.players.length}</span>/{MAX_PLAYERS} {da.playersJoined}
           </p>
-          <div className="font-display text-[3.5rem] sm:text-[5rem] lg:text-[10rem] font-bold tracking-[0.1em] sm:tracking-[0.25em] leading-none glow-text">
-            {room.code}
-          </div>
-          {/* Mobile: join URL + player count */}
-          <div className="flex lg:hidden flex-col items-center gap-2 mt-4">
-            <p className="text-xs text-[var(--color-primary-light)] font-bold">
-              {window.location.host}/join/{room.code}
-            </p>
-            <p className="text-sm text-[var(--color-text-muted)]">
-              <span className="font-bold text-[var(--color-text)]">{room.players.length}</span>/{MAX_PLAYERS} {da.playersJoined}
-            </p>
-          </div>
         </motion.div>
 
         {/* Players column */}
@@ -626,14 +633,13 @@ export function HostView() {
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.1 }}
-          className="hidden lg:flex flex-col gap-3 shrink-0 ml-10 w-[340px]"
+          className="hidden lg:flex flex-col gap-3 shrink-0 w-[340px]"
         >
-          <p className="text-sm text-[var(--color-text-muted)] text-center">
-            <span className="font-bold text-[var(--color-text)] text-lg">{room.players.length}</span>
-            <span className="mx-1">/</span>
-            <span>{MAX_PLAYERS}</span>
-            {" "}{da.playersJoined}
-          </p>
+          <SectionHeader
+            n="03"
+            title={`SPILLERE · ${room.players.length}/${MAX_PLAYERS}`}
+            sub="deltag på din telefon"
+          />
           <PlayerSlots room={room} sessionId={sessionId} />
         </motion.div>
       </div>
@@ -660,9 +666,7 @@ function FinishedScreen({ room, sessionId }: { room: RoomSnapshot; sessionId: st
   );
 
   const topScore = players[0]?.score ?? 0;
-  const winners = players.filter((p) => p.score === topScore);
-  const isTie = winners.length > 1;
-  const rest = players.filter((p) => p.score < topScore);
+  const isTie = players.filter((p) => p.score === topScore).length > 1;
 
   useEffect(() => {
     sfxFanfare();
@@ -672,7 +676,7 @@ function FinishedScreen({ room, sessionId }: { room: RoomSnapshot; sessionId: st
     import("canvas-confetti").then(({ default: confetti }) => {
       if (cancelled) return;
       const end = Date.now() + 3000;
-      const colors = ["#8b6eff", "#f472b6", "#fbbf24", "#34d399", "#60a5fa"];
+      const colors = ["#e8553a", "#2e6be6", "#f2c14e", "#6bae5a", "#9b7be8"];
 
       function frame() {
         confetti({
@@ -700,109 +704,141 @@ function FinishedScreen({ room, sessionId }: { room: RoomSnapshot; sessionId: st
     };
   }, []);
 
-  return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-8 p-8">
-      <motion.h2
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ type: "spring", stiffness: 200 }}
-        className="font-display text-4xl font-bold"
-      >
-        {da.gameOver}
-      </motion.h2>
+  const podium = players.slice(0, 3);
+  const rest = players.slice(3);
+  const gameName = room.gameType ? getGameInfo(room.gameType).name : "";
+  // Visual order: 2nd, 1st, 3rd. Pillar heights + colours by place.
+  const order = [1, 0, 2];
+  const pillarHeights = [200, 150, 124];
+  const pillarColors = ["var(--color-fusk)", "var(--color-primary)", "var(--color-accent)"];
 
-      {isTie ? (
+  return (
+    <div className="relative z-[1] flex min-h-screen flex-col items-center px-6 lg:px-10 py-8">
+      <header className="flex w-full max-w-[1480px] items-center justify-between">
+        <Logo />
+        <Chip>FINALE{gameName ? ` · ${gameName.toUpperCase()}` : ""}</Chip>
+      </header>
+
+      <div className="mt-6 text-center">
+        <div className="font-mono text-xs tracking-[0.2em] text-[var(--color-text-muted)]">
+          ── {isTie ? "UAFGJORT" : "PODIET"} ──
+        </div>
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ type: "spring", stiffness: 200 }}
+          className="font-display italic text-[clamp(48px,7vw,96px)] leading-[0.9] mt-1"
         >
-          <p className="mb-4 text-lg text-[var(--color-text-muted)]">Uafgjort!</p>
-          <div className="flex flex-wrap justify-center gap-4 sm:gap-6">
-            {winners.map((w) => (
-              <div key={w._id} className="text-center">
-                <div className="mx-auto">
-                  <GameAvatar name={w.name} avatarColor={w.avatarColor} avatarImage={w.avatarImage} className="h-20 w-20" />
-                </div>
-                <p className="mt-2 font-display text-2xl font-bold">{w.name}</p>
+          {da.gameOver}
+        </motion.div>
+      </div>
+
+      {/* Podium */}
+      <div className="mt-10 grid w-full max-w-[820px] grid-cols-3 items-end gap-4 sm:gap-5">
+        {order.map((idx) => {
+          const p = podium[idx];
+          if (!p) return <div key={idx} />;
+          const place = idx + 1;
+          return (
+            <motion.div
+              key={p._id}
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.15, type: "spring", stiffness: 160 }}
+              className="flex flex-col items-center gap-2.5"
+            >
+              <div
+                className="rounded-2xl border-[3px] border-[var(--color-ink)] bg-[var(--color-paper)] p-1.5"
+                style={{ boxShadow: "5px 5px 0 var(--color-ink)" }}
+              >
+                <GameAvatar
+                  name={p.name}
+                  avatarColor={p.avatarColor}
+                  avatarImage={p.avatarImage}
+                  className={idx === 0 ? "h-24 w-24" : "h-[72px] w-[72px]"}
+                />
               </div>
+              <div className="font-display text-xl sm:text-2xl leading-none text-center">{p.name}</div>
+              <div className="font-mono text-[11px] tracking-[0.14em] text-[var(--color-text-muted)]">
+                {p.score} POINT
+              </div>
+              <div
+                className="grid w-full place-items-center rounded-t-xl border-[3px] border-[var(--color-ink)] font-display italic text-[var(--color-paper)]"
+                style={{
+                  height: pillarHeights[idx],
+                  background: pillarColors[idx],
+                  boxShadow: "5px 5px 0 var(--color-ink)",
+                  fontSize: idx === 0 ? 84 : 60,
+                }}
+              >
+                {place}
+              </div>
+            </motion.div>
+          );
+        })}
+      </div>
+
+      {/* Scoreboard for the rest */}
+      {rest.length > 0 && (
+        <div className="mt-10 w-full max-w-[640px]">
+          <div className="mb-3 text-center font-mono text-[11px] tracking-[0.2em] text-[var(--color-text-muted)]">
+            ── OG RESTEN ──
+          </div>
+          <div className="nb-card rounded-2xl p-2">
+            {rest.map((player: any, i: number) => (
+              <motion.div
+                key={player._id}
+                initial={{ opacity: 0, x: -12 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.5 + i * 0.08 }}
+                className={`flex items-center justify-between px-3.5 py-2.5 ${i < rest.length - 1 ? "border-b border-dashed border-[var(--color-ink)]/20" : ""}`}
+              >
+                <div className="flex items-center gap-3.5">
+                  {/* Competition ranking so ties match the players' phones */}
+                  <span className="w-7 font-display text-xl text-[var(--color-ink)] opacity-40">
+                    {1 + players.filter((p) => p.score > player.score).length}
+                  </span>
+                  <GameAvatar name={player.name} avatarColor={player.avatarColor} avatarImage={player.avatarImage} className="h-9 w-9" />
+                  <span className="font-display text-lg">{player.name}</span>
+                </div>
+                <span className="font-mono text-xs tracking-[0.14em] text-[var(--color-text-muted)]">
+                  {player.score} POINT
+                </span>
+              </motion.div>
             ))}
           </div>
-          <p className="mt-3 text-lg text-[var(--color-text-muted)]">{topScore} point</p>
-        </motion.div>
-      ) : (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center"
-        >
-          <div className="mx-auto">
-            <GameAvatar name={winners[0].name} avatarColor={winners[0].avatarColor} avatarImage={winners[0].avatarImage} className="h-24 w-24" />
-          </div>
-          <p className="mt-3 font-display text-5xl font-bold">{winners[0].name}</p>
-          <p className="mt-1 text-lg text-[var(--color-text-muted)]">{topScore} point</p>
-        </motion.div>
+        </div>
       )}
 
-      {rest.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3 }}
-          className="w-full max-w-lg flex flex-col gap-2"
-        >
-          {rest.map((player: any, i: number) => (
-            <motion.div
-              key={player._id}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.4 + i * 0.1 }}
-              className="flex items-center gap-4 rounded-xl bg-[var(--color-surface)] p-3"
-            >
-              <span className="text-lg font-bold text-[var(--color-text-muted)] w-6">
-                {/* Competition ranking so ties match the players' phones */}
-                {1 + players.filter((p) => p.score > player.score).length}
-              </span>
-              <GameAvatar name={player.name} avatarColor={player.avatarColor} avatarImage={player.avatarImage} />
-              <span className="flex-1 font-semibold">{player.name}</span>
-              <span className="font-bold text-[var(--color-primary-light)]">
-                {player.score}
-              </span>
-            </motion.div>
-          ))}
-        </motion.div>
-      )}
-
-      {/* Two post-game options */}
+      {/* Post-game options */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5 }}
-        className="flex flex-col items-center gap-3"
+        className="mt-10 flex flex-wrap items-center justify-center gap-3"
       >
         <button
           onClick={() => send({ type: "restartGame", hostId: sessionId })}
-          className="rounded-2xl bg-[var(--color-primary)] px-10 py-4 text-xl font-bold cursor-pointer"
-          style={{ boxShadow: "0 0 30px color-mix(in srgb, var(--color-primary) 25%, transparent)" }}
+          className="nb-press rounded-2xl border-[3px] border-[var(--color-ink)] bg-[var(--color-ink)] px-8 py-3.5 font-display text-xl text-[var(--color-paper)] cursor-pointer"
+          style={{ boxShadow: "5px 5px 0 var(--color-primary)" }}
         >
-          {da.playAgain}
+          {da.playAgain} →
         </button>
         <button
           onClick={() => send({ type: "backToLobby", hostId: sessionId })}
-          className="rounded-xl px-8 py-3 text-base font-semibold text-[var(--color-text-muted)] hover:text-[var(--color-text)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-light)] transition-all cursor-pointer"
+          className="rounded-2xl border-2 border-[var(--color-ink)] bg-[var(--color-paper)] px-6 py-3.5 text-base font-semibold text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface-light)] transition-all cursor-pointer"
         >
           {da.chooseNewGame}
         </button>
       </motion.div>
 
-      {/* Back to lobby hint */}
       <motion.p
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.7 }}
-        className="text-xs text-[var(--color-text-muted)]/50"
+        className="mt-4 font-mono text-[11px] tracking-[0.12em] text-[var(--color-text-muted)]/60"
       >
-        {room.players.length} spillere stadig tilsluttet
+        {room.players.length} SPILLERE STADIG TILSLUTTET
       </motion.p>
     </div>
   );

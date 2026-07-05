@@ -1,41 +1,105 @@
 @import "tailwindcss";
 
-:root {
-  /* Core palette — warm dark with energetic accents */
-  --color-primary: #8b6eff;
-  --color-primary-light: #b9a4ff;
-  --color-accent: #f472b6;
-  --color-bg: #0d0b1a;
-  --color-bg-warm: #13101f;
-  --color-surface: #1e1a36;
-  --color-surface-light: #2a2448;
-  --color-text: #f5f3ff;
-  --color-text-muted: #c5bfdd;
+/* ============================================================
+   FESTSPIL — Warm Editorial theme
+   Inspired by the "Festspil Party Pack" design handoff:
+   cream paper, dark ink, chunky Fraunces serif, hard offset
+   shadows (neo-brutalist), bold accent tiles.
+   Everything is driven by CSS variables so themes are
+   swappable via [data-theme] on <html>.
+   ============================================================ */
 
-  /* Game-specific accent colors */
-  --color-blitz: #60a5fa;
-  --color-blitz-glow: #3b82f620;
-  --color-fusk: #fbbf24;
-  --color-fusk-glow: #f59e0b20;
-  --color-scrawl: #f472b6;
-  --color-scrawl-glow: #ec489920;
-  --color-morph: #34d399;
-  --color-morph-glow: #10b98120;
-  --color-surge: #a78bfa;
-  --color-surge-glow: #a78bfa20;
-  --color-hunch: #fb923c;
-  --color-hunch-glow: #fb923c20;
-  --color-pris: #f97316;
-  --color-pris-glow: #f9731620;
+:root,
+:root[data-theme="tomato"] {
+  /* Core palette — warm editorial (tomato, default) */
+  --color-primary: #e8553a; /* tomato */
+  --color-primary-light: #f0826e;
+  --color-accent: #2e6be6; /* cobalt */
+  --color-bg: #f3ecdc; /* warm paper backdrop */
+  --color-bg-warm: #ece2cb;
+  --color-surface: #faf4e6; /* paper cards */
+  --color-surface-light: #f1e7d1; /* nested paper */
+  --color-text: #1a1714; /* ink */
+  --color-text-muted: #8a8173;
+
+  /* Neo-brutalist building blocks */
+  --color-ink: #1a1714;
+  --color-paper: #faf4e6;
+  --nb-border: 3px;
+
+  /* Game-specific accent colors — bold tiles on paper */
+  --color-blitz: #2e6be6; /* cobalt */
+  --color-blitz-glow: #2e6be633;
+  --color-fusk: #d98a1f; /* mustard */
+  --color-fusk-glow: #d98a1f33;
+  --color-scrawl: #c7407b; /* raspberry */
+  --color-scrawl-glow: #c7407b33;
+  --color-morph: #1e8e6b; /* teal */
+  --color-morph-glow: #1e8e6b33;
+  --color-surge: #7c5cd6; /* violet */
+  --color-surge-glow: #7c5cd633;
+  --color-hunch: #e8553a; /* tomato */
+  --color-hunch-glow: #e8553a33;
+  --color-pris: #d9752b; /* pumpkin */
+  --color-pris-glow: #d9752b33;
 
   /* Status */
-  --color-success: #34d399;
-  --color-danger: #f87171;
-  --color-warning: #fbbf24;
+  --color-success: #6bae5a;
+  --color-danger: #d64525;
+  --color-warning: #d98a1f;
 
   /* Fonts */
-  --font-display: "Fredoka", sans-serif;
-  --font-body: "Nunito", sans-serif;
+  --font-display: "Fraunces", Georgia, serif;
+  --font-body: "Space Grotesk", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+/* Cobalt — blue paper */
+:root[data-theme="cobalt"] {
+  --color-primary: #2e6be6;
+  --color-primary-light: #5d8def;
+  --color-accent: #e8553a;
+  --color-bg: #eae8f5;
+  --color-bg-warm: #ddd9ef;
+  --color-surface: #f6f4fc;
+  --color-surface-light: #e8e4f6;
+  --color-text: #15153a;
+  --color-text-muted: #6f6e92;
+  --color-ink: #15153a;
+  --color-paper: #f6f4fc;
+}
+
+/* Midnight — dark editorial */
+:root[data-theme="midnight"] {
+  --color-primary: #f2c14e;
+  --color-primary-light: #f6d486;
+  --color-accent: #e8553a;
+  --color-bg: #171622;
+  --color-bg-warm: #1e1d2c;
+  --color-surface: #23212f;
+  --color-surface-light: #2e2c3d;
+  --color-text: #f8f3e6;
+  --color-text-muted: #a39e93;
+  --color-ink: #f8f3e6; /* light ink on dark */
+  --color-paper: #23212f;
+  --color-success: #6bae5a;
+  --color-danger: #f08a6e;
+  --color-warning: #f2c14e;
+}
+
+/* Mint — fresh green paper */
+:root[data-theme="mint"] {
+  --color-primary: #1e8e6b;
+  --color-primary-light: #44b48d;
+  --color-accent: #e85a8a;
+  --color-bg: #e6efe7;
+  --color-bg-warm: #d7e7d9;
+  --color-surface: #f3f8f3;
+  --color-surface-light: #e3eee4;
+  --color-text: #0f1f1a;
+  --color-text-muted: #5f7068;
+  --color-ink: #0f1f1a;
+  --color-paper: #f3f8f3;
 }
 
 body {
@@ -50,14 +114,16 @@ body {
   box-sizing: border-box;
 }
 
-/* Ambient background glow */
+/* Subtle paper dot texture behind everything */
 body::before {
   content: "";
   position: fixed;
   inset: 0;
-  background:
-    radial-gradient(ellipse 80% 60% at 20% 10%, #8b6eff18, transparent),
-    radial-gradient(ellipse 60% 50% at 80% 80%, #f472b618, transparent);
+  background-image: radial-gradient(
+    color-mix(in srgb, var(--color-ink) 9%, transparent) 1.4px,
+    transparent 1.4px
+  );
+  background-size: 28px 28px;
   pointer-events: none;
   z-index: 0;
 }
@@ -65,42 +131,64 @@ body::before {
 /* Display font for headings */
 .font-display {
   font-family: var(--font-display);
+  font-weight: 900;
+  letter-spacing: -0.02em;
 }
 
-/* Glowing room code effect */
+/* Mono font helper */
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+/* ============================================================
+   Neo-brutalist helpers
+   ============================================================ */
+
+/* Ink border */
+.nb-border {
+  border: var(--nb-border) solid var(--color-ink);
+}
+
+/* Hard offset shadow (ink) */
+.nb-shadow {
+  box-shadow: 6px 6px 0 var(--color-ink);
+}
+.nb-shadow-sm {
+  box-shadow: 4px 4px 0 var(--color-ink);
+}
+
+/* A full paper card: ink border + hard shadow */
+.nb-card {
+  background: var(--color-paper);
+  border: var(--nb-border) solid var(--color-ink);
+  box-shadow: 6px 6px 0 var(--color-ink);
+}
+
+/* Pressable button: shifts into its shadow on press */
+.nb-press {
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+.nb-press:active {
+  transform: translate(3px, 3px);
+  box-shadow: 2px 2px 0 var(--color-ink) !important;
+}
+
+/* Room-code / poster text — chunky with an ink drop offset */
 .glow-text {
-  text-shadow:
-    0 0 20px var(--color-primary),
-    0 0 60px color-mix(in srgb, var(--color-primary) 25%, transparent);
+  text-shadow: 3px 3px 0 color-mix(in srgb, var(--color-ink) 80%, transparent);
 }
 
-/* Animated gradient border for cards */
+/* Was an animated gradient border; now a brutalist card frame.
+   Kept the class name so existing call-sites pick up the new look. */
 .card-glow {
-  position: relative;
-  overflow: hidden;
-}
-.card-glow::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1px;
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--color-primary) 19%, transparent),
-    transparent 40%,
-    transparent 60%,
-    color-mix(in srgb, var(--color-accent) 19%, transparent)
-  );
-  -webkit-mask:
-    linear-gradient(#fff 0 0) content-box,
-    linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
+  border: var(--nb-border) solid var(--color-ink);
+  box-shadow: 6px 6px 0 var(--color-ink);
 }
 
-/* Confetti background float — GPU-composited via transform+opacity */
+/* ============================================================
+   Animations (kept from before)
+   ============================================================ */
+
 @keyframes confetti-float {
   0%, 100% { transform: translateY(0); opacity: 0.15; }
   50% { transform: translateY(-20px); opacity: 0.35; }
@@ -110,7 +198,6 @@ body::before {
   will-change: transform, opacity;
 }
 
-/* Pulse animation for waiting states */
 @keyframes gentle-pulse {
   0%, 100% { opacity: 0.6; }
   50% { opacity: 1; }
@@ -119,7 +206,6 @@ body::before {
   animation: gentle-pulse 2s ease-in-out infinite;
 }
 
-/* Float animation for decorative elements */
 @keyframes float {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-8px); }
@@ -128,13 +214,31 @@ body::before {
   animation: float 3s ease-in-out infinite;
 }
 
-/* Timer urgency pulse */
 @keyframes urgency {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.05); color: var(--color-danger); }
 }
 .animate-urgency {
   animation: urgency 0.5s ease-in-out infinite;
+}
+
+/* Join-in pop for player tiles / avatars */
+@keyframes join-in {
+  0% { transform: scale(0.3) rotate(-12deg); opacity: 0; }
+  70% { transform: scale(1.08) rotate(2deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0); opacity: 1; }
+}
+.animate-join-in {
+  animation: join-in 0.5s ease-out both;
+}
+
+/* Gentle jiggle for playful elements */
+@keyframes jiggle {
+  0%, 100% { transform: rotate(-1deg); }
+  50% { transform: rotate(1deg); }
+}
+.animate-jiggle {
+  animation: jiggle 3s ease-in-out infinite;
 }
 
 /* Subtle noise texture overlay */
@@ -151,33 +255,33 @@ body::before {
   z-index: 1;
 }
 
-/* Custom range slider */
+/* Custom range slider — brutalist */
 input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
-  height: 6px;
+  height: 8px;
   background: var(--color-surface-light);
-  border-radius: 3px;
+  border: 2px solid var(--color-ink);
+  border-radius: 999px;
   outline: none;
 }
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   background: var(--color-primary);
+  border: 2px solid var(--color-ink);
   border-radius: 50%;
   cursor: pointer;
-  box-shadow: 0 0 8px color-mix(in srgb, var(--color-primary) 38%, transparent);
 }
 input[type="range"]::-moz-range-thumb {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   background: var(--color-primary);
+  border: 2px solid var(--color-ink);
   border-radius: 50%;
   cursor: pointer;
-  border: none;
-  box-shadow: 0 0 8px color-mix(in srgb, var(--color-primary) 38%, transparent);
 }
 
 /* Hide scrollbar for carousels */
@@ -186,7 +290,7 @@ input[type="range"]::-moz-range-thumb {
 
 /* Global focus-visible ring for keyboard navigation */
 :focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: 3px solid var(--color-accent);
   outline-offset: 2px;
 }
 
@@ -194,7 +298,9 @@ input[type="range"]::-moz-range-thumb {
 @media (prefers-reduced-motion: reduce) {
   .animate-gentle-pulse,
   .animate-float,
-  .animate-urgency {
+  .animate-urgency,
+  .animate-join-in,
+  .animate-jiggle {
     animation: none;
   }
 
