@@ -61,10 +61,11 @@ export default function HostClue({ room }: PhaseComponentProps) {
               animate={{
                 backgroundColor: p._id === clueGiverId ? "var(--color-hunch)" : "var(--color-surface)",
                 opacity: p._id === clueGiverId ? 1 : 0.4,
+                color: p._id === clueGiverId ? "#fff" : "var(--color-text)",
               }}
               className="flex items-center gap-2 rounded-full px-4 py-2"
             >
-              <span className="text-base font-semibold text-white">{p.name}</span>
+              <span className="text-base font-semibold">{p.name}</span>
               {p._id === clueGiverId && (
                 <span className="text-sm">
                   {submittedCount > 0 ? "✓" : "✎"}

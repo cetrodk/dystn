@@ -62,19 +62,23 @@ export function JoinPage() {
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ type: "spring", stiffness: 200 }}
-          className="font-display text-5xl font-bold glow-text cursor-pointer hover:opacity-80 transition-opacity sm:text-6xl"
+          className="font-display text-5xl glow-text cursor-pointer hover:opacity-80 transition-opacity sm:text-6xl"
         >
           {da.title}
         </motion.a>
 
-        {/* Join form */}
+        {/* Join form — phone card */}
         <motion.form
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.12, type: "spring", stiffness: 150, damping: 18 }}
           onSubmit={handleJoin}
-          className="flex w-full flex-col gap-4"
+          className="nb-card flex w-full flex-col gap-4 rounded-[28px] p-6"
         >
+          <div className="-mt-1 mb-1 flex items-center justify-between font-mono text-[10px] tracking-[0.15em] text-[var(--color-text-muted)]">
+            <span>FESTSPIL.PARTY</span>
+            <span>DELTAG</span>
+          </div>
           {/* Room code input */}
           <div className="group relative">
             <input
@@ -85,12 +89,8 @@ export function JoinPage() {
                 setCode(e.target.value.toUpperCase().replace(/[^A-Z]/g, ""))
               }
               placeholder={da.enterCode}
-              className="w-full rounded-2xl bg-[var(--color-surface)] p-4 text-center font-display text-3xl font-bold uppercase tracking-[0.3em] placeholder:text-[var(--color-text-muted)]/50 placeholder:text-base placeholder:tracking-normal placeholder:font-normal focus:outline-none transition-shadow"
-              style={{
-                boxShadow: code.length === 4
-                  ? "0 0 0 2px color-mix(in srgb, var(--color-primary) 50%, transparent), 0 0 20px color-mix(in srgb, var(--color-primary) 12%, transparent)"
-                  : undefined,
-              }}
+              className="w-full rounded-2xl border-[3px] border-[var(--color-ink)] bg-[var(--color-bg)] p-4 text-center font-display text-4xl uppercase tracking-[0.3em] placeholder:text-[var(--color-text-muted)]/50 placeholder:text-base placeholder:tracking-normal placeholder:font-normal focus:outline-none"
+              style={{ boxShadow: "4px 4px 0 var(--color-ink)" }}
               autoComplete="off"
               autoFocus
             />
@@ -101,7 +101,7 @@ export function JoinPage() {
               animate={{ opacity: code.length === 4 ? 1 : 0, scale: code.length === 4 ? 1 : 0.5 }}
             >
               <div
-                className="h-2.5 w-2.5 rounded-full"
+                className="h-3 w-3 rounded-full border-2 border-[var(--color-ink)]"
                 style={{ background: "var(--color-success)" }}
               />
             </motion.div>
@@ -112,12 +112,13 @@ export function JoinPage() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2, type: "spring", stiffness: 150, damping: 18 }}
-            className="relative flex items-center rounded-2xl bg-[var(--color-surface)] transition-shadow focus-within:shadow-[0_0_0_2px_color-mix(in_srgb,var(--color-primary)_50%,transparent)]"
+            className="relative flex items-center gap-2 rounded-2xl border-[3px] border-[var(--color-ink)] bg-[var(--color-surface)] pl-2"
+            style={{ boxShadow: "4px 4px 0 var(--color-ink)" }}
           >
             <button
               type="button"
               onClick={() => setAvatarModalOpen(true)}
-              className="group/avatar shrink-0 ml-3 flex items-center justify-center h-10 w-10 rounded-full bg-[var(--color-surface-light)] hover:bg-[var(--color-primary)]/20 transition-colors cursor-pointer overflow-hidden"
+              className="group/avatar shrink-0 flex items-center justify-center h-11 w-11 rounded-full border-2 border-[var(--color-ink)] bg-[var(--color-surface-light)] hover:bg-[var(--color-primary)]/20 transition-colors cursor-pointer overflow-hidden"
             >
               {selectedAvatar ? (
                 <img
@@ -126,7 +127,7 @@ export function JoinPage() {
                   className="h-full w-full rounded-full object-cover"
                 />
               ) : (
-                <span className="text-lg text-[var(--color-text-muted)] group-hover/avatar:text-[var(--color-primary-light)] transition-colors">
+                <span className="text-lg text-[var(--color-text-muted)] group-hover/avatar:text-[var(--color-primary)] transition-colors">
                   +
                 </span>
               )}
@@ -141,7 +142,7 @@ export function JoinPage() {
               autoComplete="off"
             />
             {/* Spacer to keep text centered */}
-            <div className="shrink-0 w-10 mr-3" />
+            <div className="shrink-0 w-11" />
           </motion.div>
 
           <AnimatePresence>
@@ -175,19 +176,14 @@ export function JoinPage() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.28, type: "spring", stiffness: 150, damping: 18 }}
-            whileHover={canSubmit ? { scale: 1.03 } : undefined}
-            whileTap={canSubmit ? { scale: 0.97 } : undefined}
-            className="rounded-2xl bg-[var(--color-primary)] p-4 text-xl font-bold disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-shadow"
-            style={
-              canSubmit
-                ? {
-                    boxShadow:
-                      "0 0 24px color-mix(in srgb, var(--color-primary) 25%, transparent)",
-                  }
-                : undefined
-            }
+            className="nb-press rounded-2xl border-[3px] border-[var(--color-ink)] p-4 font-display text-2xl disabled:cursor-not-allowed cursor-pointer"
+            style={{
+              backgroundColor: canSubmit ? "var(--color-ink)" : "var(--color-surface-light)",
+              color: canSubmit ? "var(--color-paper)" : "color-mix(in srgb, var(--color-ink) 35%, transparent)",
+              boxShadow: canSubmit ? "5px 5px 0 var(--color-primary)" : "none",
+            }}
           >
-            {joining ? "..." : da.join}
+            {joining ? "..." : `${da.join} →`}
           </motion.button>
         </motion.form>
       </motion.div>

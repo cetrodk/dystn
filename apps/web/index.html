@@ -5,7 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Festspil — Sjove partyspil for venner og familie</title>
     <meta name="description" content="Spil sjove partyspil sammen med venner og familie. Blitz, Fusk, Scrawl, Morph, Surge, Hunch og mere — direkte i browseren." />
-    <meta name="theme-color" content="#0d0b1a" />
+    <meta name="theme-color" content="#f3ecdc" />
+    <script>
+      /* Apply the saved theme before first paint to avoid a FOUC. Runs
+         synchronously in <head>, before the render-blocking CSS. The colour
+         map must stay in sync with META_COLORS in src/lib/theme.ts. */
+      (function () {
+        try {
+          var t = localStorage.getItem("festspil-theme");
+          var bg = { tomato: "#f3ecdc", cobalt: "#eae8f5", midnight: "#171622", mint: "#e6efe7" };
+          if (bg[t]) {
+            document.documentElement.dataset.theme = t;
+            var m = document.querySelector('meta[name="theme-color"]');
+            if (m) m.setAttribute("content", bg[t]);
+          }
+        } catch (e) {}
+      })();
+    </script>
     <meta property="og:type" content="website" />
     <meta property="og:title" content="Festspil" />
     <meta property="og:description" content="Sjove partyspil for venner og familie — direkte i browseren." />
@@ -18,7 +34,7 @@
     <link rel="manifest" href="/manifest.json" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,700;0,9..144,900;1,9..144,700;1,9..144,900&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
   </head>
   <body>
     <div id="root"></div>
