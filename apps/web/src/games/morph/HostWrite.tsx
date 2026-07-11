@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Phone } from "lucide-react";
-import { CountdownTimer } from "@festspil/ui/CountdownTimer";
+import { CountdownTimer } from "@dystn/ui/CountdownTimer";
 import { sfxTick, sfxUrgent } from "@/lib/sounds";
 import { da } from "@/lib/da";
 import type { PhaseComponentProps } from "../registry";

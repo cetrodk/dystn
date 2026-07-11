@@ -1,5 +1,5 @@
 {
-  "name": "@festspil/game-engine",
+  "name": "@dystn/game-engine",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -13,7 +13,7 @@
     "xstate": "^5"
   },
   "devDependencies": {
-    "@festspil/typescript-config": "workspace:*",
+    "@dystn/typescript-config": "workspace:*",
     "typescript": "~5.9.3"
   }
 }

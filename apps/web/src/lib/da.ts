@@ -7,7 +7,7 @@ export function pluralPlayers(n: number): string {
 
 export const da = {
   // App
-  title: "Festspil",
+  title: "Dystn",
   subtitle: "Sjove partyspil for venner og familie",
 
   // Landing

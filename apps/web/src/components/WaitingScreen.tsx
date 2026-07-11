@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { CountdownTimer } from "@festspil/ui/CountdownTimer";
+import { CountdownTimer } from "@dystn/ui/CountdownTimer";
 import { GameAvatar } from "@/components/GameAvatar";
 import { da } from "@/lib/da";
 

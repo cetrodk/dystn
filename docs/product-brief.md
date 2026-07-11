@@ -1,8 +1,8 @@
-# Festspil — Product Brief
+# Dystn — Product Brief
 
 ## What is it?
 
-Festspil is a Danish party game platform for friends and family playing together in the same room. One person hosts the game on a big screen (TV/laptop), and everyone else joins on their phones using a simple room code. No app install, no login — just open a link and play.
+Dystn is a Danish party game platform for friends and family playing together in the same room. One person hosts the game on a big screen (TV/laptop), and everyone else joins on their phones using a simple room code. No app install, no login — just open a link and play.
 
 ## Who is it for?
 

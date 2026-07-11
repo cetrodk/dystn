@@ -1,6 +1,6 @@
-const SESSION_KEY = "festspil_session_id";
-export const PLAYER_NAME_KEY = "festspil-player-name";
-export const PLAYER_AVATAR_KEY = "festspil-player-avatar";
+const SESSION_KEY = "dystn_session_id";
+export const PLAYER_NAME_KEY = "dystn-player-name";
+export const PLAYER_AVATAR_KEY = "dystn-player-avatar";
 
 function generateSessionId(): string {
   return crypto.randomUUID?.() ?? Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, "0")).join("");
@@ -24,7 +24,7 @@ export function getSessionId(): string {
 
 /* -- Player session, scoped per room (localStorage) ------------- */
 
-const ROOM_SESSION_PREFIX = "festspil_session_";
+const ROOM_SESSION_PREFIX = "dystn_session_";
 const roomSessionCache = new Map<string, string>();
 
 /**
@@ -48,8 +48,8 @@ export function getRoomSessionId(roomCode: string): string {
 
 /* -- Host session persistence (localStorage) -------------------- */
 
-export const HOST_ROOM_KEY = "festspil_host_room";
-export const HOST_SECRET_KEY = "festspil_host_secret";
+export const HOST_ROOM_KEY = "dystn_host_room";
+export const HOST_SECRET_KEY = "dystn_host_secret";
 
 export function setHostSession(roomCode: string, secret: string) {
   localStorage.setItem(HOST_ROOM_KEY, roomCode);

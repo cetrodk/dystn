@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { CountdownTimer } from "@festspil/ui/CountdownTimer";
+import { CountdownTimer } from "@dystn/ui/CountdownTimer";
 import {
   sfxDrumroll,
   sfxAnswerPop,

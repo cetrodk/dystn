@@ -1,4 +1,4 @@
-# @festspil/web
+# @dystn/web
 
 Vite + React-klienten (host- og spillerskærme). Se rod-README'en (`../../README.md`) for arkitektur, miljøvariabler og dev-/deploy-flow.
 

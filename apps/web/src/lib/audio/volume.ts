@@ -4,8 +4,8 @@
 
 import { getMasterGain, getAudioContext } from "./context";
 
-const STORAGE_KEY_VOL = "festspil_volume";
-const STORAGE_KEY_MUTE = "festspil_muted";
+const STORAGE_KEY_VOL = "dystn_volume";
+const STORAGE_KEY_MUTE = "dystn_muted";
 
 type Listener = (volume: number, muted: boolean) => void;
 

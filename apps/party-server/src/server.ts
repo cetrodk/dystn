@@ -63,7 +63,7 @@ function generateId(): string {
   return Math.random().toString(36).slice(2, 11);
 }
 
-export default class FestspilServer implements Party.Server {
+export default class DystnServer implements Party.Server {
   state: RoomState;
   private readonly roomId: string;
   /** Timestamp of the last accepted phase advance — debounces host double-clicks */
@@ -829,4 +829,4 @@ export default class FestspilServer implements Party.Server {
   }
 }
 
-FestspilServer satisfies Party.Worker;
+DystnServer satisfies Party.Worker;

@@ -41,7 +41,7 @@ The ~1.5s switch animation means:
 - Comeback potential: even trailing players can win with a streak
 
 ### 5. "Heads Up" By Design
-The TV shows the racetrack with all avatars moving in real time. Players naturally look UP at the screen to see what others are doing, not down at their phone. The phone is just a simple two-button (or swipe) input device. This perfectly aligns with Festspil's "heads up, not heads down" principle.
+The TV shows the racetrack with all avatars moving in real time. Players naturally look UP at the screen to see what others are doing, not down at their phone. The phone is just a simple two-button (or swipe) input device. This perfectly aligns with Dystn's "heads up, not heads down" principle.
 
 ---
 
@@ -210,10 +210,10 @@ Both are treated identically: avatar gets a "confused" animation (spinning quest
 
 ---
 
-## Mapping to Festspil Architecture
+## Mapping to Dystn Architecture
 
 ### Phase Structure
-Unlike other Festspil games (submit → vote → reveal loop), Sandhed is a **continuous real-time loop** with no distinct submission phase. This is a new pattern.
+Unlike other Dystn games (submit → vote → reveal loop), Sandhed is a **continuous real-time loop** with no distinct submission phase. This is a new pattern.
 
 ```
 Phases:
@@ -395,7 +395,7 @@ These are optional mechanics to add variety if the base game tests well:
 
 ---
 
-## Comparison to Existing Festspil Games
+## Comparison to Existing Dystn Games
 
 | Aspect | Duel | Bluff | Tegn | **Sandhed** |
 |--------|------|-------|------|-------------|

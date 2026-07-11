@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { motion } from "framer-motion";
-import { CountdownTimer } from "@festspil/ui/CountdownTimer";
+import { CountdownTimer } from "@dystn/ui/CountdownTimer";
 import { useSend } from "@/providers/PartyProvider";
 import { sfxUrgent, sfxTick, sfxClick } from "@/lib/sounds";
 import { da } from "@/lib/da";

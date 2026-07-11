@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Pencil } from "lucide-react";
-import { CountdownTimer } from "@festspil/ui/CountdownTimer";
+import { CountdownTimer } from "@dystn/ui/CountdownTimer";
 import { WaitingScreen } from "@/components/WaitingScreen";
 import { useSend, usePartyConnection } from "@/providers/PartyProvider";
 import { sfxWhoosh, sfxUrgent } from "@/lib/sounds";

@@ -2,7 +2,7 @@
 
 **Til:** Fable 5 · **Fra:** launch-readiness review 5. juli 2026 · **Mål:** de fund der ikke er launch-blokkere, men enten spolerer enkelte runder (P1) eller er lette gevinster i polish/robusthed/hygiejne (P2).
 
-Læs først **fælles kontekst** i `docs/handoff-p0-reconnect-persistence.md` (arkitektur, `conn.id === sessionId`-invarianten, state-/timer-model). Den gælder her også og gentages ikke. **Linjenumre er omtrentlige** — naviger via funktionsnavne, verificér mod nuværende kode, kør `pnpm typecheck` og `pnpm --filter @festspil/party-server validate-prompts` efter relevante ændringer. Tre P1'er (onAlarm-staleness, expectedCount tæller frakoblede, continueGame `remaining=0`) står allerede i P0-briefen under "rider med" — dublér dem ikke.
+Læs først **fælles kontekst** i `docs/handoff-p0-reconnect-persistence.md` (arkitektur, `conn.id === sessionId`-invarianten, state-/timer-model). Den gælder her også og gentages ikke. **Linjenumre er omtrentlige** — naviger via funktionsnavne, verificér mod nuværende kode, kør `pnpm typecheck` og `pnpm --filter @dystn/party-server validate-prompts` efter relevante ændringer. Tre P1'er (onAlarm-staleness, expectedCount tæller frakoblede, continueGame `remaining=0`) står allerede i P0-briefen under "rider med" — dublér dem ikke.
 
 ---
 

@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { motion } from "framer-motion";
-import { CountdownTimer } from "@festspil/ui/CountdownTimer";
+import { CountdownTimer } from "@dystn/ui/CountdownTimer";
 import { sfxScore } from "@/lib/sounds";
 import { GameAvatar } from "@/components/GameAvatar";
 import { useSend } from "@/providers/PartyProvider";

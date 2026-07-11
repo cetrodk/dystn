@@ -8,7 +8,7 @@ export async function newHostPage(browser: Browser): Promise<Page> {
   const ctx = await browser.newContext();
   const page = await ctx.newPage();
   await page.addInitScript(() => {
-    sessionStorage.setItem("festspil_host_unlocked", "1");
+    sessionStorage.setItem("dystn_host_unlocked", "1");
   });
   return page;
 }

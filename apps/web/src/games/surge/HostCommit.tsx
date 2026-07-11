@@ -1,6 +1,6 @@
 import { memo, useCallback, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { CountdownTimer } from "@festspil/ui/CountdownTimer";
+import { CountdownTimer } from "@dystn/ui/CountdownTimer";
 import { sfxUrgent, sfxTick, sfxSwitch } from "@/lib/sounds";
 import { GameAvatar } from "@/components/GameAvatar";
 import { da } from "@/lib/da";

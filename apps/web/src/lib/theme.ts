@@ -13,7 +13,7 @@ export const THEMES = [
 
 export type ThemeId = (typeof THEMES)[number]["id"];
 
-const STORAGE_KEY = "festspil-theme";
+const STORAGE_KEY = "dystn-theme";
 const DEFAULT_THEME: ThemeId = "tomato";
 
 /** Browser-chrome colour per theme (matches --color-bg in index.css). Kept in

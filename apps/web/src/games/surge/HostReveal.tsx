@@ -1,7 +1,7 @@
 import { useCallback, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Check, X, HelpCircle } from "lucide-react";
-import { CountdownTimer } from "@festspil/ui/CountdownTimer";
+import { CountdownTimer } from "@dystn/ui/CountdownTimer";
 import { sfxReveal, sfxCorrect, sfxWrong, sfxShame, sfxHop } from "@/lib/sounds";
 import { GameAvatar } from "@/components/GameAvatar";
 import { useSend } from "@/providers/PartyProvider";

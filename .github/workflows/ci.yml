@@ -36,7 +36,7 @@ jobs:
         run: pnpm build
 
       - name: Validate game prompts
-        run: pnpm --filter @festspil/party-server validate-prompts
+        run: pnpm --filter @dystn/party-server validate-prompts
 
   e2e:
     name: End-to-end games

@@ -1,6 +1,6 @@
-# Festspil — Design Prompt
+# Dystn — Design Prompt
 
-Use this description to generate UI/UX design concepts for the Festspil party game platform.
+Use this description to generate UI/UX design concepts for the Dystn party game platform.
 
 ---
 

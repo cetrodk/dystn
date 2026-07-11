@@ -1,5 +1,5 @@
 {
-  "extends": "@festspil/typescript-config/react.json",
+  "extends": "@dystn/typescript-config/react.json",
   "compilerOptions": {
     "outDir": "dist",
     "rootDir": "src"

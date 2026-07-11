@@ -1,5 +1,5 @@
 {
-  "name": "@festspil/ui",
+  "name": "@dystn/ui",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -25,7 +25,7 @@
     "react": "^19.2.0"
   },
   "devDependencies": {
-    "@festspil/typescript-config": "workspace:*",
+    "@dystn/typescript-config": "workspace:*",
     "@types/react": "^19.2.7",
     "typescript": "~5.9.3"
   }

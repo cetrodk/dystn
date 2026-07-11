@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { CountdownTimer } from "@festspil/ui/CountdownTimer";
+import { CountdownTimer } from "@dystn/ui/CountdownTimer";
 import { sfxFanfare, sfxScore } from "@/lib/sounds";
 import { GameAvatar } from "@/components/GameAvatar";
 import { useSend } from "@/providers/PartyProvider";

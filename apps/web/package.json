@@ -1,5 +1,5 @@
 {
-  "name": "@festspil/web",
+  "name": "@dystn/web",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -26,10 +26,10 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
-    "@festspil/game-engine": "workspace:*",
-    "@festspil/shared-types": "workspace:*",
-    "@festspil/typescript-config": "workspace:*",
-    "@festspil/ui": "workspace:*",
+    "@dystn/game-engine": "workspace:*",
+    "@dystn/shared-types": "workspace:*",
+    "@dystn/typescript-config": "workspace:*",
+    "@dystn/ui": "workspace:*",
     "@playwright/test": "^1.58.2",
     "@tailwindcss/vite": "^4",
     "@types/canvas-confetti": "^1.9.0",

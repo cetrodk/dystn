@@ -1,5 +1,5 @@
 {
-  "name": "@festspil/party-server",
+  "name": "@dystn/party-server",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -15,7 +15,7 @@
     "partysocket": "^1.0.3"
   },
   "devDependencies": {
-    "@festspil/typescript-config": "workspace:*",
+    "@dystn/typescript-config": "workspace:*",
     "typescript": "~5.9.3"
   }
 }

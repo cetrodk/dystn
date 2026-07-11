@@ -76,7 +76,7 @@ export function JoinPage() {
           className="nb-card flex w-full flex-col gap-4 rounded-[28px] p-6"
         >
           <div className="-mt-1 mb-1 flex items-center justify-between font-mono text-[10px] tracking-[0.15em] text-[var(--color-text-muted)]">
-            <span>FESTSPIL.PARTY</span>
+            <span>DYSTN.APP</span>
             <span>DELTAG</span>
           </div>
           {/* Room code input */}

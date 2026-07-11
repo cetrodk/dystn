@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Paintbrush } from "lucide-react";
-import { CountdownTimer } from "@festspil/ui/CountdownTimer";
+import { CountdownTimer } from "@dystn/ui/CountdownTimer";
 import { WaitingScreen } from "@/components/WaitingScreen";
 import { useSend, usePartyConnection } from "@/providers/PartyProvider";
 import { sfxClick } from "@/lib/sounds";

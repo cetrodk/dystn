@@ -8,12 +8,12 @@ Denne brief indeholder alt det, der allerede er kortlagt — arkitektur, invaria
 
 ## Fælles kontekst (læs først — spar tokens her)
 
-- **Backend:** PartyKit, ikke Convex. `apps/party-server/src/server.ts` — én Durable Object pr. rum, klassen `FestspilServer`. Al state ligger i `this.state: RoomState` (typen i `apps/party-server/src/types.ts`).
+- **Backend:** PartyKit, ikke Convex. `apps/party-server/src/server.ts` — én Durable Object pr. rum, klassen `DystnServer`. Al state ligger i `this.state: RoomState` (typen i `apps/party-server/src/types.ts`).
 - **Nøgle-invariant:** klienten forbinder med `new PartySocket({ id: sessionId })` (`apps/web/src/providers/PartyProvider.tsx`, i `useEffect`). Derfor er **`conn.id === sessionId`** på serveren. Værten binder `hostId = sessionId` i `handleHostConnect`. Host-handlinger autoriseres nu på `sender.id === state.hostId` (central guard i `onMessage`, `HOST_ONLY_TYPES`). **Bevar denne invariant** i alt nedenstående.
 - **Persistens i dag:** ingen. Kun `scheduleNextAlarm()` bruger `this.room.storage.setAlarm(...)`. Constructoren (`constructor(readonly room)`) initialiserer altid frisk lobby-state. Der er ingen `onStart`.
 - **Timer-model:** `onAlarm()` kalder `advancePhase(state, "TIMER_EXPIRED")`. `scheduleNextAlarm()` sætter alarmen til `min(phaseDeadline, hostDisconnectDeadline)`. En DO har kun ÉN alarm.
 - **Forbindelseslivscyklus:** `onConnect` markerer host/spiller som forbundet igen + sender snapshot. `onClose` markerer disconnect og **auto-pauser** hvis `status === "playing"` (gemmer `pausedRemaining`, rydder `phaseDeadline`).
-- **Klient-identitet:** `apps/web/src/lib/session.ts`. `getSessionId()` cacher i modul-scope + `sessionStorage["festspil_session_id"]` (pr. fane). Host-session i `localStorage` (`festspil_host_room`, `festspil_host_secret`) via `setHostSession/getHostSession`. `SessionProvider` er **app-global** og kalder `getSessionId()` uden argument (ingen rum-kontekst) — det er en forhindring for opgave B, se dér.
+- **Klient-identitet:** `apps/web/src/lib/session.ts`. `getSessionId()` cacher i modul-scope + `sessionStorage["dystn_session_id"]` (pr. fane). Host-session i `localStorage` (`dystn_host_room`, `dystn_host_secret`) via `setHostSession/getHostSession`. `SessionProvider` er **app-global** og kalder `getSessionId()` uden argument (ingen rum-kontekst) — det er en forhindring for opgave B, se dér.
 - **Relevante klientfiler:** `apps/web/src/pages/PlayerView.tsx` (join/rejoin-effekt med `prevConnected`-ref; læser `PLAYER_NAME_KEY` fra sessionStorage), `apps/web/src/pages/HostView.tsx` (`hostConnectSent`-ref, sender kun `hostConnect` én gang), `apps/web/src/pages/HostSettings.tsx` (egen `PartyProvider`), `apps/web/src/pages/JoinPage.tsx`.
 
 ---
@@ -44,7 +44,7 @@ Denne brief indeholder alt det, der allerede er kortlagt — arkitektur, invaria
 **Anbefalet løsning (besluttet):** flyt spiller-session til `localStorage`, **scopet pr. rumkode**, så identiteten overlever tab-død usynligt. Reclaim-by-name er kun redningsnet, ikke hovedvej (navne er ikke hemmelige).
 
 **Gør:**
-- `apps/web/src/lib/session.ts`: erstat/udbyg `getSessionId()` med en rum-scopet variant, fx `getSessionId(roomCode: string)` der læser/skriver `localStorage["festspil_session_" + roomCode.toUpperCase()]`. Nyt rum → nyt id.
+- `apps/web/src/lib/session.ts`: erstat/udbyg `getSessionId()` med en rum-scopet variant, fx `getSessionId(roomCode: string)` der læser/skriver `localStorage["dystn_session_" + roomCode.toUpperCase()]`. Nyt rum → nyt id.
 - **Forhindring der skal løses:** `SessionProvider` er app-global og kalder `getSessionId()` uden rumkode. To veje:
   1. Lad `PlayerView`/`JoinPage` udlede id'et selv fra `code`-param (drop afhængigheden af den globale `useSessionId()` i spiller-flowet), **eller**
   2. Gør `SessionProvider` rum-bevidst (tag `roomCode` som prop der hvor den wrapper spiller-ruter).

@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 import { motion } from "framer-motion";
-import { CountdownTimer } from "@festspil/ui/CountdownTimer";
+import { CountdownTimer } from "@dystn/ui/CountdownTimer";
 import { sfxTick, sfxUrgent } from "@/lib/sounds";
 import { da } from "@/lib/da";
 import { DrawingDisplay } from "./DrawingDisplay";

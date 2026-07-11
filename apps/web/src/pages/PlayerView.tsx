@@ -279,7 +279,7 @@ function PlayerViewInner({ sessionId }: { sessionId: string }) {
         className="nb-card flex w-full max-w-sm flex-col gap-5 rounded-[28px] p-6"
       >
         <div className="flex items-center justify-between font-mono text-[10px] tracking-[0.15em] text-[var(--color-text-muted)]">
-          <span>FESTSPIL.PARTY</span>
+          <span>DYSTN.APP</span>
           <span>RUM {room.code}</span>
         </div>
 

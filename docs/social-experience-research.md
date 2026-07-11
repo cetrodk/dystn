@@ -1,4 +1,4 @@
-# Festspil Social Experience Research
+# Dystn Social Experience Research
 
 First playtest feedback: the game works technically but people stared at phones, timing was too rushed for social interaction, and it didn't feel like a group experience.
 

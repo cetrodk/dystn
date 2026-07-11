@@ -2,7 +2,7 @@
 
 ## Context
 
-Festspil uses Convex as the real-time backend. This analysis evaluates whether raw WebSockets (or Durable Objects / PartyKit) would be a better fit.
+Dystn uses Convex as the real-time backend. This analysis evaluates whether raw WebSockets (or Durable Objects / PartyKit) would be a better fit.
 
 ## What Convex Gave Us
 
@@ -25,7 +25,7 @@ A Durable Object holds the entire room in memory and pushes targeted diffs. Zero
 
 ### Not Using Convex's Strengths
 
-Convex shines for complex cross-entity queries, long-lived data, global consistency. Festspil has ephemeral 30-minute rooms with no user accounts, no cross-room data, no long-term persistence. The persistence Convex provides is actively unhelpful — we need to clean up stale rooms, which is extra complexity.
+Convex shines for complex cross-entity queries, long-lived data, global consistency. Dystn has ephemeral 30-minute rooms with no user accounts, no cross-room data, no long-term persistence. The persistence Convex provides is actively unhelpful — we need to clean up stale rooms, which is extra complexity.
 
 ### `v.any()` Schema Limitations
 
