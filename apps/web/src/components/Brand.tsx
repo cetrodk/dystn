@@ -154,15 +154,7 @@ export function SectionHeader({
   );
 }
 
-/* -- Room code as rotated accent tiles ---------------------------- */
-
-/* Tile accent colours, cycled across room-code characters. */
-const TILE_COLORS = [
-  "var(--color-primary)",
-  "var(--color-accent)",
-  "var(--color-fusk)",
-  "var(--color-morph)",
-];
+/* -- Room code as bouncing monochrome tiles ------------------------ */
 
 export function RoomCodeTiles({
   code,
@@ -177,30 +169,26 @@ export function RoomCodeTiles({
       : size === "md"
         ? "clamp(44px, 6vw, 72px)"
         : "clamp(34px, 8vw, 48px)";
-  const pad = size === "sm" ? "0 8px" : "0 12px";
-  const border = size === "sm" ? "3px" : "4px";
-  const shadow = size === "sm" ? "3px 3px 0" : "5px 5px 0";
 
   return (
     <div
-      className="flex flex-wrap font-display leading-[0.85] text-[var(--color-paper)]"
+      className="flex flex-wrap font-display leading-[0.85] text-[var(--color-ink)]"
       style={{ fontSize, gap: 4 }}
     >
       {code.split("").map((ch, i) => (
-        <span
-          key={i}
-          className="inline-block"
-          style={{
-            background: TILE_COLORS[i % TILE_COLORS.length],
-            padding: pad,
-            border: `${border} solid var(--color-ink)`,
-            borderRadius: 10,
-            transform: `rotate(${(i % 2 ? 1 : -1) * 1.5}deg)`,
-            boxShadow: `${shadow} var(--color-ink)`,
+        <DanceTile
+          key={`${code}-${i}`}
+          ch={ch}
+          i={i}
+          delayBase={0.15}
+          tileStyle={{
+            background: "var(--color-paper)",
+            padding: size === "sm" ? "0.06em 0.18em" : "0.08em 0.22em",
+            border: "0.07em solid var(--color-ink)",
+            borderRadius: "0.14em",
+            boxShadow: "0.08em 0.08em 0 var(--color-ink)",
           }}
-        >
-          {ch}
-        </span>
+        />
       ))}
     </div>
   );
