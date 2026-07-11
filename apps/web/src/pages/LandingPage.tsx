@@ -2,11 +2,12 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { generateRoomCode } from "@/hooks/useCreateRoom";
+import { AnimatedLogo } from "@/components/Brand";
 import { setHostSession, clearHostSession, getHostSession } from "@/lib/session";
 import { da } from "@/lib/da";
 
 const HOST_PASSPHRASE = import.meta.env.VITE_HOST_PASSPHRASE as string | undefined;
-const PASSPHRASE_STORAGE_KEY = "festspil_host_unlocked";
+const PASSPHRASE_STORAGE_KEY = "dystn_host_unlocked";
 
 export function LandingPage() {
   const navigate = useNavigate();
@@ -64,23 +65,22 @@ export function LandingPage() {
           transition={{ delay: 0.1, type: "spring", stiffness: 200 }}
           className="font-display inline-block rounded-full border border-[var(--color-primary)]/20 bg-[var(--color-primary)]/10 px-4 py-1.5 text-xs font-semibold tracking-widest text-[var(--color-primary-light)] uppercase"
         >
-          Det ultimative festspil
+          Den ultimative dyst
         </motion.span>
 
         {/* Title */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15, type: "spring", stiffness: 150 }}
-          className="text-center"
-        >
-          <h1 className="font-display text-6xl font-bold tracking-tight glow-text sm:text-8xl">
-            {da.title}
-          </h1>
-          <p className="mx-auto mt-3 max-w-xs text-base text-[var(--color-text-muted)] sm:text-lg">
+        <div className="flex flex-col items-center text-center">
+          <h1 className="sr-only">{da.title}</h1>
+          <AnimatedLogo />
+          <motion.p
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.4, type: "spring", stiffness: 150 }}
+            className="mx-auto mt-5 max-w-xs text-base text-[var(--color-text-muted)] sm:text-lg"
+          >
             {da.subtitle}
-          </p>
-        </motion.div>
+          </motion.p>
+        </div>
 
         {/* Existing host session banner */}
         {hostSession && (
@@ -207,7 +207,7 @@ export function LandingPage() {
         transition={{ delay: 0.8 }}
         className="absolute bottom-4 text-[10px] tracking-[0.2em] text-[var(--color-text-muted)]/30 uppercase"
       >
-        &copy; 2026 Festspil Platform
+        &copy; 2026 Dystn
       </motion.footer>
     </div>
   );

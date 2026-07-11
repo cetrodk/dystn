@@ -1,14 +1,94 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
+import { motion } from "framer-motion";
 
-/* Tile accent colours, cycled across room-code characters. */
-const TILE_COLORS = [
-  "var(--color-primary)",
-  "var(--color-accent)",
-  "var(--color-fusk)",
-  "var(--color-morph)",
-];
+/* -- Bouncing letter tile (shared by AnimatedLogo + RoomCodeTiles) --
+   Ported from the "Dystn Logo Animation" design (variant A): tiles drop
+   in from above with a back-out overshoot, squash on landing, then keep
+   dancing (wiggle + bob, phase-offset per tile). All visual dimensions
+   are em-based so the tile scales with the container's font-size. */
 
-/* -- Logo (F tile + wordmark) ------------------------------------- */
+function DanceTile({
+  ch,
+  i,
+  tileStyle,
+  delayBase = 0.3,
+}: {
+  ch: string;
+  i: number;
+  tileStyle: CSSProperties;
+  delayBase?: number;
+}) {
+  const delay = delayBase + i * 0.16;
+  const danceDelay = delayBase + 1.8 + i * 0.22;
+  const baseTilt = i % 2 === 0 ? -2 : 2;
+  return (
+    <motion.span
+      className="inline-block"
+      initial={{ y: "-3.5em", opacity: 0 }}
+      animate={{ y: "0em", opacity: 1, scaleY: [1, 1, 0.85, 1] }}
+      transition={{
+        y: { delay, duration: 0.55, ease: "backOut" },
+        opacity: { delay, duration: 0.12 },
+        scaleY: { delay, duration: 0.7, times: [0, 0.64, 0.79, 1] },
+      }}
+      style={{ transformOrigin: "50% 100%" }}
+    >
+      <motion.span
+        className="inline-block"
+        animate={{ rotate: [0, 2, 0, -2, 0], y: [0, -0.05, 0, 0.05, 0].map(v => `${v}em`) }}
+        transition={{ delay: danceDelay, duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+      >
+        <span
+          className="inline-block"
+          style={{ transform: `rotate(${baseTilt}deg)`, ...tileStyle }}
+        >
+          {ch}
+        </span>
+      </motion.span>
+    </motion.span>
+  );
+}
+
+/* -- Animated logo (versal letter tiles; only the D tile is coloured) */
+
+const LOGO_LETTERS = ["D", "Y", "S", "T", "N"];
+
+export function AnimatedLogo({
+  className = "",
+  fontSize = "clamp(44px, 11vw, 84px)",
+}: {
+  className?: string;
+  fontSize?: string;
+}) {
+  return (
+    <div
+      aria-hidden
+      className={`flex font-display leading-none ${className}`}
+      style={{ fontSize, gap: "0.18em" }}
+    >
+      {LOGO_LETTERS.map((ch, i) => (
+        <DanceTile
+          key={i}
+          ch={ch}
+          i={i}
+          tileStyle={{
+            width: "1.5em",
+            height: "1.5em",
+            display: "grid",
+            placeItems: "center",
+            background: i === 0 ? "var(--color-primary)" : "var(--color-surface)",
+            color: i === 0 ? "var(--color-paper)" : "var(--color-ink)",
+            border: "0.05em solid var(--color-ink)",
+            borderRadius: "0.16em",
+            boxShadow: "0.09em 0.09em 0 var(--color-ink)",
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+/* -- Logo (D tile + wordmark) ------------------------------------- */
 
 export function Logo({ className = "" }: { className?: string }) {
   return (
@@ -17,10 +97,10 @@ export function Logo({ className = "" }: { className?: string }) {
         className="grid h-11 w-11 place-items-center rounded-[10px] bg-[var(--color-ink)] font-display text-[1.75rem] leading-none text-[var(--color-paper)] -rotate-[4deg]"
         style={{ boxShadow: "4px 4px 0 var(--color-primary)" }}
       >
-        F
+        D
       </div>
       <div>
-        <div className="font-display text-[1.4rem] leading-none">Festspil</div>
+        <div className="font-display text-[1.4rem] leading-none">Dystn</div>
         <div className="mt-[3px] font-mono text-[10px] tracking-[0.2em] text-[var(--color-text-muted)]">
           PARTY PACK
         </div>
@@ -75,6 +155,14 @@ export function SectionHeader({
 }
 
 /* -- Room code as rotated accent tiles ---------------------------- */
+
+/* Tile accent colours, cycled across room-code characters. */
+const TILE_COLORS = [
+  "var(--color-primary)",
+  "var(--color-accent)",
+  "var(--color-fusk)",
+  "var(--color-morph)",
+];
 
 export function RoomCodeTiles({
   code,
