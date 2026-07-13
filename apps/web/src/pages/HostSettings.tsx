@@ -1,13 +1,14 @@
 import { useState, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Swords, Paintbrush, Phone, Scale, Settings, Volume2, VolumeX, Palette } from "lucide-react";
+import { ArrowLeft, KeyRound, Swords, Paintbrush, Phone, Scale, Settings, Volume2, VolumeX, Palette } from "lucide-react";
 
 import { useSessionId } from "@/providers/SessionProvider";
 import { useRoom, useSend } from "@/providers/PartyProvider";
 import { da } from "@/lib/da";
 import { useVolume } from "@/hooks/useVolume";
 import { THEMES, useTheme } from "@/lib/theme";
+import { LicenseSettings } from "@/components/LicenseSettings";
 
 /* -- Timer & tab definitions ---------------------------------------- */
 
@@ -59,6 +60,7 @@ interface TabDef {
 const TABS: TabDef[] = [
   { id: "sound", label: "Lyd", Icon: Volume2, color: "var(--color-primary)", timers: [] },
   { id: "appearance", label: "Udseende", Icon: Palette, color: "var(--color-primary)", timers: [] },
+  { id: "license", label: da.license.tab, Icon: KeyRound, color: "var(--color-primary)", timers: [] },
   { id: "general", label: "Generelt", Icon: Settings, color: "var(--color-primary)", timers: GENERAL_TIMERS },
   { id: "blitz", label: "Blitz", Icon: Swords, color: "var(--color-blitz)", timers: BLITZ_TIMERS },
   {
@@ -367,6 +369,8 @@ export function HostSettingsPage() {
             <SoundSettings />
           ) : activeTab === "appearance" ? (
             <ThemeSettings />
+          ) : activeTab === "license" ? (
+            <LicenseSettings />
           ) : (
             <>
               {activeTab === "general" && (
