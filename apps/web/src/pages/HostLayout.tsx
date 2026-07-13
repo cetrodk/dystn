@@ -3,6 +3,7 @@ import { Outlet, useParams } from "react-router-dom";
 import { useSessionId } from "@/providers/SessionProvider";
 import { PartyProvider, usePartyConnection, useSend } from "@/providers/PartyProvider";
 import { getHostSession } from "@/lib/session";
+import { getStoredLicense, LICENSE_STORAGE_KEY } from "@/lib/license";
 
 /**
  * Re-claims host on EVERY websocket open, not just the first: after a network
@@ -24,9 +25,37 @@ function HostConnectionManager({ sessionId }: { sessionId: string }) {
 
     const session = getHostSession();
     if (session) {
-      send({ type: "hostConnect", sessionId, hostSecret: session.secret });
+      // En gemt licenskode medsendes altid — serveren unioner entitlements
+      // (gyldig) eller rører intet (ugyldig/manglende), så det er ufarligt.
+      send({
+        type: "hostConnect",
+        sessionId,
+        hostSecret: session.secret,
+        license: getStoredLicense() ?? undefined,
+      });
     }
   }, [connected, send, sessionId]);
+
+  return null;
+}
+
+/**
+ * Samme-enheds-auto-indløsning (spec §3.3): når /tak-fanen gemmer koden i
+ * localStorage, fyrer storage-eventet i DENNE fane (storage-events fyrer kun i
+ * andre faner end skriveren) — indløs straks over den åbne socket, så låsen
+ * forsvinder uden refresh.
+ */
+function LicenseStorageListener({ sessionId }: { sessionId: string }) {
+  const send = useSend();
+
+  useEffect(() => {
+    function onStorage(e: StorageEvent) {
+      if (e.key !== LICENSE_STORAGE_KEY || !e.newValue) return;
+      send({ type: "redeemLicense", hostId: sessionId, code: e.newValue });
+    }
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, [send, sessionId]);
 
   return null;
 }
@@ -51,6 +80,7 @@ export function HostLayout() {
   return (
     <PartyProvider roomCode={code} sessionId={sessionId}>
       <HostConnectionManager sessionId={sessionId} />
+      <LicenseStorageListener sessionId={sessionId} />
       <Outlet />
     </PartyProvider>
   );

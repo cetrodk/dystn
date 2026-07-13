@@ -26,6 +26,8 @@ export interface RoomSnapshot {
   settings?: Record<string, unknown>;
   hostId?: string;
   hostConnected?: boolean;
+  /** Oplåste pakker — kun værts-UI bruger den. Optional så simulator-fixtures overlever. */
+  entitlements?: string[];
 }
 
 export interface PhaseComponentProps {
