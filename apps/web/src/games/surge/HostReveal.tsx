@@ -8,11 +8,13 @@ import { useSend } from "@/providers/PartyProvider";
 import { da } from "@/lib/da";
 import { Racetrack } from "./Racetrack";
 import type { PhaseComponentProps } from "../registry";
+import type { AvatarTraits } from "@/lib/avatar";
 
 interface ResultEntry {
   playerId: string;
   playerName: string;
   avatarColor: string;
+  avatar?: AvatarTraits;
   choice: string | null;
   correct: boolean;
   noAnswer: boolean;
@@ -97,6 +99,7 @@ export default function HostReveal({ room, sessionId }: PhaseComponentProps) {
             <GameAvatar
               name={result.playerName}
               avatarColor={result.avatarColor}
+              avatar={result.avatar}
               className="h-12 w-12"
             />
             <span className="font-semibold text-xl">{result.playerName}</span>

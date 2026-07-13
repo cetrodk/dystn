@@ -1,4 +1,4 @@
-import { Suspense, useState, useEffect, useRef } from "react";
+import { Suspense, useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { WifiOff } from "lucide-react";
@@ -6,7 +6,7 @@ import { PartyProvider, useRoom, useSend, usePartyConnection, useRoomClosed, use
 import { gameComponents } from "@/games/registry";
 import { GameAvatar } from "@/components/GameAvatar";
 import { AvatarEditorModal } from "@/components/AvatarEditorModal";
-import { AVATAR_PALETTE, parseStoredAvatar, traitsFromName } from "@/lib/avatar";
+import { AVATAR_PALETTE, parseStoredAvatar, traitsFromName, type AvatarSpec } from "@/lib/avatar";
 import { GameIntro } from "@/components/GameIntro";
 import { UnknownPhase } from "@/components/UnknownPhase";
 import { useShowIntro } from "@/hooks/useShowIntro";
@@ -100,8 +100,38 @@ function PlayerViewInner({ sessionId }: { sessionId: string }) {
   const prevConnected = useRef(false);
 
   const [avatarModalOpen, setAvatarModalOpen] = useState(false);
+  // Editor state lives locally while the modal is open — the server snapshot
+  // lags a roundtrip behind, so building each edit on top of it would let
+  // rapid clicks overwrite each other. Sends are debounced (fund: one full
+  // room broadcast per click) and flushed on close/unmount.
+  const [editorAvatar, setEditorAvatar] = useState<AvatarSpec | null>(null);
+  const pendingAvatar = useRef<AvatarSpec | null>(null);
+  const avatarSendTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [showIntro, dismissIntro] = useShowIntro(room);
+
+  const flushAvatarChange = useCallback(() => {
+    if (avatarSendTimer.current) {
+      clearTimeout(avatarSendTimer.current);
+      avatarSendTimer.current = null;
+    }
+    if (pendingAvatar.current) {
+      send({ type: "changeAvatar", sessionId, avatar: pendingAvatar.current });
+      pendingAvatar.current = null;
+    }
+  }, [send, sessionId]);
+
+  useEffect(() => () => flushAvatarChange(), [flushAvatarChange]);
+
+  const handleAvatarChange = useCallback(
+    (spec: AvatarSpec) => {
+      setEditorAvatar(spec);
+      pendingAvatar.current = spec;
+      if (avatarSendTimer.current) clearTimeout(avatarSendTimer.current);
+      avatarSendTimer.current = setTimeout(flushAvatarChange, 400);
+    },
+    [flushAvatarChange],
+  );
 
   // Surface server rejections ("Prøv et andet svar", "Rummet er fuldt", …) that
   // were previously swallowed — the player used to see an eternal waiting screen.
@@ -308,7 +338,20 @@ function PlayerViewInner({ sessionId }: { sessionId: string }) {
                     animate={{ opacity: 1, x: 0 }}
                   >
                     <div
-                      onClick={isMe ? () => setAvatarModalOpen(true) : undefined}
+                      onClick={
+                        isMe
+                          ? () => {
+                              setEditorAvatar({
+                                color: Math.max(
+                                  0,
+                                  AVATAR_PALETTE.indexOf(player.avatarColor as (typeof AVATAR_PALETTE)[number]),
+                                ),
+                                ...(player.avatar ?? traitsFromName(player.name)),
+                              });
+                              setAvatarModalOpen(true);
+                            }
+                          : undefined
+                      }
                       className={`flex items-center gap-3 rounded-xl border-2 border-[var(--color-ink)] bg-[var(--color-surface-light)] p-2.5 transition-all ${
                         isMe ? "cursor-pointer hover:bg-[var(--color-primary)]/15" : ""
                       }`}
@@ -330,16 +373,14 @@ function PlayerViewInner({ sessionId }: { sessionId: string }) {
       </motion.div>
 
       <AnimatePresence>
-        {avatarModalOpen && currentPlayer ? (
+        {avatarModalOpen && editorAvatar ? (
           <AvatarEditorModal
-            value={{
-              color: Math.max(0, AVATAR_PALETTE.indexOf(currentPlayer.avatarColor as (typeof AVATAR_PALETTE)[number])),
-              ...(currentPlayer.avatar ?? traitsFromName(currentPlayer.name)),
+            value={editorAvatar}
+            onChange={handleAvatarChange}
+            onClose={() => {
+              flushAvatarChange();
+              setAvatarModalOpen(false);
             }}
-            onChange={(spec) => {
-              send({ type: "changeAvatar", sessionId, avatar: spec });
-            }}
-            onClose={() => setAvatarModalOpen(false)}
           />
         ) : null}
       </AnimatePresence>

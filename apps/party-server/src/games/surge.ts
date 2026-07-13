@@ -1,4 +1,5 @@
 import { registerGameHandlers } from "../registry";
+import type { AvatarTraits } from "../avatar";
 import type { RoomState, Player, PhaseTransition } from "../types";
 import { getSubmissions, upsertSubmission } from "../submissions";
 import { surgePrompts as allPrompts } from "./prompts/loader";
@@ -130,6 +131,7 @@ registerGameHandlers("surge", {
       playerId: string;
       playerName: string;
       avatarColor: string;
+      avatar?: AvatarTraits;
       choice: string | null;
       correct: boolean;
       noAnswer: boolean;
@@ -166,6 +168,7 @@ registerGameHandlers("surge", {
         playerId: player.id,
         playerName: player.name,
         avatarColor: player.avatarColor,
+        avatar: player.avatar,
         choice: isNoAnswer ? null : choice,
         correct: isCorrect,
         noAnswer: isNoAnswer,
