@@ -1,16 +1,35 @@
 import { expect, type Browser, type Page } from "@playwright/test";
+import { TEST_LICENSE_CODE } from "./license-fixtures";
 
-// Fælles flow-helpers for e2e-specsene: rum-oprettelse (inkl. forbi
-// kodeords-gaten), spiller-join og spilstart fra lobby-karrusellen.
+// Fælles flow-helpers for e2e-specsene: rum-oprettelse, spiller-join,
+// licens-indløsning og spilstart fra lobby-karrusellen.
 
-/** Create a page whose session has the host-passphrase gate pre-unlocked. */
 export async function newHostPage(browser: Browser): Promise<Page> {
   const ctx = await browser.newContext();
-  const page = await ctx.newPage();
-  await page.addInitScript(() => {
-    sessionStorage.setItem("dystn_host_unlocked", "1");
-  });
-  return page;
+  return ctx.newPage();
+}
+
+/**
+ * Lås Dystn-pakken op i et rum via serverens onRequest-endpoint (samme vej som
+ * cross-device-indløsningen fra /tak). Uden dette viser lobbyen kun de to
+ * gratis spil + pakkekortet, og specs der starter pack1-spil ville knække.
+ */
+export async function redeemTestLicense(page: Page, roomCode: string) {
+  // 404 = DO'en er endnu ikke claimet af værtens hostConnect (racer med
+  // navigationen efter createRoom) — prøv igen i op til ~5 s.
+  for (let attempt = 0; ; attempt++) {
+    const res = await page.request.post(
+      `http://localhost:1999/parties/main/${roomCode.toLowerCase()}`,
+      { data: { code: TEST_LICENSE_CODE } },
+    );
+    if (res.status() === 404 && attempt < 20) {
+      await page.waitForTimeout(250);
+      continue;
+    }
+    expect(res.status()).toBe(200);
+    expect((await res.json()).ok).toBe(true);
+    return;
+  }
 }
 
 export async function createRoom(hostPage: Page): Promise<string> {

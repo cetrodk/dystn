@@ -4,10 +4,11 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "partykit dev",
+    "dev": "partykit dev --var LICENSE_SECRET_V1=dystn-test-secret-0123456789abcdef0123456789abcdef",
     "build": "partykit build",
     "deploy": "partykit deploy",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
     "validate-prompts": "npx tsx src/games/prompts/validate.ts"
   },
   "dependencies": {
@@ -16,6 +17,7 @@
   },
   "devDependencies": {
     "@dystn/typescript-config": "workspace:*",
-    "typescript": "~5.9.3"
+    "typescript": "~5.9.3",
+    "vitest": "^3.2.4"
   }
 }

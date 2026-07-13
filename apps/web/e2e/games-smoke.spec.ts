@@ -1,5 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
-import { newHostPage, createRoom, joinRoom, selectAndStartGame, waitForText } from "./helpers";
+import { newHostPage, createRoom, joinRoom, redeemTestLicense, selectAndStartGame, waitForText } from "./helpers";
 
 /**
  * Smoke test per game: host + 3 players, start the game, and verify the first
@@ -44,6 +44,8 @@ for (const game of GAMES) {
   test(`${game.name}: starter og viser første fase`, async ({ browser }) => {
     const host = await newHostPage(browser);
     const code = await createRoom(host);
+    // Suiten dækker pack1-spil — lås pakken op, ellers viser lobbyen kun pakkekortet
+    await redeemTestLicense(host, code);
 
     const players = [
       await joinRoom(browser, code, "Alice"),

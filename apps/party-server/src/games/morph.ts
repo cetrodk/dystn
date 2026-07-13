@@ -18,6 +18,7 @@ import { shuffle } from "../shuffle";
 
 registerGameHandlers("morph", {
   config: {
+    pack: "pack1",
     initialPhase: "write",
     totalRoundsForPlayerCount: () => 1,
     minPlayers: 3, // chains need at least write → draw → guess by 3 different players

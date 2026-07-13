@@ -13,7 +13,10 @@ export default defineConfig({
   },
   webServer: [
     {
-      command: "cd ../party-server && npx partykit dev",
+      // Samme offentlige test-secret som i test/license.vectors.ts — får den
+      // frosne TEST_LICENSE_CODE til at validere. Deployes ALDRIG.
+      command:
+        "cd ../party-server && npx partykit dev --var LICENSE_SECRET_V1=dystn-test-secret-0123456789abcdef0123456789abcdef",
       port: 1999,
       reuseExistingServer: true,
       // Generous window so a cold CI start (no warm cache) doesn't flake.
