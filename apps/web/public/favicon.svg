@@ -1,36 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <defs>
-    <filter id="glow">
-      <feDropShadow dx="0" dy="0" stdDeviation="3" flood-color="#8b6eff" flood-opacity="0.7"/>
-      <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#8b6eff" flood-opacity="0.4"/>
-    </filter>
-  </defs>
-  <!-- Background -->
-  <rect width="100" height="100" rx="20" fill="#0d0b1a"/>
-  <!-- Subtle gradient overlay -->
-  <rect width="100" height="100" rx="20" fill="url(#bg-grad)"/>
-  <defs>
-    <linearGradient id="bg-grad" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#8b6eff" stop-opacity="0.1"/>
-      <stop offset="100%" stop-color="#8b6eff" stop-opacity="0"/>
-    </linearGradient>
-  </defs>
-  <!-- Crown + Controller icon -->
-  <g filter="url(#glow)">
-    <!-- Crown outline -->
-    <path d="M 10,80 L 15,30 L 35,50 L 50,15 L 65,50 L 85,30 L 90,80 Z" fill="rgba(139,110,255,0.1)" stroke="#8b6eff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-    <!-- D-Pad -->
-    <g transform="translate(25,60) scale(0.6)">
-      <path d="M 0,-10 L 0,10 M -10,0 L 10,0" stroke="#8b6eff" stroke-width="6" stroke-linecap="square" fill="none"/>
-    </g>
-    <!-- Action buttons -->
-    <g transform="translate(75,60) scale(0.6)">
-      <circle cx="0" cy="-10" r="3" fill="#8b6eff"/>
-      <circle cx="0" cy="10" r="3" fill="#8b6eff"/>
-      <circle cx="-10" cy="0" r="3" fill="#8b6eff"/>
-      <circle cx="10" cy="0" r="3" fill="#8b6eff"/>
-    </g>
-    <!-- Center jewel -->
-    <circle cx="50" cy="60" r="4" fill="#8b6eff"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Dystn "D" tile — mirrors the header Logo: ink tile, paper D,
+       hard tomato offset shadow, tilted -4deg (warm-editorial theme). -->
+  <g transform="rotate(-4 32 32)">
+    <rect x="9" y="9" width="50" height="50" rx="12" fill="#e8553a"/>
+    <rect x="4" y="4" width="50" height="50" rx="12" fill="#1a1714"/>
+    <path fill="#faf4e6" fill-rule="evenodd" d="M16 13 L30 13 C39.5 13 45 19.5 45 29 C45 38.5 39.5 45 30 45 L16 45 Z M24 21 L30 21 C35 21 37.5 24 37.5 29 C37.5 34 35 37 30 37 L24 37 Z"/>
   </g>
 </svg>

@@ -4,8 +4,8 @@
   "description": "Sjove partyspil for venner og familie",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0d0b1a",
-  "theme_color": "#0d0b1a",
+  "background_color": "#f3ecdc",
+  "theme_color": "#f3ecdc",
   "icons": [
     {
       "src": "/icon-192.png",
