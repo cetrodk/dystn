@@ -25,6 +25,18 @@ export const da = {
   roomNotFound: "Rummet blev ikke fundet",
   nameTaken: "Navnet er allerede taget",
 
+  // Avatar editor
+  avatar: {
+    title: "Tilpas din avatar",
+    shuffle: "Bland",
+    color: "Farve",
+    shape: "Form",
+    eyes: "Øjne",
+    mouth: "Mund",
+    hat: "Hat",
+    done: "Færdig",
+  },
+
   // Lobby
   waitingForHost: "Venter på værten...",
   startGame: "Start Spil",

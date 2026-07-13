@@ -1,3 +1,4 @@
+import type { AvatarTraits } from "@/lib/avatar";
 import { memo, useCallback, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CountdownTimer } from "@dystn/ui/CountdownTimer";
@@ -81,7 +82,7 @@ export default function HostCommit({ room }: PhaseComponentProps) {
                 <GameAvatar
                   name={p.name}
                   avatarColor={p.avatarColor}
-                  avatarImage={p.avatarImage}
+                  avatar={p.avatar}
                   className="h-10 w-10"
                 />
                 <span className="text-sm text-[var(--color-text-muted)]">?</span>
@@ -125,7 +126,7 @@ export default function HostCommit({ room }: PhaseComponentProps) {
 const PlayerBubble = memo(function PlayerBubble({
   player,
 }: {
-  player: { _id: string; name: string; avatarColor: string; avatarImage?: string };
+  player: { _id: string; name: string; avatarColor: string; avatar?: AvatarTraits };
 }) {
   return (
     <motion.div
@@ -139,7 +140,7 @@ const PlayerBubble = memo(function PlayerBubble({
       <GameAvatar
         name={player.name}
         avatarColor={player.avatarColor}
-        avatarImage={player.avatarImage}
+        avatar={player.avatar}
         className="h-10 w-10"
       />
       <span className="text-base font-semibold">{player.name}</span>

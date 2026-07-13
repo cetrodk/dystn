@@ -49,7 +49,7 @@ export default function HostReveal({ room, sessionId }: PhaseComponentProps) {
               <GameAvatar
                 name={chainOwner.playerName}
                 avatarColor={chainOwner.avatarColor}
-                avatarImage={chainOwner.avatarImage}
+                avatar={chainOwner.avatar}
                 className="h-8 w-8"
               />
               <span className="text-sm font-semibold text-[var(--color-text-muted)]">
@@ -113,7 +113,7 @@ export default function HostReveal({ room, sessionId }: PhaseComponentProps) {
               <GameAvatar
                 name={currentStep.playerName}
                 avatarColor={currentStep.avatarColor}
-                avatarImage={currentStep.avatarImage}
+                avatar={currentStep.avatar}
                 className="h-10 w-10"
               />
               <span className="text-lg font-semibold">

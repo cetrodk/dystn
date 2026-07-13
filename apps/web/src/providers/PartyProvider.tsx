@@ -11,10 +11,11 @@ import {
 import PartySocket from "partysocket";
 import type { RoomSnapshot } from "@/games/registry";
 import { PARTY_HOST } from "@/lib/partyHost";
+import type { AvatarSpec } from "@/lib/avatar";
 
 /** Message types matching the server's ClientMessage */
 export type ClientMessage =
-  | { type: "join"; name: string; sessionId: string; avatarImage?: string }
+  | { type: "join"; name: string; sessionId: string; avatar?: AvatarSpec }
   | { type: "rejoin"; sessionId: string }
   | { type: "changeGameType"; hostId: string; gameType: string }
   | { type: "startGame"; hostId: string }
@@ -26,7 +27,7 @@ export type ClientMessage =
   | { type: "continueGame"; hostId: string }
   | { type: "kickPlayer"; hostId: string; playerId: string }
   | { type: "morphAdvanceReveal"; hostId: string }
-  | { type: "changeAvatar"; sessionId: string; avatarImage: string }
+  | { type: "changeAvatar"; sessionId: string; avatar: AvatarSpec }
   | { type: "leaveRoom"; sessionId: string }
   | { type: "hostConnect"; sessionId: string; hostSecret: string; license?: string }
   | { type: "redeemLicense"; hostId: string; code: string; requestId?: string };

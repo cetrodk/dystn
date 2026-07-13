@@ -1,3 +1,4 @@
+import type { AvatarTraits } from "../avatar";
 import { registerGameHandlers } from "../registry";
 import type { RoomState, Player, PhaseTransition } from "../types";
 import { getSubmissions, upsertSubmission } from "../submissions";
@@ -117,7 +118,7 @@ registerGameHandlers("hunch", {
       playerId: string;
       playerName: string;
       avatarColor: string;
-      avatarImage?: string;
+      avatar?: AvatarTraits;
       guess: number | null;
       distance: number | null;
       score: number;
@@ -141,7 +142,7 @@ registerGameHandlers("hunch", {
         playerId: player.id,
         playerName: player.name,
         avatarColor: player.avatarColor,
-        avatarImage: player.avatarImage,
+        avatar: player.avatar,
         guess,
         distance,
         score,

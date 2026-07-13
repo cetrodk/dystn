@@ -1,3 +1,4 @@
+import type { AvatarTraits } from "@/lib/avatar";
 import { motion, AnimatePresence } from "framer-motion";
 import { CountdownTimer } from "@dystn/ui/CountdownTimer";
 import { sfxFanfare, sfxScore } from "@/lib/sounds";
@@ -19,7 +20,7 @@ export default function HostReveal({ room, sessionId }: PhaseComponentProps) {
     playerId: string;
     playerName: string;
     avatarColor: string;
-    avatarImage?: string;
+    avatar?: AvatarTraits;
     guess: number | null;
     distance: number | null;
     score: number;
@@ -42,7 +43,7 @@ export default function HostReveal({ room, sessionId }: PhaseComponentProps) {
       position: r.guess!,
       playerName: r.playerName,
       avatarColor: r.avatarColor,
-      avatarImage: r.avatarImage,
+      avatar: r.avatar,
       score: r.score,
     }));
 
@@ -94,7 +95,7 @@ export default function HostReveal({ room, sessionId }: PhaseComponentProps) {
               <GameAvatar
                 name={result.playerName}
                 avatarColor={result.avatarColor}
-                avatarImage={result.avatarImage}
+                avatar={result.avatar}
                 className="h-12 w-12"
               />
               <div className="flex-1 min-w-0">

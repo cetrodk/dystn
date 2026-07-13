@@ -1,3 +1,4 @@
+import type { AvatarTraits } from "@/lib/avatar";
 import { motion } from "framer-motion";
 import { CountdownTimer } from "@dystn/ui/CountdownTimer";
 import { GameAvatar } from "@/components/GameAvatar";
@@ -9,7 +10,7 @@ interface WaitingScreenProps {
     _id: string;
     name: string;
     avatarColor: string;
-    avatarImage?: string;
+    avatar?: AvatarTraits;
     hasSubmitted?: boolean;
   }>;
   /** Optional content displayed between the checkmark and the progress */
@@ -48,7 +49,7 @@ export function WaitingScreen({ deadline, players, children }: WaitingScreenProp
                   <GameAvatar
                     name={p.name}
                     avatarColor={p.avatarColor}
-                    avatarImage={p.avatarImage}
+                    avatar={p.avatar}
                     className="h-6 w-6"
                   />
                   <span className="text-xs text-[var(--color-text-muted)]">{p.name}</span>

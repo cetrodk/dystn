@@ -1,5 +1,6 @@
 const SESSION_KEY = "dystn_session_id";
 export const PLAYER_NAME_KEY = "dystn-player-name";
+/** Holds a JSON-serialized AvatarSpec (see lib/avatar.ts) */
 export const PLAYER_AVATAR_KEY = "dystn-player-avatar";
 
 function generateSessionId(): string {
