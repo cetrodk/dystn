@@ -1,8 +1,10 @@
 import { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ConfettiBackground } from "@/components/ConfettiBackground";
+import { isGateActive } from "@/lib/gate";
 
 const LandingPage = lazy(() => import("@/pages/LandingPage").then((m) => ({ default: m.LandingPage })));
+const OmPage = lazy(() => import("@/pages/OmPage").then((m) => ({ default: m.OmPage })));
 const JoinPage = lazy(() => import("@/pages/JoinPage").then((m) => ({ default: m.JoinPage })));
 const HostLayout = lazy(() => import("@/pages/HostLayout").then((m) => ({ default: m.HostLayout })));
 const HostView = lazy(() => import("@/pages/HostView").then((m) => ({ default: m.HostView })));
@@ -20,12 +22,27 @@ const PageFallback = (
 );
 
 export default function App() {
+  // Midlertidig launch-gate: kun infosiden er tilgængelig (se lib/gate.ts)
+  if (isGateActive()) {
+    return (
+      <BrowserRouter>
+        <ConfettiBackground />
+        <Suspense fallback={PageFallback}>
+          <Routes>
+            <Route path="*" element={<OmPage gate />} />
+          </Routes>
+        </Suspense>
+      </BrowserRouter>
+    );
+  }
+
   return (
     <BrowserRouter>
       <ConfettiBackground />
       <Suspense fallback={PageFallback}>
         <Routes>
           <Route path="/" element={<LandingPage />} />
+          <Route path="/om" element={<OmPage />} />
           <Route path="/play" element={<JoinPage />} />
           <Route path="/join/:code" element={<JoinPage />} />
           <Route path="/play/:code" element={<PlayerView />} />

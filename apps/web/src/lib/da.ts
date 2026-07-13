@@ -316,4 +316,62 @@ export const da = {
       forgetHint: "Fjerner kun koden fra denne browser — rummet beholder sine oplåste spil.",
     },
   },
+
+  // Om-/infoside (og midlertidig launch-gate)
+  om: {
+    pageTitle: "Om Dystn — partyspil på dansk",
+    linkLabel: "Om Dystn & kontakt",
+    heroTagline: "Partyspil på dansk",
+    heroTitle: "Ét TV. Alles telefoner. Én vinder.",
+    heroBody:
+      "Dystn er danske partyspil til fester, familiehygge og firmaaftener. Én person viser spillet på et TV eller en computer — alle andre spiller med på deres telefon. Ingen apps, intet login.",
+    playNow: "Spil nu",
+    comingSoon: "Vi åbner snart",
+    comingSoonBody:
+      "Vi lægger sidste hånd på Dystn. Skriv til os, hvis du vil have besked, når vi åbner dørene.",
+    how: {
+      title: "Sådan virker det",
+      sub: "Fra sofa til dyst på under et minut",
+      steps: [
+        {
+          title: "Opret et rum",
+          body: "Værten åbner dystn.app på TV'et eller computeren og opretter et rum.",
+        },
+        {
+          title: "Deltag på telefonen",
+          body: "Alle scanner QR-koden eller taster den korte rumkode på deres telefon.",
+        },
+        {
+          title: "Dyst!",
+          body: "Skriv, tegn, bluf og stem — pointene tælles helt automatisk.",
+        },
+      ],
+    },
+    games: {
+      title: "Spillene",
+      sub: "Seks spil — flere på vej",
+      free: "Gratis",
+      inPack: "Dystn-pakken",
+    },
+    pricing: {
+      title: "Pris",
+      sub: "Kun værten betaler — aldrig spillerne",
+      freeTitle: "Gratis",
+      freePrice: "0 kr.",
+      freeBody: "Blitz og Scrawl er gratis — altid. Ubegrænset antal rum og runder.",
+      packBody:
+        "Fusk, Morph, Surge og Hunch oveni. Ét engangskøb — dit for evigt, ingen abonnement.",
+      packPriceSuffix: "engangskøb",
+    },
+    contact: {
+      title: "Kontakt & firmaoplysninger",
+      sub: "Hvem står bag?",
+      runBy: "Dystn drives af",
+      cvrLabel: "CVR",
+      emailLabel: "E-mail",
+      responseNote: "Vi svarer typisk inden for 1–2 hverdage.",
+    },
+    footer: "© 2026 Dystn",
+    backToFront: "Til forsiden",
+  },
 } as const;
