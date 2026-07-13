@@ -7,8 +7,9 @@ import type {
   Player,
 } from "./types";
 import { advancePhase, getPhaseDuration } from "./phase";
-import { getGameHandlers } from "./registry";
+import { getGameHandlers, hasGameHandlers } from "./registry";
 import { getAvatarColor } from "./colors";
+import { denylistFromEnv, keyringFromEnv, verifyLicense } from "./license";
 
 // Register all game handlers (must be after registry is loaded)
 import "./games/blitz";
@@ -23,6 +24,13 @@ const MIN_PLAYERS = 1;
 const MAX_AVATAR_LEN = 64;
 /** Minimum gap between accepted host-advance messages (kills double-clicks) */
 const HOST_ADVANCE_DEBOUNCE_MS = 500;
+
+/** Efter så mange fejlslagne licens-valideringer (alle kilder) starter cooldown */
+const LICENSE_MAX_FAILS = 5;
+/** Cooldown-længde — kort nok til at ærlige tastefejl ikke brænder værten af */
+const LICENSE_COOLDOWN_MS = 30_000;
+/** Sentinel for spil uden eksplicit pack-config: aldrig i entitlements ⇒ altid låst */
+const LOCKED_PACK = "__locked__";
 
 /** Settings keys the host may change — the pause keys are server-managed */
 const ALLOWED_SETTINGS_KEYS = new Set([
@@ -52,7 +60,13 @@ const HOST_ONLY_TYPES = new Set([
   "continueGame",
   "kickPlayer",
   "morphAdvanceReveal",
+  "redeemLicense",
 ]);
+
+/** Resultat af én licens-validering (fælles for alle tre indløsningskilder) */
+type LicenseOutcome =
+  | { ok: true; packs: string[] }
+  | { ok: false; reason: "invalid" | "rateLimited" | "denylisted" };
 
 /** Generate a 4-char room code from the party room ID */
 function roomCodeFromId(id: string): string {
@@ -87,6 +101,8 @@ export default class DystnServer implements Party.Server {
       submissions: [],
       createdAt: Date.now(),
       phaseVersion: 0,
+      entitlements: [],
+      licenseFailCount: 0,
     };
   }
 
@@ -124,6 +140,10 @@ export default class DystnServer implements Party.Server {
     const saved = await this.room.storage.get<RoomState>("state");
     if (!saved) return;
     this.state = saved;
+
+    // Rum persisteret før licens-felterne fandtes — giv dem defaults
+    this.state.entitlements ??= [];
+    this.state.licenseFailCount ??= 0;
 
     // All sockets are gone after a restart — connection flags are transient
     this.state.hostConnected = false;
@@ -220,7 +240,7 @@ export default class DystnServer implements Party.Server {
 
   /** ── Message handling ── */
 
-  onMessage(raw: string, sender: Party.Connection) {
+  async onMessage(raw: string, sender: Party.Connection) {
     // Global inbound cap before JSON.parse — larger than any legal payload
     // (drawings are capped at MAX_DRAWING_BYTES in the game handlers).
     if (raw.length > 512_000) {
@@ -294,7 +314,11 @@ export default class DystnServer implements Party.Server {
           this.handleMorphAdvanceReveal(msg.hostId);
           break;
         case "hostConnect":
-          this.handleHostConnect(sender, msg.sessionId, msg.hostSecret);
+          // Async handlers awaites INDE i try/catch, så danske fejl når sendError
+          await this.handleHostConnect(sender, msg.sessionId, msg.hostSecret, msg.license);
+          break;
+        case "redeemLicense":
+          await this.handleRedeemLicense(sender, msg.code);
           break;
       }
     } catch (err) {
@@ -451,6 +475,10 @@ export default class DystnServer implements Party.Server {
     // Only selectable in the lobby — switching mid-game would feed the new
     // game's handlers the old game's phase/phaseData and corrupt the state.
     if (this.state.status !== "lobby") return;
+    // Ukendt-tjek FØR registry-opslag: registry kaster en engelsk exception,
+    // og en vilkårlig klient-streng må ikke ende i state. Tom streng = fravælg.
+    if (gameType && !hasGameHandlers(gameType)) throw new Error("Ukendt spil");
+    if (gameType && !this.canPlay(gameType)) throw new Error("Dette spil kræver Dystn-pakken");
     this.state.gameType = gameType || undefined;
     this.broadcastState();
   }
@@ -459,6 +487,9 @@ export default class DystnServer implements Party.Server {
     if (this.state.hostId !== hostId) throw new Error("Kun værten kan starte spillet");
     if (this.state.status !== "lobby") throw new Error("Spillet er allerede i gang");
     if (!this.state.gameType) throw new Error("Der er ikke valgt et spil");
+    // Forsvar i dybden: changeGameType guarder allerede, men et persisteret
+    // gameType fra før guarden (eller en direkte startGame) må ikke slippe forbi.
+    if (!this.canPlay(this.state.gameType)) throw new Error("Dette spil kræver Dystn-pakken");
 
     const handlers = getGameHandlers(this.state.gameType);
     const config = handlers.config ?? {};
@@ -701,35 +732,182 @@ export default class DystnServer implements Party.Server {
     this.broadcastState();
   }
 
-  private handleHostConnect(conn: Party.Connection, sessionId: string, hostSecret: string) {
-    // First host connection (room creation)
+  private async handleHostConnect(
+    conn: Party.Connection,
+    sessionId: string,
+    hostSecret: string,
+    license?: string,
+  ) {
+    // Claim-beslutningen afgøres på secret'en alene — en medbragt licenskode
+    // ignoreres helt ved forkert secret.
+    if (this.state.hostSecret && this.state.hostSecret !== hostSecret) {
+      conn.send(JSON.stringify({ type: "hostClaimed", success: false }));
+      return;
+    }
+    const isFirstClaim = !this.state.hostSecret;
+
+    // Validér en evt. medbragt kode FÆRDIGT før nogen state-mutation
+    // (async-reglen: aldrig mutation → await → mutation).
+    let licenseOutcome: LicenseOutcome | null = null;
+    if (typeof license === "string" && license.length > 0 && license.length <= 64) {
+      licenseOutcome = await this.validateLicense(license);
+      // En anden connection kan have claimet rummet, mens vi awaitede
+      if (this.state.hostSecret && this.state.hostSecret !== hostSecret) {
+        conn.send(JSON.stringify({ type: "hostClaimed", success: false }));
+        return;
+      }
+    }
+
+    if (isFirstClaim) this.state.hostSecret = hostSecret;
+    this.state.hostId = sessionId;
+    this.state.hostConnected = true;
+    this.state.hostLastSeen = Date.now();
+    this.state.hostDisconnectDeadline = undefined;
+    this.state.hostPauseDeadline = undefined;
+    // Monotoni: gyldig kode udvider entitlements; ugyldig/manglende rører intet
+    if (licenseOutcome?.ok) this.grantEntitlements(licenseOutcome.packs);
+
+    conn.send(JSON.stringify({ type: "hostClaimed", success: true }));
+    // licenseResult sendes KUN når en kode faktisk var medsendt — en host uden
+    // kode må ikke få et fejl-toast ud af ingenting.
+    if (licenseOutcome) {
+      const msg: ServerMessage = licenseOutcome.ok
+        ? { type: "licenseResult", ok: true, packs: [...this.state.entitlements] }
+        : {
+            type: "licenseResult",
+            ok: false,
+            packs: [...this.state.entitlements],
+            reason: licenseOutcome.reason,
+          };
+      conn.send(JSON.stringify(msg));
+    }
+    if (!isFirstClaim) this.scheduleNextAlarm(); // reschedule without the host disconnect deadline
+    this.broadcastState();
+  }
+
+  /** ── Licens ── */
+
+  private requiredPack(gameType: string): string {
+    // Fail-closed: ukendt spil eller manglende pack-config behandles som
+    // betalt — et nyt spil kan aldrig tavst blive gratis.
+    if (!hasGameHandlers(gameType)) return LOCKED_PACK;
+    return getGameHandlers(gameType).config?.pack ?? LOCKED_PACK;
+  }
+
+  private canPlay(gameType: string): boolean {
+    const pack = this.requiredPack(gameType);
+    return pack === "free" || this.state.entitlements.includes(pack);
+  }
+
+  /** Union-skrivning — entitlements er monotone, aldrig `= packs` */
+  private grantEntitlements(packs: string[]) {
+    for (const pack of packs) {
+      if (!this.state.entitlements.includes(pack)) this.state.entitlements.push(pack);
+    }
+  }
+
+  /**
+   * Fælles validering for redeemLicense, onRequest og hostConnect-medbragte
+   * koder: cooldown-tjek (sync) → verify (await) → tæller-mutation. Tælleren
+   * ligger i RoomState, så PartySockets auto-reconnect ikke nulstiller den.
+   */
+  private async validateLicense(code: string): Promise<LicenseOutcome> {
+    if (this.state.licenseCooldownUntil && Date.now() < this.state.licenseCooldownUntil) {
+      return { ok: false, reason: "rateLimited" };
+    }
+    const keyring = keyringFromEnv(this.room.env);
+    const denylist = denylistFromEnv(this.room.env);
+    const result = await verifyLicense(code, keyring, denylist);
+    if (result.ok) {
+      this.state.licenseFailCount = 0;
+      this.state.licenseCooldownUntil = undefined;
+      return { ok: true, packs: result.packs };
+    }
+    this.state.licenseFailCount += 1;
+    if (this.state.licenseFailCount >= LICENSE_MAX_FAILS) {
+      this.state.licenseFailCount = 0;
+      this.state.licenseCooldownUntil = Date.now() + LICENSE_COOLDOWN_MS;
+    }
+    return { ok: false, reason: result.reason };
+  }
+
+  private async handleRedeemLicense(conn: Party.Connection, code: string) {
+    if (typeof code !== "string" || code.length === 0 || code.length > 64) {
+      const msg: ServerMessage = {
+        type: "licenseResult",
+        ok: false,
+        packs: [...this.state.entitlements],
+        reason: "invalid",
+      };
+      conn.send(JSON.stringify(msg));
+      return;
+    }
+    const result = await this.validateLicense(code);
+    if (result.ok) {
+      this.grantEntitlements(result.packs);
+      const msg: ServerMessage = {
+        type: "licenseResult",
+        ok: true,
+        packs: [...this.state.entitlements],
+      };
+      conn.send(JSON.stringify(msg));
+      this.broadcastState();
+    } else {
+      const msg: ServerMessage = {
+        type: "licenseResult",
+        ok: false,
+        packs: [...this.state.entitlements],
+        reason: result.reason,
+      };
+      conn.send(JSON.stringify(msg));
+      this.persist(); // fejltælleren skal overleve uden at broadcaste
+    }
+  }
+
+  /**
+   * Cross-device-indløsning (spec §3.2): /tak-siden POST'er rumkoden + koden
+   * direkte til rummets DO. Endpointet kan kun TILFØJE entitlements — aldrig
+   * fjerne eller læse noget — så det er ufarligt uden auth.
+   */
+  async onRequest(req: Party.Request): Promise<Response> {
+    const cors = {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type",
+    };
+    if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
+    const headers = { ...cors, "Content-Type": "application/json" };
+    if (req.method !== "POST") {
+      return new Response(JSON.stringify({ error: "methodNotAllowed" }), { status: 405, headers });
+    }
+
+    let code: unknown;
+    try {
+      const body = (await req.json()) as { code?: unknown };
+      code = body?.code;
+    } catch {
+      return new Response(JSON.stringify({ error: "badRequest" }), { status: 400, headers });
+    }
+    if (typeof code !== "string" || code.length === 0 || code.length > 64) {
+      return new Response(JSON.stringify({ error: "badRequest" }), { status: 400, headers });
+    }
+
+    // Uclaimet DO = rumkoden findes ikke (tastefejl på /tak)
     if (!this.state.hostSecret) {
-      this.state.hostSecret = hostSecret;
-      this.state.hostId = sessionId;
-      this.state.hostConnected = true;
-      this.state.hostLastSeen = Date.now();
-      this.state.hostDisconnectDeadline = undefined;
-      this.state.hostPauseDeadline = undefined;
-      conn.send(JSON.stringify({ type: "hostClaimed", success: true }));
-      this.broadcastState();
-      return;
+      return new Response(JSON.stringify({ error: "roomNotFound" }), { status: 404, headers });
     }
 
-    // Host rejoin: verify secret
-    if (this.state.hostSecret === hostSecret) {
-      this.state.hostId = sessionId;
-      this.state.hostConnected = true;
-      this.state.hostLastSeen = Date.now();
-      this.state.hostDisconnectDeadline = undefined;
-      this.state.hostPauseDeadline = undefined;
-      conn.send(JSON.stringify({ type: "hostClaimed", success: true }));
-      this.scheduleNextAlarm(); // reschedule without the host disconnect deadline
+    const result = await this.validateLicense(code);
+    if (result.ok) {
+      this.grantEntitlements(result.packs);
       this.broadcastState();
-      return;
+      return new Response(
+        JSON.stringify({ ok: true, packs: [...this.state.entitlements] }),
+        { status: 200, headers },
+      );
     }
-
-    // Wrong secret
-    conn.send(JSON.stringify({ type: "hostClaimed", success: false }));
+    this.persist();
+    return new Response(JSON.stringify({ ok: false, reason: result.reason }), { status: 200, headers });
   }
 
   /** ── Broadcasting ── */
@@ -801,6 +979,8 @@ export default class DystnServer implements Party.Server {
       })),
       hostConnected: this.state.hostConnected,
       currentPlayerId: player?.id,
+      // Whitelist: kun pakke-listen — aldrig failCount/cooldown, aldrig koden
+      entitlements: this.state.entitlements,
     };
   }
 

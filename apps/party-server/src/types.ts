@@ -44,6 +44,13 @@ export interface RoomState {
   createdAt: number;
   /** Incrementing version to prevent stale timer races */
   phaseVersion: number;
+  /** Oplåste pakker (fx ["pack1"]). Monotone: der tilføjes kun, fjernes aldrig.
+   *  Selve licenskoden gemmes/broadcastes ALDRIG — kun pakke-listen. */
+  entitlements: string[];
+  /** Fejlslagne licens-valideringer (alle kilder); 5 ⇒ 30 s cooldown. */
+  licenseFailCount: number;
+  /** Epoch-ms indtil hvilken nye licens-forsøg afvises som rateLimited. */
+  licenseCooldownUntil?: number;
 }
 
 /** ── Game handler interfaces (replaces Convex gameHandlers.ts) ── */
@@ -68,6 +75,10 @@ export interface GameConfig {
   totalRoundsForPlayerCount?: (playerCount: number) => number;
   /** Minimum players for the game to make sense (vote games degenerate < 3) */
   minPlayers?: number;
+  /** Hvilken pakke spillet kræver. Fail-closed: mangler feltet, behandles
+   *  spillet som betalt ved runtime — et nyt spil kan ikke tavst blive gratis.
+   *  packs.test.ts asserter, at alle registrerede spil sætter det eksplicit. */
+  pack?: "free" | "pack1";
 }
 
 /**
@@ -117,7 +128,8 @@ export type ClientMessage =
   | { type: "changeAvatar"; sessionId: string; avatarImage: string }
   | { type: "leaveRoom"; sessionId: string }
   | { type: "morphAdvanceReveal"; hostId: string }
-  | { type: "hostConnect"; sessionId: string; hostSecret: string };
+  | { type: "hostConnect"; sessionId: string; hostSecret: string; license?: string }
+  | { type: "redeemLicense"; hostId: string; code: string };
 
 /** Server → Client */
 export type ServerMessage =
@@ -127,7 +139,13 @@ export type ServerMessage =
   | { type: "rejoinFailed" }
   | { type: "kicked" }
   | { type: "hostClaimed"; success: boolean }
-  | { type: "roomClosed"; reason: string };
+  | { type: "roomClosed"; reason: string }
+  | {
+      type: "licenseResult";
+      ok: boolean;
+      packs: string[];
+      reason?: "invalid" | "rateLimited" | "denylisted";
+    };
 
 /** The filtered room state sent to each client */
 export interface RoomSnapshot {
@@ -153,4 +171,6 @@ export interface RoomSnapshot {
   }>;
   hostConnected: boolean;
   currentPlayerId?: string;
+  /** Oplåste pakker — bruges KUN af værts-UI'et; spillerskærme viser intet licens-relateret. */
+  entitlements: string[];
 }

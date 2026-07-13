@@ -11,6 +11,7 @@ function scoreForDistance(d: number): number {
 
 registerGameHandlers("hunch", {
   config: {
+    pack: "pack1",
     initialPhase: "clue",
     totalRoundsForPlayerCount: (n) => Math.min(Math.max(6, n * 2), 12),
     minPlayers: 2, // clue-giver + at least one guesser
