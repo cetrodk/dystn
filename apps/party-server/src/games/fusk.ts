@@ -1,3 +1,4 @@
+import type { AvatarTraits } from "../avatar";
 import { registerGameHandlers } from "../registry";
 import { getSubmissions, upsertSubmission, validateVote } from "../submissions";
 import type { RoomState, Player, PhaseTransition } from "../types";
@@ -156,7 +157,7 @@ registerGameHandlers("fusk", {
       /** All authors incl. merged co-authors — each was awarded the points */
       authorNames?: string[];
       avatarColor: string | null;
-      avatarImage?: string;
+      avatar?: AvatarTraits;
       voterNames: string[];
       fooledCount: number;
     }> = [];
@@ -188,7 +189,7 @@ registerGameHandlers("fusk", {
         playerName: player?.name ?? "???",
         authorNames: authorIds.map((pid) => playerMap.get(pid)?.name ?? "???"),
         avatarColor: player?.avatarColor ?? "#888",
-        avatarImage: player?.avatarImage,
+        avatar: player?.avatar,
         voterNames: voterIds.map(
           (vid) => playerMap.get(vid)?.name ?? "???",
         ),

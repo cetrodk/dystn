@@ -82,7 +82,7 @@ export default function HostReveal({ room, sessionId }: PhaseComponentProps) {
               <GameAvatar
                 name={result.playerName}
                 avatarColor={result.avatarColor}
-                avatarImage={result.avatarImage}
+                avatar={result.avatar}
                 className="h-14 w-14"
               />
               <div className="flex-1 min-w-0">

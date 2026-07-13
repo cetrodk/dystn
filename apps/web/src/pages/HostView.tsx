@@ -166,7 +166,7 @@ function PauseBanner({
         <div className="flex flex-wrap items-center justify-center gap-2">
           {disconnectedPlayers.map((p: any) => (
             <div key={p._id} className="flex items-center gap-2 rounded-lg bg-[var(--color-surface)] px-3 py-1.5">
-              <GameAvatar name={p.name} avatarColor={p.avatarColor} avatarImage={p.avatarImage} className="h-6 w-6" />
+              <GameAvatar name={p.name} avatarColor={p.avatarColor} avatar={p.avatar} className="h-6 w-6" />
               <span className="text-sm font-semibold">{p.name}</span>
               <span className="text-xs text-[var(--color-danger)]">afbrudt</span>
             </div>
@@ -213,7 +213,7 @@ function PlayerSlots({ room, sessionId }: { room: RoomSnapshot; sessionId: strin
             className="nb-card relative flex items-center gap-2.5 rounded-xl px-3 py-2.5"
             style={{ boxShadow: "4px 4px 0 var(--color-ink)" }}
           >
-            <GameAvatar name={player.name} avatarColor={player.avatarColor} avatarImage={player.avatarImage} className="h-9 w-9 shrink-0" />
+            <GameAvatar name={player.name} avatarColor={player.avatarColor} avatar={player.avatar} className="h-9 w-9 shrink-0" />
             {/* Op til to linjer i fuld størrelse — sædekortet er for smalt til
                 lange navne på én linje (se docs/host-lobby-name-display-analysis.md) */}
             <span className="font-display text-base leading-tight line-clamp-2 [overflow-wrap:anywhere] flex-1">{player.name}</span>
@@ -845,7 +845,7 @@ function FinishedScreen({ room, sessionId }: { room: RoomSnapshot; sessionId: st
                 <GameAvatar
                   name={p.name}
                   avatarColor={p.avatarColor}
-                  avatarImage={p.avatarImage}
+                  avatar={p.avatar}
                   className={isFirst ? "h-24 w-24" : "h-[72px] w-[72px]"}
                 />
               </div>
@@ -889,7 +889,7 @@ function FinishedScreen({ room, sessionId }: { room: RoomSnapshot; sessionId: st
                   <span className="w-7 font-display text-xl text-[var(--color-ink)] opacity-40">
                     {1 + players.filter((p) => p.score > player.score).length}
                   </span>
-                  <GameAvatar name={player.name} avatarColor={player.avatarColor} avatarImage={player.avatarImage} className="h-9 w-9" />
+                  <GameAvatar name={player.name} avatarColor={player.avatarColor} avatar={player.avatar} className="h-9 w-9" />
                   <span className="font-display text-lg">{player.name}</span>
                 </div>
                 <span className="font-mono text-xs tracking-[0.14em] text-[var(--color-text-muted)]">
