@@ -35,6 +35,9 @@ jobs:
       - name: Build
         run: pnpm build
 
+      - name: Unit tests (license + api handlers)
+        run: pnpm --filter @dystn/party-server test
+
       - name: Validate game prompts
         run: pnpm --filter @dystn/party-server validate-prompts
 
