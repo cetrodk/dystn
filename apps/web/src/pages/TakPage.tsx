@@ -41,34 +41,47 @@ export function TakPage() {
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
 
+    // Forbigående fejl (netværksblip ved app-skift på mobilen, 429, cold-
+    // start-5xx) må ikke være terminale efter én betalt ordre — poll videre
+    // op til samme loft som pending-stien, og giv først op derefter.
+    function retryOrGiveUp(giveUp: TakState) {
+      pollCount.current += 1;
+      if (pollCount.current >= POLL_MAX_ATTEMPTS) {
+        setState(giveUp);
+      } else {
+        timer = setTimeout(poll, POLL_INTERVAL_MS);
+      }
+    }
+
     async function poll() {
+      let body:
+        | { status: "paid"; code: string; packs: string[] }
+        | { status: "pending" }
+        | { status: "not_completed" };
       try {
         const res = await fetch(`/api/license?session_id=${encodeURIComponent(sessionId!)}`);
         if (cancelled) return;
         if (!res.ok) {
-          setState({ kind: "error" });
+          if (res.status === 429 || res.status >= 500) {
+            retryOrGiveUp({ kind: "error" });
+          } else {
+            setState({ kind: "error" }); // 4xx er et reelt svar — terminalt
+          }
           return;
         }
-        const body = (await res.json()) as
-          | { status: "paid"; code: string; packs: string[] }
-          | { status: "pending" }
-          | { status: "not_completed" };
-        if (cancelled) return;
-        if (body.status === "paid") {
-          setState({ kind: "paid", code: body.code });
-        } else if (body.status === "not_completed") {
-          setState({ kind: "not_completed" });
-        } else {
-          pollCount.current += 1;
-          if (pollCount.current >= POLL_MAX_ATTEMPTS) {
-            setState({ kind: "pendingTimeout" });
-          } else {
-            setState({ kind: "pending" });
-            timer = setTimeout(poll, POLL_INTERVAL_MS);
-          }
-        }
+        body = await res.json();
       } catch {
-        if (!cancelled) setState({ kind: "error" });
+        if (!cancelled) retryOrGiveUp({ kind: "error" });
+        return;
+      }
+      if (cancelled) return;
+      if (body.status === "paid") {
+        setState({ kind: "paid", code: body.code });
+      } else if (body.status === "not_completed") {
+        setState({ kind: "not_completed" });
+      } else {
+        setState({ kind: "pending" });
+        retryOrGiveUp({ kind: "pendingTimeout" });
       }
     }
 

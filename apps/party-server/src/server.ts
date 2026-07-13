@@ -25,10 +25,12 @@ const MAX_AVATAR_LEN = 64;
 /** Minimum gap between accepted host-advance messages (kills double-clicks) */
 const HOST_ADVANCE_DEBOUNCE_MS = 500;
 
-/** Efter så mange fejlslagne licens-valideringer (alle kilder) starter cooldown */
+/** Efter så mange fejlslagne licens-valideringer FRA SAMME KILDE starter cooldown */
 const LICENSE_MAX_FAILS = 5;
 /** Cooldown-længde — kort nok til at ærlige tastefejl ikke brænder værten af */
 const LICENSE_COOLDOWN_MS = 30_000;
+/** Ryd udløbne throttle-entries når mappet når denne størrelse (mange kilder = angreb) */
+const LICENSE_THROTTLE_SWEEP = 500;
 /** Sentinel for spil uden eksplicit pack-config: aldrig i entitlements ⇒ altid låst */
 const LOCKED_PACK = "__locked__";
 
@@ -82,6 +84,15 @@ export default class DystnServer implements Party.Server {
   private readonly roomId: string;
   /** Timestamp of the last accepted phase advance — debounces host double-clicks */
   private lastAdvanceAt = 0;
+  /**
+   * Licens-throttle PR. KILDE (ws-connection-id hhv. afsender-IP). Bevidst i
+   * instans-hukommelsen og ikke i RoomState: en rum-bred, persisteret tæller
+   * lod enhver gæst (via det åbne onRequest-endpoint) eller en forældet gemt
+   * kode på reconnect spærre værtens egen indløsning permanent. Koderne er
+   * 120-bit signerede, så throttlen er chikane-bremse, ikke kryptoværn — at
+   * en DO-genstart nulstiller den er acceptabelt.
+   */
+  private licenseThrottle = new Map<string, { fails: number; cooldownUntil?: number }>();
 
   constructor(readonly room: Party.Room) {
     this.roomId = room.id;
@@ -102,7 +113,6 @@ export default class DystnServer implements Party.Server {
       createdAt: Date.now(),
       phaseVersion: 0,
       entitlements: [],
-      licenseFailCount: 0,
     };
   }
 
@@ -143,7 +153,6 @@ export default class DystnServer implements Party.Server {
 
     // Rum persisteret før licens-felterne fandtes — giv dem defaults
     this.state.entitlements ??= [];
-    this.state.licenseFailCount ??= 0;
 
     // All sockets are gone after a restart — connection flags are transient
     this.state.hostConnected = false;
@@ -318,7 +327,7 @@ export default class DystnServer implements Party.Server {
           await this.handleHostConnect(sender, msg.sessionId, msg.hostSecret, msg.license);
           break;
         case "redeemLicense":
-          await this.handleRedeemLicense(sender, msg.code);
+          await this.handleRedeemLicense(sender, msg.code, msg.requestId);
           break;
       }
     } catch (err) {
@@ -750,7 +759,7 @@ export default class DystnServer implements Party.Server {
     // (async-reglen: aldrig mutation → await → mutation).
     let licenseOutcome: LicenseOutcome | null = null;
     if (typeof license === "string" && license.length > 0 && license.length <= 64) {
-      licenseOutcome = await this.validateLicense(license);
+      licenseOutcome = await this.validateLicense(license, null);
       // En anden connection kan have claimet rummet, mens vi awaitede
       if (this.state.hostSecret && this.state.hostSecret !== hostSecret) {
         conn.send(JSON.stringify({ type: "hostClaimed", success: false }));
@@ -808,47 +817,64 @@ export default class DystnServer implements Party.Server {
 
   /**
    * Fælles validering for redeemLicense, onRequest og hostConnect-medbragte
-   * koder: cooldown-tjek (sync) → verify (await) → tæller-mutation. Tælleren
-   * ligger i RoomState, så PartySockets auto-reconnect ikke nulstiller den.
+   * koder: cooldown-tjek (sync) → verify (await) → tæller-mutation. Throttlen
+   * er pr. throttleKey (se licenseThrottle). throttleKey null (hostConnect) ⇒
+   * hverken tjek eller tælling: kilden er secret-gated, og en gemt kode, der
+   * auto-medsendes ved hver reconnect, må aldrig kunne brænde værtens forsøg.
    */
-  private async validateLicense(code: string): Promise<LicenseOutcome> {
-    if (this.state.licenseCooldownUntil && Date.now() < this.state.licenseCooldownUntil) {
-      return { ok: false, reason: "rateLimited" };
+  private async validateLicense(code: string, throttleKey: string | null): Promise<LicenseOutcome> {
+    const now = Date.now();
+    if (this.licenseThrottle.size >= LICENSE_THROTTLE_SWEEP) {
+      for (const [key, entry] of this.licenseThrottle) {
+        if (!entry.cooldownUntil || now >= entry.cooldownUntil) this.licenseThrottle.delete(key);
+      }
+    }
+    if (throttleKey) {
+      const entry = this.licenseThrottle.get(throttleKey);
+      if (entry?.cooldownUntil) {
+        if (now < entry.cooldownUntil) return { ok: false, reason: "rateLimited" };
+        this.licenseThrottle.delete(throttleKey);
+      }
     }
     const keyring = keyringFromEnv(this.room.env);
     const denylist = denylistFromEnv(this.room.env);
     const result = await verifyLicense(code, keyring, denylist);
     if (result.ok) {
-      this.state.licenseFailCount = 0;
-      this.state.licenseCooldownUntil = undefined;
+      if (throttleKey) this.licenseThrottle.delete(throttleKey);
       return { ok: true, packs: result.packs };
     }
-    this.state.licenseFailCount += 1;
-    if (this.state.licenseFailCount >= LICENSE_MAX_FAILS) {
-      this.state.licenseFailCount = 0;
-      this.state.licenseCooldownUntil = Date.now() + LICENSE_COOLDOWN_MS;
+    if (throttleKey) {
+      const entry = this.licenseThrottle.get(throttleKey) ?? { fails: 0 };
+      entry.fails += 1;
+      if (entry.fails >= LICENSE_MAX_FAILS) entry.cooldownUntil = now + LICENSE_COOLDOWN_MS;
+      this.licenseThrottle.set(throttleKey, entry);
     }
     return { ok: false, reason: result.reason };
   }
 
-  private async handleRedeemLicense(conn: Party.Connection, code: string) {
+  private async handleRedeemLicense(conn: Party.Connection, code: string, requestId?: string) {
+    // Ekko kun et velformet requestId — klienten korrelerer sit svar på det,
+    // så en samtidig auto-indløsning aldrig kan forveksles med modalens egen.
+    const reqId = typeof requestId === "string" && requestId.length <= 64 ? requestId : undefined;
     if (typeof code !== "string" || code.length === 0 || code.length > 64) {
       const msg: ServerMessage = {
         type: "licenseResult",
         ok: false,
         packs: [...this.state.entitlements],
         reason: "invalid",
+        requestId: reqId,
       };
       conn.send(JSON.stringify(msg));
       return;
     }
-    const result = await this.validateLicense(code);
+    const result = await this.validateLicense(code, `ws:${conn.id}`);
     if (result.ok) {
       this.grantEntitlements(result.packs);
       const msg: ServerMessage = {
         type: "licenseResult",
         ok: true,
         packs: [...this.state.entitlements],
+        requestId: reqId,
       };
       conn.send(JSON.stringify(msg));
       this.broadcastState();
@@ -858,9 +884,9 @@ export default class DystnServer implements Party.Server {
         ok: false,
         packs: [...this.state.entitlements],
         reason: result.reason,
+        requestId: reqId,
       };
       conn.send(JSON.stringify(msg));
-      this.persist(); // fejltælleren skal overleve uden at broadcaste
     }
   }
 
@@ -897,7 +923,13 @@ export default class DystnServer implements Party.Server {
       return new Response(JSON.stringify({ error: "roomNotFound" }), { status: 404, headers });
     }
 
-    const result = await this.validateLicense(code);
+    // Throttle pr. afsender-IP — endpointet er uautentificeret, og en gæst
+    // med rumkoden må ikke kunne holde værtens egen indløsning i cooldown.
+    const ip =
+      req.headers.get("cf-connecting-ip") ??
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+      "unknown";
+    const result = await this.validateLicense(code, `http:${ip}`);
     if (result.ok) {
       this.grantEntitlements(result.packs);
       this.broadcastState();
@@ -906,7 +938,6 @@ export default class DystnServer implements Party.Server {
         { status: 200, headers },
       );
     }
-    this.persist();
     return new Response(JSON.stringify({ ok: false, reason: result.reason }), { status: 200, headers });
   }
 

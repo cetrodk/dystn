@@ -14,7 +14,16 @@ const RATE_LIMIT_WINDOW_MS = 60_000;
 // In-memory er fint på Fluid Compute: bedre end ingenting, nulstilles ved cold start
 const rateHits = new Map<string, { count: number; windowStart: number }>();
 
+// Fluid Compute holder instansen varm i timevis — uden eviction vokser mappet
+// én entry pr. unik IP (fx en bot-sweep), til instansen dør af det
+const RATE_LIMIT_SWEEP_SIZE = 1_000;
+
 function isRateLimited(ip: string, now: number): boolean {
+  if (rateHits.size >= RATE_LIMIT_SWEEP_SIZE) {
+    for (const [key, entry] of rateHits) {
+      if (now - entry.windowStart >= RATE_LIMIT_WINDOW_MS) rateHits.delete(key);
+    }
+  }
   const hit = rateHits.get(ip);
   if (!hit || now - hit.windowStart >= RATE_LIMIT_WINDOW_MS) {
     rateHits.set(ip, { count: 1, windowStart: now });

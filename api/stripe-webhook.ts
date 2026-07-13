@@ -6,7 +6,7 @@
  * (samme session ⇒ samme kode), så en dubletmail er acceptabel. Denne kanal
  * påvirker ALDRIG /tak-flowet.
  */
-import { buildCodeForSession, classifySession, fetchCheckoutSession } from "./_stripe";
+import { UnknownPriceError, buildCodeForSession, classifySession, fetchCheckoutSession } from "./_stripe";
 import { formatCode, normalizeCode } from "./_license";
 
 const te = new TextEncoder();
@@ -138,7 +138,10 @@ export async function handleWebhookRequest(
     if (!mailRes.ok) return new Response(null, { status: 500 }); // Stripe retryer
 
     return new Response(null, { status: 200 });
-  } catch {
+  } catch (err) {
+    // Et fremmed produkt på samme Stripe-konto er ikke vores event: kvitter
+    // 200, ellers retryer Stripe i dagevis og kan deaktivere endpointet.
+    if (err instanceof UnknownPriceError) return new Response(null, { status: 200 });
     return new Response(null, { status: 500 });
   }
 }

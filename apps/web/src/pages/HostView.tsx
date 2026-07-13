@@ -8,7 +8,7 @@ const QRCodeSVG = lazy(() =>
   import("qrcode.react").then((m) => ({ default: m.QRCodeSVG })),
 );
 import { useSessionId } from "@/providers/SessionProvider";
-import { useRoom, useSend, useHostClaimed, useLicenseResult } from "@/providers/PartyProvider";
+import { useRoom, useSend, useHostClaimed, useLicenseResult, usePartyConnection } from "@/providers/PartyProvider";
 import { gameComponents, type RoomSnapshot } from "@/games/registry";
 import { sfxFanfare } from "@/lib/sounds";
 import { useGameMusic } from "@/hooks/useGameMusic";
@@ -18,7 +18,7 @@ import { ensureResumed } from "@/lib/audio/context";
 import { GameAvatar } from "@/components/GameAvatar";
 import { GamePicker, GAMES, GAME_ICONS } from "@/components/GamePicker";
 import { UnlockModal } from "@/components/UnlockModal";
-import { setStoredLicense } from "@/lib/license";
+import { newRedeemRequestId, trackRedeemForStorage } from "@/lib/license";
 import { GameIntro } from "@/components/GameIntro";
 import { UnknownPhase } from "@/components/UnknownPhase";
 import { Logo, Chip, RoomCodeTiles, SectionHeader } from "@/components/Brand";
@@ -337,13 +337,16 @@ export function HostView() {
 
   // ── Dystn-pakken: oplåsnings-modal + licens-status ──
   const licenseResult = useLicenseResult();
+  const { connected } = usePartyConnection();
   const [showUnlock, setShowUnlock] = useState(false);
   const [redeeming, setRedeeming] = useState(false);
   const [unlockError, setUnlockError] = useState<string | null>(null);
-  const pendingRedeem = useRef<{ code: string; remember: boolean } | null>(null);
+  const pendingRedeem = useRef<string | null>(null); // requestId på egen indløsning
 
-  const entitlements = room?.entitlements ?? [];
-  const hasPack = entitlements.includes("pack1");
+  // Manglende felt = ældre server (deploy-skew/rollback) — må aldrig låse
+  // spil, der var åbne før licens-flowet; kun et eksplicit snapshot låser.
+  const entitlements = room?.entitlements;
+  const hasPack = entitlements ? entitlements.includes("pack1") : true;
 
   // Konfetti når pakken låses op LIVE — uanset kilde (modal, /tak-fane via
   // storage-event ELLER cross-device onRequest, hvor kun snapshottet ændrer
@@ -363,26 +366,42 @@ export function HostView() {
     }
   }, [room, hasPack]);
 
-  // Svar på egne indløsninger: gem koden ved ok (hvis "husk" var valgt), vis
-  // skelnelig dansk fejl ellers. `at`-feltet gør at gentagne ens fejl re-trigger.
+  // Egne indløsninger matches på requestId — auto-indløsninger (hostConnect-
+  // medbragt kode, storage-event) deler kanal, og et ukorreleret svar må
+  // hverken rydde en fremmed pending eller gemme en forkert kode. Selve
+  // localStorage-skrivningen sker centralt i HostLayout (LicensePersistence).
+  // `at`-feltet gør at gentagne ens fejl re-trigger.
   useEffect(() => {
     if (!licenseResult) return;
-    setRedeeming(false);
-    if (licenseResult.ok) {
-      const pending = pendingRedeem.current;
-      if (pending?.remember) setStoredLicense(pending.code);
+    const isOwn =
+      licenseResult.requestId != null && licenseResult.requestId === pendingRedeem.current;
+    if (isOwn) {
       pendingRedeem.current = null;
-    } else {
-      pendingRedeem.current = null;
+      setRedeeming(false);
+    }
+    // Fejl vises også for auto-indløsninger (ingen egen pending) — ellers står
+    // værten med låste spil og nul forklaring, når den gemte kode afvises.
+    if (!licenseResult.ok && (isOwn || pendingRedeem.current === null)) {
       setUnlockError(da.license.errors[licenseResult.reason ?? "invalid"]);
     }
   }, [licenseResult]);
 
+  // Socket-drop mellem send og svar: svaret kommer aldrig (serveren svarer på
+  // den døde connection), så knappen må ikke hænge på "Indløser..." for evigt.
+  useEffect(() => {
+    if (connected || pendingRedeem.current === null) return;
+    pendingRedeem.current = null;
+    setRedeeming(false);
+    setUnlockError(da.license.errors.network);
+  }, [connected]);
+
   function handleRedeem(code: string, remember: boolean) {
-    pendingRedeem.current = { code, remember };
+    const requestId = newRedeemRequestId();
+    if (remember) trackRedeemForStorage(requestId, code);
+    pendingRedeem.current = requestId;
     setUnlockError(null);
     setRedeeming(true);
-    send({ type: "redeemLicense", hostId: sessionId, code });
+    send({ type: "redeemLicense", hostId: sessionId, code, requestId });
   }
 
   // Warn before closing/refreshing — only when game is active (lobby or playing)
@@ -704,7 +723,9 @@ export function HostView() {
           }}
           showExternalGames
           entitlements={entitlements}
-          onUnlockClick={() => { setUnlockError(null); setShowUnlock(true); }}
+          // Fejlen ryddes bevidst IKKE her: en fejlet auto-indløsning skal
+          // kunne ses, når værten åbner modalen for at forstå de låste spil.
+          onUnlockClick={() => setShowUnlock(true)}
         />
       </div>
 

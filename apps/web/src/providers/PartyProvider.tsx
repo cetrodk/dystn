@@ -29,7 +29,7 @@ export type ClientMessage =
   | { type: "changeAvatar"; sessionId: string; avatarImage: string }
   | { type: "leaveRoom"; sessionId: string }
   | { type: "hostConnect"; sessionId: string; hostSecret: string; license?: string }
-  | { type: "redeemLicense"; hostId: string; code: string };
+  | { type: "redeemLicense"; hostId: string; code: string; requestId?: string };
 
 type ServerMessage =
   | { type: "room"; data: RoomSnapshot }
@@ -44,6 +44,7 @@ type ServerMessage =
       ok: boolean;
       packs: string[];
       reason?: "invalid" | "rateLimited" | "denylisted";
+      requestId?: string;
     };
 
 /** Seneste licens-svar. `at` gør at to ens fejl i træk stadig re-trigger effects. */
@@ -51,6 +52,8 @@ export interface LicenseResult {
   ok: boolean;
   packs: string[];
   reason?: "invalid" | "rateLimited" | "denylisted";
+  /** Ekko af redeemLicense-requestId'et — auto-indløsninger (hostConnect) har intet. */
+  requestId?: string;
   at: number;
 }
 
@@ -133,7 +136,13 @@ export function PartyProvider({
             setHostClaimed(msg.success);
             break;
           case "licenseResult":
-            setLicenseResult({ ok: msg.ok, packs: msg.packs, reason: msg.reason, at: Date.now() });
+            setLicenseResult({
+              ok: msg.ok,
+              packs: msg.packs,
+              reason: msg.reason,
+              requestId: msg.requestId,
+              at: Date.now(),
+            });
             break;
         }
       } catch {

@@ -47,10 +47,6 @@ export interface RoomState {
   /** Oplåste pakker (fx ["pack1"]). Monotone: der tilføjes kun, fjernes aldrig.
    *  Selve licenskoden gemmes/broadcastes ALDRIG — kun pakke-listen. */
   entitlements: string[];
-  /** Fejlslagne licens-valideringer (alle kilder); 5 ⇒ 30 s cooldown. */
-  licenseFailCount: number;
-  /** Epoch-ms indtil hvilken nye licens-forsøg afvises som rateLimited. */
-  licenseCooldownUntil?: number;
 }
 
 /** ── Game handler interfaces (replaces Convex gameHandlers.ts) ── */
@@ -129,7 +125,7 @@ export type ClientMessage =
   | { type: "leaveRoom"; sessionId: string }
   | { type: "morphAdvanceReveal"; hostId: string }
   | { type: "hostConnect"; sessionId: string; hostSecret: string; license?: string }
-  | { type: "redeemLicense"; hostId: string; code: string };
+  | { type: "redeemLicense"; hostId: string; code: string; requestId?: string };
 
 /** Server → Client */
 export type ServerMessage =
@@ -145,6 +141,8 @@ export type ServerMessage =
       ok: boolean;
       packs: string[];
       reason?: "invalid" | "rateLimited" | "denylisted";
+      /** Ekko af redeemLicense-requestId'et — auto-indløsninger har intet. */
+      requestId?: string;
     };
 
 /** The filtered room state sent to each client */

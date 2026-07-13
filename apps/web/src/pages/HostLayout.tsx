@@ -1,9 +1,14 @@
 import { useEffect, useRef } from "react";
 import { Outlet, useParams } from "react-router-dom";
 import { useSessionId } from "@/providers/SessionProvider";
-import { PartyProvider, usePartyConnection, useSend } from "@/providers/PartyProvider";
+import { PartyProvider, useLicenseResult, usePartyConnection, useSend } from "@/providers/PartyProvider";
 import { getHostSession } from "@/lib/session";
-import { getStoredLicense, LICENSE_STORAGE_KEY } from "@/lib/license";
+import {
+  getStoredLicense,
+  LICENSE_STORAGE_KEY,
+  setStoredLicense,
+  takeRedeemForStorage,
+} from "@/lib/license";
 
 /**
  * Re-claims host on EVERY websocket open, not just the first: after a network
@@ -61,6 +66,23 @@ function LicenseStorageListener({ sessionId }: { sessionId: string }) {
 }
 
 /**
+ * Central persistering af indløste koder: komponenten her er altid mountet
+ * under PartyProvider, så koden gemmes også når afsenderen (oplåsnings-modal
+ * eller settings-fanen) unmountes før serverens svar ankommer.
+ */
+function LicensePersistence() {
+  const licenseResult = useLicenseResult();
+
+  useEffect(() => {
+    if (!licenseResult?.requestId) return;
+    const code = takeRedeemForStorage(licenseResult.requestId);
+    if (licenseResult.ok && code) setStoredLicense(code);
+  }, [licenseResult]);
+
+  return null;
+}
+
+/**
  * Layout route that shares ONE PartyProvider between /host/:code and
  * /host/:code/settings, so opening settings doesn't close the host's
  * websocket and auto-pause the game for everyone.
@@ -81,6 +103,7 @@ export function HostLayout() {
     <PartyProvider roomCode={code} sessionId={sessionId}>
       <HostConnectionManager sessionId={sessionId} />
       <LicenseStorageListener sessionId={sessionId} />
+      <LicensePersistence />
       <Outlet />
     </PartyProvider>
   );

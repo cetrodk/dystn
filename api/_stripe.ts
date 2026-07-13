@@ -45,6 +45,13 @@ export function classifySession(session: StripeSession, secretKey: string): Sess
   return "pending";
 }
 
+/**
+ * En session indeholder et price-id uden pack-mapping. Egen klasse, så
+ * webhooken kan skelne "ikke vores produkt" (kvitter 200, ingen retry) fra
+ * ægte fejl (500 ⇒ Stripe retryer).
+ */
+export class UnknownPriceError extends Error {}
+
 /** Price-id → pakker via eksplicit mapping fra env. Ukendt price-id ⇒ throw — aldrig et gæt. */
 export function packsForSession(
   session: StripeSession,
@@ -60,7 +67,7 @@ export function packsForSession(
   for (const item of items) {
     const priceId = item.price?.id;
     const mapped = priceId ? priceToPacks[priceId] : undefined;
-    if (!mapped) throw new Error("Ukendt price-id i session");
+    if (!mapped) throw new UnknownPriceError("Ukendt price-id i session");
     for (const pack of mapped) packs.add(pack);
   }
   return [...packs];

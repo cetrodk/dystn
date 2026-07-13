@@ -151,6 +151,16 @@ describe("POST /api/stripe-webhook", () => {
     expect(calls.some((c) => c.url.startsWith("https://api.resend.com/"))).toBe(false);
   });
 
+  it("ukendt price-id (fremmed produkt) ⇒ 200 uden mail — aldrig retry-storm", async () => {
+    const calls = stubFetch({
+      session: stripeSession({ line_items: { data: [{ price: { id: "price_andet_produkt" } }] } }),
+    });
+    const raw = completedEvent();
+    const res = await handleWebhookRequest(post(raw, sign(raw, Math.floor(Date.now() / 1000))), ENV);
+    expect(res.status).toBe(200);
+    expect(calls.some((c) => c.url.startsWith("https://api.resend.com/"))).toBe(false);
+  });
+
   it("Resend-fejl ⇒ 500 så Stripe retryer", async () => {
     stubFetch({ resendStatus: 500 });
     const raw = completedEvent();

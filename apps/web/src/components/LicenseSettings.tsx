@@ -1,14 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Sparkles, Trash2 } from "lucide-react";
-import { useRoom, useSend, useLicenseResult } from "@/providers/PartyProvider";
+import { useRoom, useSend, useLicenseResult, usePartyConnection } from "@/providers/PartyProvider";
 import { useSessionId } from "@/providers/SessionProvider";
 import { da } from "@/lib/da";
 import {
   clearStoredLicense,
   getStoredLicense,
+  newRedeemRequestId,
   normalizeLicenseInput,
-  setStoredLicense,
+  trackRedeemForStorage,
 } from "@/lib/license";
 
 /** Kanonisk 24-tegns kode → visningsform med bindestreger. */
@@ -22,30 +23,43 @@ export function LicenseSettings() {
   const send = useSend();
   const sessionId = useSessionId();
   const licenseResult = useLicenseResult();
+  const { connected } = usePartyConnection();
 
   const [stored, setStored] = useState(() => getStoredLicense());
   const [codeInput, setCodeInput] = useState("");
   const [redeeming, setRedeeming] = useState(false);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
-  // Reagér kun på svar på VORES indløsning — ikke fx hostConnect-koden ved load
-  const pending = useRef<string | null>(null);
+  // Reagér kun på svar på VORES indløsning (requestId-match) — ikke fx
+  // hostConnect-koden ved load. Selve localStorage-skrivningen sker centralt
+  // i HostLayout (LicensePersistence), så den overlever at fanen unmountes,
+  // før svaret ankommer.
+  const pending = useRef<{ requestId: string; code: string } | null>(null);
 
-  const hasPack = (room?.entitlements ?? []).includes("pack1");
+  // Manglende felt = ældre server (deploy-skew) — vis ikke pakken som låst
+  const hasPack = room?.entitlements ? room.entitlements.includes("pack1") : true;
 
   useEffect(() => {
-    if (!licenseResult || pending.current === null) return;
+    if (!licenseResult || !pending.current) return;
+    if (licenseResult.requestId !== pending.current.requestId) return;
+    const { code } = pending.current;
+    pending.current = null;
     setRedeeming(false);
     if (licenseResult.ok) {
-      // Indtastning her er en bevidst handling på denne enhed — husk koden
-      setStoredLicense(pending.current);
-      setStored(pending.current);
+      setStored(code);
       setCodeInput("");
       setMessage({ ok: true, text: da.license.settings.unlockedPacks });
     } else {
       setMessage({ ok: false, text: da.license.errors[licenseResult.reason ?? "invalid"] });
     }
-    pending.current = null;
   }, [licenseResult]);
+
+  // Socket-drop mellem send og svar: svaret kommer aldrig — frigør knappen
+  useEffect(() => {
+    if (connected || pending.current === null) return;
+    pending.current = null;
+    setRedeeming(false);
+    setMessage({ ok: false, text: da.license.errors.network });
+  }, [connected]);
 
   function handleRedeem(e: React.FormEvent) {
     e.preventDefault();
@@ -55,10 +69,13 @@ export function LicenseSettings() {
       return;
     }
     const code = withDashes(canonical);
-    pending.current = code;
+    const requestId = newRedeemRequestId();
+    // Indtastning her er en bevidst handling på denne enhed — husk koden
+    trackRedeemForStorage(requestId, code);
+    pending.current = { requestId, code };
     setMessage(null);
     setRedeeming(true);
-    send({ type: "redeemLicense", hostId: sessionId, code });
+    send({ type: "redeemLicense", hostId: sessionId, code, requestId });
   }
 
   return (

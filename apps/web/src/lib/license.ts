@@ -31,6 +31,28 @@ export function clearStoredLicense() {
   }
 }
 
+/**
+ * Udestående indløsninger, hvis kode skal huskes ved ok-svar. Modul-niveau
+ * frem for komponent-state: afsenderen (modal/settings-fane) kan unmountes
+ * før serverens svar ankommer, og koden må ikke gå tabt af den grund.
+ * Forbruges af LicensePersistence i HostLayout via licenseResult.requestId.
+ */
+const redeemsToRemember = new Map<string, string>();
+
+export function newRedeemRequestId(): string {
+  return crypto.randomUUID();
+}
+
+export function trackRedeemForStorage(requestId: string, code: string) {
+  redeemsToRemember.set(requestId, code);
+}
+
+export function takeRedeemForStorage(requestId: string): string | null {
+  const code = redeemsToRemember.get(requestId) ?? null;
+  redeemsToRemember.delete(requestId);
+  return code;
+}
+
 const CROCKFORD = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 
 /**
