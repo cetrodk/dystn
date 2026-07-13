@@ -1,11 +1,27 @@
 import type { CSSProperties, ReactNode } from "react";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 
 /* -- Bouncing letter tile (shared by AnimatedLogo + RoomCodeTiles) --
-   Ported from the "Dystn Logo Animation" design (variant A): tiles drop
-   in from above with a back-out overshoot, squash on landing, then keep
-   dancing (wiggle + bob, phase-offset per tile). All visual dimensions
+   Tiles drop in from above with a back-out overshoot and squash-and-
+   stretch on landing, then settle into an endless sway: y bobs on a
+   sine wave while the tile leans into the rise (rotation in phase with
+   the bob, alternating direction per tile). Neighbouring tiles are
+   phase-offset so the row reads as a travelling wave rather than a
+   synchronised hop. The sine is densely sampled and played with linear
+   easing so the loop has no visible easing seams. All visual dimensions
    are em-based so the tile scales with the container's font-size. */
+
+const IDLE_DURATION = 2.1;
+const IDLE_STAGGER = 0.15;
+const IDLE_SAMPLES = 25; // first == last, so the loop closes seamlessly
+
+const idlePhase = Array.from(
+  { length: IDLE_SAMPLES },
+  (_, k) => (k / (IDLE_SAMPLES - 1)) * Math.PI * 2,
+);
+const idleBob = idlePhase.map((t) => `${(-Math.sin(t) * 0.055).toFixed(4)}em`);
+const idleSway = idlePhase.map((t) => +(Math.sin(t) * 2.4).toFixed(3));
+const idleSwayInverted = idleSway.map((v) => -v);
 
 function DanceTile({
   ch,
@@ -18,32 +34,64 @@ function DanceTile({
   tileStyle: CSSProperties;
   delayBase?: number;
 }) {
+  const reduceMotion = useReducedMotion();
   const delay = delayBase + i * 0.16;
-  const danceDelay = delayBase + 1.8 + i * 0.22;
+  const danceDelay = delayBase + 1.6 + i * IDLE_STAGGER;
   const baseTilt = i % 2 === 0 ? -2 : 2;
+  const staticTile = (
+    <span
+      className="inline-block"
+      style={{ transform: `rotate(${baseTilt}deg)`, ...tileStyle }}
+    >
+      {ch}
+    </span>
+  );
+
+  if (reduceMotion) {
+    return (
+      <motion.span
+        className="inline-block"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay, duration: 0.3 }}
+      >
+        {staticTile}
+      </motion.span>
+    );
+  }
+
   return (
     <motion.span
       className="inline-block"
-      initial={{ y: "-3.5em", opacity: 0 }}
-      animate={{ y: "0em", opacity: 1, scaleY: [1, 1, 0.85, 1] }}
+      initial={{ y: "-3.2em", opacity: 0 }}
+      animate={{
+        y: "0em",
+        opacity: 1,
+        scaleY: [1, 1, 0.84, 1.05, 1],
+        scaleX: [1, 1, 1.1, 0.97, 1],
+      }}
       transition={{
         y: { delay, duration: 0.55, ease: "backOut" },
         opacity: { delay, duration: 0.12 },
-        scaleY: { delay, duration: 0.7, times: [0, 0.64, 0.79, 1] },
+        scaleY: { delay, duration: 0.85, times: [0, 0.58, 0.72, 0.87, 1], ease: "easeOut" },
+        scaleX: { delay, duration: 0.85, times: [0, 0.58, 0.72, 0.87, 1], ease: "easeOut" },
       }}
       style={{ transformOrigin: "50% 100%" }}
     >
       <motion.span
         className="inline-block"
-        animate={{ rotate: [0, 2, 0, -2, 0], y: [0, -0.05, 0, 0.05, 0].map(v => `${v}em`) }}
-        transition={{ delay: danceDelay, duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+        animate={{
+          y: idleBob,
+          rotate: i % 2 === 0 ? idleSway : idleSwayInverted,
+        }}
+        transition={{
+          delay: danceDelay,
+          duration: IDLE_DURATION,
+          repeat: Infinity,
+          ease: "linear",
+        }}
       >
-        <span
-          className="inline-block"
-          style={{ transform: `rotate(${baseTilt}deg)`, ...tileStyle }}
-        >
-          {ch}
-        </span>
+        {staticTile}
       </motion.span>
     </motion.span>
   );
