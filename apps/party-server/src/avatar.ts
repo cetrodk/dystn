@@ -31,6 +31,11 @@ export interface AvatarSpec extends AvatarTraits {
   color: number;
 }
 
+/** Plukker rendering-traits ud af en fuld spec (farven gemmes separat som hex). */
+export function traitsOf(spec: AvatarSpec): AvatarTraits {
+  return { shape: spec.shape, eyes: spec.eyes, mouth: spec.mouth, hat: spec.hat };
+}
+
 const inRange = (v: unknown, max: number): v is number =>
   typeof v === "number" && Number.isInteger(v) && v >= 0 && v < max;
 

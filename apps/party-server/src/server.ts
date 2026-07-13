@@ -9,7 +9,7 @@ import type {
 import { advancePhase, getPhaseDuration } from "./phase";
 import { getGameHandlers } from "./registry";
 import { getAvatarColor } from "./colors";
-import { AVATAR_PALETTE, sanitizeAvatarSpec } from "./avatar";
+import { AVATAR_PALETTE, sanitizeAvatarSpec, traitsOf } from "./avatar";
 
 // Register all game handlers (must be after registry is loaded)
 import "./games/blitz";
@@ -412,16 +412,20 @@ export default class DystnServer implements Party.Server {
     }
 
     const spec = sanitizeAvatarSpec(avatarInput);
+    // Ønsket farve honoreres kun hvis den er ledig — join-defaults er tilfældige,
+    // og spillerne skal kunne skelnes fra start. Frit farvevalg (inkl. dubletter)
+    // er stadig muligt via changeAvatar i lobbyen.
+    const usedColors = this.state.players.map((p) => p.avatarColor);
+    const wantedColor = spec ? AVATAR_PALETTE[spec.color] : undefined;
     const player: Player = {
       id: generateId(),
       name: trimmedName,
       sessionId,
-      avatarColor: spec
-        ? AVATAR_PALETTE[spec.color]
-        : getAvatarColor(this.state.players.map((p) => p.avatarColor)),
-      avatar: spec
-        ? { shape: spec.shape, eyes: spec.eyes, mouth: spec.mouth, hat: spec.hat }
-        : undefined,
+      avatarColor:
+        wantedColor && !usedColors.includes(wantedColor)
+          ? wantedColor
+          : getAvatarColor(usedColors),
+      avatar: spec ? traitsOf(spec) : undefined,
       score: 0,
       isConnected: true,
       lastSeen: Date.now(),
@@ -666,7 +670,7 @@ export default class DystnServer implements Party.Server {
     const spec = sanitizeAvatarSpec(avatarInput);
     if (!spec) return;
     player.avatarColor = AVATAR_PALETTE[spec.color];
-    player.avatar = { shape: spec.shape, eyes: spec.eyes, mouth: spec.mouth, hat: spec.hat };
+    player.avatar = traitsOf(spec);
     this.broadcastState();
   }
 
