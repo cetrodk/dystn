@@ -214,12 +214,14 @@ function PlayerSlots({ room, sessionId }: { room: RoomSnapshot; sessionId: strin
             style={{ boxShadow: "4px 4px 0 var(--color-ink)" }}
           >
             <GameAvatar name={player.name} avatarColor={player.avatarColor} avatarImage={player.avatarImage} className="h-9 w-9 shrink-0" />
-            <span className="font-display text-base truncate flex-1">{player.name}</span>
+            {/* Op til to linjer i fuld størrelse — sædekortet er for smalt til
+                lange navne på én linje (se docs/host-lobby-name-display-analysis.md) */}
+            <span className="font-display text-base leading-tight line-clamp-2 [overflow-wrap:anywhere] flex-1">{player.name}</span>
             {!player.isConnected && (
               <span className="text-[10px] text-[var(--color-danger)] shrink-0">●</span>
             )}
             {confirmKick === player._id ? (
-              <div className="flex gap-1 shrink-0">
+              <div className="absolute -top-2.5 -right-2 flex gap-1">
                 <button
                   onClick={() => {
                     send({ type: "kickPlayer", hostId: sessionId, playerId: player._id });
@@ -237,9 +239,11 @@ function PlayerSlots({ room, sessionId }: { room: RoomSnapshot; sessionId: strin
                 </button>
               </div>
             ) : (
+              /* Hjørne-badge i stedet for inline — koster 0 px i rækken, så
+                 navnet får pladsen */
               <button
                 onClick={() => setConfirmKick(player._id)}
-                className="grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 border-[var(--color-ink)] text-xs text-[var(--color-ink)] opacity-50 hover:opacity-100 hover:bg-[var(--color-danger)] hover:text-[var(--color-paper)] transition-all cursor-pointer"
+                className="absolute -top-2 -right-2 grid h-6 w-6 place-items-center rounded-full border-2 border-[var(--color-ink)] bg-[var(--color-paper)] text-xs text-[var(--color-ink)]/60 hover:text-[var(--color-paper)] hover:bg-[var(--color-danger)] transition-all cursor-pointer"
                 aria-label={`Fjern ${player.name}`}
               >
                 ✕
