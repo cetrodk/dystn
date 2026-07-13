@@ -1,3 +1,4 @@
+import type { AvatarTraits } from "@/lib/avatar";
 import { motion } from "framer-motion";
 import { GameAvatar } from "@/components/GameAvatar";
 
@@ -5,7 +6,7 @@ interface GuessMarker {
   position: number;
   playerName: string;
   avatarColor: string;
-  avatarImage?: string;
+  avatar?: AvatarTraits;
   score?: number;
 }
 
@@ -100,7 +101,7 @@ export function SpectrumBar({
             }}
           >
             <div className="flex flex-col items-center gap-0.5">
-              <GameAvatar name={g.playerName} avatarColor={g.avatarColor} avatarImage={g.avatarImage} className="h-7 w-7" />
+              <GameAvatar name={g.playerName} avatarColor={g.avatarColor} avatar={g.avatar} className="h-7 w-7" />
               {g.score != null && (
                 <span className={`text-xs font-bold ${g.score > 0 ? "text-[var(--color-hunch)]" : "text-[var(--color-text-muted)]"}`}>
                   +{g.score}

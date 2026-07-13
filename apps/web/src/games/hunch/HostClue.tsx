@@ -41,7 +41,7 @@ export default function HostClue({ room }: PhaseComponentProps) {
             animate={{ opacity: 1, y: 0 }}
             className="flex items-center gap-3 rounded-2xl bg-[var(--color-hunch)]/10 ring-1 ring-[var(--color-hunch)]/30 px-6 py-3"
           >
-            <GameAvatar name={clueGiver.name} avatarColor={clueGiver.avatarColor} avatarImage={clueGiver.avatarImage} className="h-12 w-12" />
+            <GameAvatar name={clueGiver.name} avatarColor={clueGiver.avatarColor} avatar={clueGiver.avatar} className="h-12 w-12" />
             <div>
               <p className="text-lg font-bold" style={{ color: "var(--color-hunch)" }}>{clueGiver.name}</p>
               <p className="text-sm text-[var(--color-text-muted)]">

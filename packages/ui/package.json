@@ -8,14 +8,6 @@
       "types": "./src/CountdownTimer.tsx",
       "default": "./src/CountdownTimer.tsx"
     },
-    "./PlayerAvatar": {
-      "types": "./src/PlayerAvatar.tsx",
-      "default": "./src/PlayerAvatar.tsx"
-    },
-    "./PlayerList": {
-      "types": "./src/PlayerList.tsx",
-      "default": "./src/PlayerList.tsx"
-    },
     "./RoomCodeDisplay": {
       "types": "./src/RoomCodeDisplay.tsx",
       "default": "./src/RoomCodeDisplay.tsx"

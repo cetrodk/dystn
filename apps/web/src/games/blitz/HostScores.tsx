@@ -63,7 +63,7 @@ export default function HostScores({ room, sessionId }: PhaseComponentProps) {
             <GameAvatar
               name={player.name}
               avatarColor={player.avatarColor}
-              avatarImage={player.avatarImage}
+              avatar={player.avatar}
               className="h-14 w-14"
             />
             <span className="flex-1 text-xl font-semibold">{player.name}</span>

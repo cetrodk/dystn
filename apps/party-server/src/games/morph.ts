@@ -1,3 +1,4 @@
+import type { AvatarTraits } from "../avatar";
 import { registerGameHandlers } from "../registry";
 import { getSubmissions, upsertSubmission } from "../submissions";
 import type { Player, RoomState, PhaseTransition } from "../types";
@@ -104,7 +105,7 @@ registerGameHandlers("morph", {
         playerId: string;
         playerName: string;
         avatarColor: string;
-        avatarImage?: string;
+        avatar?: AvatarTraits;
         content: unknown;
       }>
     > = [];
@@ -120,7 +121,7 @@ registerGameHandlers("morph", {
         playerId: owner,
         playerName: ownerPlayer?.name ?? "???",
         avatarColor: ownerPlayer?.avatarColor ?? "#888",
-        avatarImage: ownerPlayer?.avatarImage,
+        avatar: ownerPlayer?.avatar,
         content: subsByPhase.get("write")?.get(owner) ?? "???",
       });
 
@@ -135,7 +136,7 @@ registerGameHandlers("morph", {
           playerId: drawerId,
           playerName: drawerPlayer?.name ?? "???",
           avatarColor: drawerPlayer?.avatarColor ?? "#888",
-          avatarImage: drawerPlayer?.avatarImage,
+          avatar: drawerPlayer?.avatar,
           content: subsByPhase.get(`draw_${K}`)?.get(drawerId) ?? null,
         });
 
@@ -148,7 +149,7 @@ registerGameHandlers("morph", {
           playerId: guesserId,
           playerName: guesserPlayer?.name ?? "???",
           avatarColor: guesserPlayer?.avatarColor ?? "#888",
-          avatarImage: guesserPlayer?.avatarImage,
+          avatar: guesserPlayer?.avatar,
           content: subsByPhase.get(`guess_${K}`)?.get(guesserId) ?? "???",
         });
       }

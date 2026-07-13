@@ -5,7 +5,8 @@ import { WifiOff } from "lucide-react";
 import { PartyProvider, useRoom, useSend, usePartyConnection, useRoomClosed, useRejoinFailed } from "@/providers/PartyProvider";
 import { gameComponents } from "@/games/registry";
 import { GameAvatar } from "@/components/GameAvatar";
-import { AvatarPickerModal } from "@/components/AvatarPickerModal";
+import { AvatarEditorModal } from "@/components/AvatarEditorModal";
+import { AVATAR_PALETTE, parseStoredAvatar, traitsFromName } from "@/lib/avatar";
 import { GameIntro } from "@/components/GameIntro";
 import { UnknownPhase } from "@/components/UnknownPhase";
 import { useShowIntro } from "@/hooks/useShowIntro";
@@ -143,11 +144,12 @@ function PlayerViewInner({ sessionId }: { sessionId: string }) {
       hasJoined.current = true;
       sessionStorage.removeItem(PLAYER_NAME_KEY);
       sessionStorage.removeItem(PLAYER_AVATAR_KEY);
+      const spec = parseStoredAvatar(storedAvatar);
       send({
         type: "join",
         name: storedName,
         sessionId,
-        ...(storedAvatar ? { avatarImage: storedAvatar } : {}),
+        ...(spec ? { avatar: spec } : {}),
       });
     } else {
       hasJoined.current = true;
@@ -247,7 +249,7 @@ function PlayerViewInner({ sessionId }: { sessionId: string }) {
             animate={{ opacity: 1, y: 0 }}
             className="flex flex-col items-center gap-3"
           >
-            <GameAvatar name={currentPlayer.name} avatarColor={currentPlayer.avatarColor} avatarImage={currentPlayer.avatarImage} className="h-20 w-20" />
+            <GameAvatar name={currentPlayer.name} avatarColor={currentPlayer.avatarColor} avatar={currentPlayer.avatar} className="h-20 w-20" />
             <p className="font-display text-5xl font-bold" style={{ color: rank === 1 ? "var(--color-warning)" : "var(--color-primary-light)" }}>
               #{rank}
             </p>
@@ -311,7 +313,7 @@ function PlayerViewInner({ sessionId }: { sessionId: string }) {
                         isMe ? "cursor-pointer hover:bg-[var(--color-primary)]/15" : ""
                       }`}
                     >
-                      <GameAvatar name={player.name} avatarColor={player.avatarColor} avatarImage={player.avatarImage} className="h-9 w-9" />
+                      <GameAvatar name={player.name} avatarColor={player.avatarColor} avatar={player.avatar} className="h-9 w-9" />
                       <span className="font-display text-base">{player.name}</span>
                       {isMe ? (
                         <span className="ml-auto rounded-full border-2 border-[var(--color-ink)] bg-[var(--color-primary)] px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--color-paper)]">
@@ -328,11 +330,14 @@ function PlayerViewInner({ sessionId }: { sessionId: string }) {
       </motion.div>
 
       <AnimatePresence>
-        {avatarModalOpen ? (
-          <AvatarPickerModal
-            selected={currentPlayer?.avatarImage ?? null}
-            onSelect={(name) => {
-              send({ type: "changeAvatar", sessionId, avatarImage: name ?? "" });
+        {avatarModalOpen && currentPlayer ? (
+          <AvatarEditorModal
+            value={{
+              color: Math.max(0, AVATAR_PALETTE.indexOf(currentPlayer.avatarColor as (typeof AVATAR_PALETTE)[number])),
+              ...(currentPlayer.avatar ?? traitsFromName(currentPlayer.name)),
+            }}
+            onChange={(spec) => {
+              send({ type: "changeAvatar", sessionId, avatar: spec });
             }}
             onClose={() => setAvatarModalOpen(false)}
           />

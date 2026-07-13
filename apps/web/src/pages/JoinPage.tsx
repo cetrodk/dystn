@@ -1,10 +1,16 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { getAvatarSrc } from "@/lib/avatars";
-import { AvatarPickerModal } from "@/components/AvatarPickerModal";
+import { BlobAvatar } from "@/components/GameAvatar";
+import { AvatarEditorModal } from "@/components/AvatarEditorModal";
 import { da } from "@/lib/da";
 import { PLAYER_NAME_KEY, PLAYER_AVATAR_KEY } from "@/lib/session";
+import {
+  AVATAR_PALETTE,
+  parseStoredAvatar,
+  randomAvatar,
+  type AvatarSpec,
+} from "@/lib/avatar";
 
 export function JoinPage() {
   const navigate = useNavigate();
@@ -14,7 +20,9 @@ export function JoinPage() {
   const [name, setName] = useState("");
   const [error, setError] = useState("");
   const [joining, setJoining] = useState(false);
-  const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null);
+  const [avatar, setAvatar] = useState<AvatarSpec>(
+    () => parseStoredAvatar(sessionStorage.getItem(PLAYER_AVATAR_KEY)) ?? randomAvatar(),
+  );
   const [avatarModalOpen, setAvatarModalOpen] = useState(false);
 
   const canSubmit = code.length === 4 && name.trim().length > 0 && !joining;
@@ -30,11 +38,7 @@ export function JoinPage() {
     // the join message when it connects to PartyKit
     const trimmedName = name.trim();
     sessionStorage.setItem(PLAYER_NAME_KEY, trimmedName);
-    if (selectedAvatar) {
-      sessionStorage.setItem(PLAYER_AVATAR_KEY, selectedAvatar);
-    } else {
-      sessionStorage.removeItem(PLAYER_AVATAR_KEY);
-    }
+    sessionStorage.setItem(PLAYER_AVATAR_KEY, JSON.stringify(avatar));
 
     navigate(`/play/${code.toUpperCase()}`);
   }
@@ -118,19 +122,10 @@ export function JoinPage() {
             <button
               type="button"
               onClick={() => setAvatarModalOpen(true)}
-              className="group/avatar shrink-0 flex items-center justify-center h-11 w-11 rounded-full border-2 border-[var(--color-ink)] bg-[var(--color-surface-light)] hover:bg-[var(--color-primary)]/20 transition-colors cursor-pointer overflow-hidden"
+              aria-label={da.avatar.title}
+              className="shrink-0 flex items-center justify-center h-11 w-11 rounded-full border-2 border-[var(--color-ink)] bg-[var(--color-surface-light)] hover:bg-[var(--color-primary)]/20 transition-colors cursor-pointer overflow-hidden p-0.5"
             >
-              {selectedAvatar ? (
-                <img
-                  src={getAvatarSrc(selectedAvatar)}
-                  alt={selectedAvatar}
-                  className="h-full w-full rounded-full object-cover"
-                />
-              ) : (
-                <span className="text-lg text-[var(--color-text-muted)] group-hover/avatar:text-[var(--color-primary)] transition-colors">
-                  +
-                </span>
-              )}
+              <BlobAvatar traits={avatar} color={AVATAR_PALETTE[avatar.color]} />
             </button>
             <input
               type="text"
@@ -138,18 +133,25 @@ export function JoinPage() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder={da.enterName}
-              className="flex-1 bg-transparent p-4 text-center text-xl placeholder:text-[var(--color-text-muted)]/50 focus:outline-none"
+              className="min-w-0 flex-1 bg-transparent p-4 text-center text-xl placeholder:text-[var(--color-text-muted)]/50 focus:outline-none"
               autoComplete="off"
             />
-            {/* Spacer to keep text centered */}
-            <div className="shrink-0 w-11" />
+            {/* Shuffle — mirrors the avatar button so the text stays centered */}
+            <button
+              type="button"
+              onClick={() => setAvatar(randomAvatar())}
+              aria-label={da.avatar.shuffle}
+              className="shrink-0 flex items-center justify-center h-11 w-11 mr-2 rounded-full border-2 border-[var(--color-ink)] bg-[var(--color-surface-light)] hover:bg-[var(--color-primary)]/20 transition-colors cursor-pointer text-lg"
+            >
+              ↻
+            </button>
           </motion.div>
 
           <AnimatePresence>
             {avatarModalOpen ? (
-              <AvatarPickerModal
-                selected={selectedAvatar}
-                onSelect={setSelectedAvatar}
+              <AvatarEditorModal
+                value={avatar}
+                onChange={setAvatar}
                 onClose={() => setAvatarModalOpen(false)}
               />
             ) : null}

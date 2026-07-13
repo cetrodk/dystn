@@ -68,7 +68,7 @@ export default function HostVictory({ room }: PhaseComponentProps) {
             <GameAvatar
               name={p.name}
               avatarColor={p.avatarColor}
-              avatarImage={p.avatarImage}
+              avatar={p.avatar}
               className="h-28 w-28"
             />
             <span className="font-display text-3xl font-bold">{p.name}</span>

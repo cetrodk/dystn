@@ -1,3 +1,5 @@
+import type { AvatarSpec, AvatarTraits } from "./avatar";
+
 /** ── In-memory room state (replaces Convex rooms/players/submissions tables) ── */
 
 export type RoomStatus = "lobby" | "playing" | "finished";
@@ -7,7 +9,7 @@ export interface Player {
   name: string;
   sessionId: string;
   avatarColor: string;
-  avatarImage?: string;
+  avatar?: AvatarTraits;
   score: number;
   isConnected: boolean;
   lastSeen: number;
@@ -103,7 +105,7 @@ export interface GameHandlers {
 
 /** Client → Server */
 export type ClientMessage =
-  | { type: "join"; name: string; sessionId: string; avatarImage?: string }
+  | { type: "join"; name: string; sessionId: string; avatar?: AvatarSpec }
   | { type: "rejoin"; sessionId: string }
   | { type: "changeGameType"; hostId: string; gameType: string }
   | { type: "startGame"; hostId: string }
@@ -114,7 +116,7 @@ export type ClientMessage =
   | { type: "restartGame"; hostId: string }
   | { type: "continueGame"; hostId: string }
   | { type: "kickPlayer"; hostId: string; playerId: string }
-  | { type: "changeAvatar"; sessionId: string; avatarImage: string }
+  | { type: "changeAvatar"; sessionId: string; avatar: AvatarSpec }
   | { type: "leaveRoom"; sessionId: string }
   | { type: "morphAdvanceReveal"; hostId: string }
   | { type: "hostConnect"; sessionId: string; hostSecret: string };
@@ -146,7 +148,7 @@ export interface RoomSnapshot {
     _id: string;
     name: string;
     avatarColor: string;
-    avatarImage?: string;
+    avatar?: AvatarTraits;
     score: number;
     isConnected: boolean;
     hasSubmitted?: boolean;

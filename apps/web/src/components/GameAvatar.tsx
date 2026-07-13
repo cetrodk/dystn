@@ -1,31 +1,25 @@
-import { getAvatarSrc } from "@/lib/avatars";
+import { traitsFromName, type AvatarTraits } from "@/lib/avatar";
 
 interface GameAvatarProps {
   name: string;
   avatarColor: string;
-  avatarImage?: string;
+  avatar?: AvatarTraits;
   className?: string;
 }
 
-const hashStr = (s: string) => {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
-  return Math.abs(h);
-};
-
 /**
  * Procedural "blob" avatar — a friendly cartoon face whose shape, eyes,
- * smile and hat are derived from the player's name. Used as the fallback
- * when a player hasn't picked an image avatar. Matches the warm-editorial
+ * mouth and hat come from the player's chosen traits (falling back to a
+ * name-derived hash for players without one). Matches the warm-editorial
  * design language (ink outline, accent fill). Theme-aware: outline + face
  * use currentColor, set to the ink colour via CSS.
  */
-function BlobAvatar({ seed, color }: { seed: string; color: string }) {
-  const h = hashStr(seed);
-  const shape = h % 4;
-  const eyeOffset = (h % 5) - 2;
-  const smile = h % 3;
-  const hat = h % 5;
+export function BlobAvatar({ traits, color }: { traits: AvatarTraits; color: string }) {
+  const { shape, eyes, mouth, hat } = traits;
+  // Øjne: 0=standard, 1=kigger venstre, 2=kigger højre, 3=søvnige, 4=store
+  const eyeOffset = eyes === 1 ? -3 : eyes === 2 ? 3 : 0;
+  const eyeR = eyes === 4 ? 6 : 4.5;
+  const glintR = eyes === 4 ? 2 : 1.4;
 
   return (
     <svg
@@ -59,15 +53,24 @@ function BlobAvatar({ seed, color }: { seed: string; color: string }) {
         </g>
       )}
       {hat === 3 && <path d="M30 30 Q50 18 70 30" stroke="currentColor" strokeWidth="3" fill="none" />}
-      <circle cx={40 + eyeOffset} cy="48" r="4.5" fill="currentColor" />
-      <circle cx={62 + eyeOffset} cy="48" r="4.5" fill="currentColor" />
-      <circle cx={41 + eyeOffset} cy="47" r="1.4" fill="var(--color-paper)" />
-      <circle cx={63 + eyeOffset} cy="47" r="1.4" fill="var(--color-paper)" />
-      {smile === 0 && (
+      {eyes === 3 ? (
+        <g>
+          <path d="M35 48 Q40 53 45 48" stroke="currentColor" strokeWidth="3" fill="none" strokeLinecap="round" />
+          <path d="M57 48 Q62 53 67 48" stroke="currentColor" strokeWidth="3" fill="none" strokeLinecap="round" />
+        </g>
+      ) : (
+        <g>
+          <circle cx={40 + eyeOffset} cy="48" r={eyeR} fill="currentColor" />
+          <circle cx={62 + eyeOffset} cy="48" r={eyeR} fill="currentColor" />
+          <circle cx={41 + eyeOffset} cy="47" r={glintR} fill="var(--color-paper)" />
+          <circle cx={63 + eyeOffset} cy="47" r={glintR} fill="var(--color-paper)" />
+        </g>
+      )}
+      {mouth === 0 && (
         <path d="M38 64 Q50 74 62 64" stroke="currentColor" strokeWidth="3" fill="none" strokeLinecap="round" />
       )}
-      {smile === 1 && <path d="M38 66 L62 66" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />}
-      {smile === 2 && <ellipse cx="50" cy="66" rx="5" ry="6" fill="currentColor" />}
+      {mouth === 1 && <path d="M38 66 L62 66" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />}
+      {mouth === 2 && <ellipse cx="50" cy="66" rx="5" ry="6" fill="currentColor" />}
       <circle cx="30" cy="60" r="3" fill="#e85a8a" opacity="0.55" />
       <circle cx="72" cy="60" r="3" fill="#e85a8a" opacity="0.55" />
     </svg>
@@ -77,22 +80,13 @@ function BlobAvatar({ seed, color }: { seed: string; color: string }) {
 export function GameAvatar({
   name,
   avatarColor,
-  avatarImage,
+  avatar,
   className = "h-10 w-10",
 }: GameAvatarProps) {
-  const src = getAvatarSrc(avatarImage);
-  if (src) {
-    return (
-      <img
-        src={src}
-        alt={name}
-        className={`${className} rounded-full object-cover shrink-0`}
-      />
-    );
-  }
+  const traits = avatar ?? traitsFromName(name);
   return (
     <div className={`${className} shrink-0`}>
-      <BlobAvatar seed={name} color={avatarColor} />
+      <BlobAvatar traits={traits} color={avatarColor} />
     </div>
   );
 }

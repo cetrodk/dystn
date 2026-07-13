@@ -112,7 +112,7 @@ export default function HostReveal({ room, sessionId }: PhaseComponentProps) {
                 <GameAvatar
                   name={result.playerName}
                   avatarColor={result.avatarColor}
-                  avatarImage={result.avatarImage}
+                  avatar={result.avatar}
                   className="h-16 w-16"
                 />
                 {(result.coAuthors ?? []).map((c: any) => (
@@ -120,7 +120,7 @@ export default function HostReveal({ room, sessionId }: PhaseComponentProps) {
                     key={c.name}
                     name={c.name}
                     avatarColor={c.avatarColor}
-                    avatarImage={c.avatarImage}
+                    avatar={c.avatar}
                     className="h-16 w-16 ring-2 ring-[var(--color-surface)]"
                   />
                 ))}

@@ -55,7 +55,6 @@ interface RacetrackPlayer {
   _id: string;
   name: string;
   avatarColor: string;
-  avatarImage?: string;
 }
 
 // Static SVG defs hoisted to module scope to avoid re-creation on every render

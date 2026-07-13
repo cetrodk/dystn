@@ -1,3 +1,4 @@
+import type { AvatarTraits } from "../avatar";
 import { registerGameHandlers } from "../registry";
 import { getSubmissions, upsertSubmission, validateVote } from "../submissions";
 import type { PhaseTransition, Player, RoomState } from "../types";
@@ -107,12 +108,12 @@ registerGameHandlers("blitz", {
       playerId: string;
       playerName: string;
       avatarColor: string;
-      avatarImage?: string;
+      avatar?: AvatarTraits;
       votes: number;
       coAuthors?: Array<{
         name: string;
         avatarColor: string;
-        avatarImage?: string;
+        avatar?: AvatarTraits;
       }>;
     }> = [];
 
@@ -139,7 +140,7 @@ registerGameHandlers("blitz", {
               return {
                 name: p?.name ?? "???",
                 avatarColor: p?.avatarColor ?? "#888",
-                avatarImage: p?.avatarImage,
+                avatar: p?.avatar,
               };
             })
           : undefined;
@@ -150,7 +151,7 @@ registerGameHandlers("blitz", {
         playerId: answer.playerId,
         playerName: primaryPlayer?.name ?? "???",
         avatarColor: primaryPlayer?.avatarColor ?? "#888",
-        avatarImage: primaryPlayer?.avatarImage,
+        avatar: primaryPlayer?.avatar,
         votes: voteCount,
         coAuthors,
       });

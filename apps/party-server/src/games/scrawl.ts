@@ -1,3 +1,4 @@
+import type { AvatarTraits } from "../avatar";
 import { registerGameHandlers } from "../registry";
 import type { RoomState, Player, PhaseTransition } from "../types";
 import { getSubmissions, upsertSubmission, validateVote } from "../submissions";
@@ -242,7 +243,7 @@ registerGameHandlers("scrawl", {
       playerId: string | null;
       playerName: string | null;
       avatarColor: string | null;
-      avatarImage?: string;
+      avatar?: AvatarTraits;
       voterNames: string[];
       fooledCount: number;
     }> = [];
@@ -271,7 +272,7 @@ registerGameHandlers("scrawl", {
         playerId: answer.playerId,
         playerName: player?.name ?? "???",
         avatarColor: player?.avatarColor ?? "#888",
-        avatarImage: player?.avatarImage,
+        avatar: player?.avatar,
         voterNames: voterIds.map((vid) => getName(vid)),
         fooledCount,
       });

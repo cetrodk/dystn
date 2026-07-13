@@ -1,10 +1,11 @@
+import type { AvatarTraits } from "@/lib/avatar";
 import { lazy, type ComponentType } from "react";
 
 export interface PlayerSnapshot {
   _id: string;
   name: string;
   avatarColor: string;
-  avatarImage?: string;
+  avatar?: AvatarTraits;
   score: number;
   isConnected: boolean;
   hasSubmitted?: boolean;

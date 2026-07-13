@@ -9,6 +9,7 @@ import type {
 import { advancePhase, getPhaseDuration } from "./phase";
 import { getGameHandlers } from "./registry";
 import { getAvatarColor } from "./colors";
+import { AVATAR_PALETTE, sanitizeAvatarSpec } from "./avatar";
 
 // Register all game handlers (must be after registry is loaded)
 import "./games/blitz";
@@ -20,7 +21,6 @@ import "./games/hunch";
 
 const MAX_PLAYERS = 8;
 const MIN_PLAYERS = 1;
-const MAX_AVATAR_LEN = 64;
 /** Minimum gap between accepted host-advance messages (kills double-clicks) */
 const HOST_ADVANCE_DEBOUNCE_MS = 500;
 
@@ -250,7 +250,7 @@ export default class DystnServer implements Party.Server {
     try {
       switch (msg.type) {
         case "join":
-          this.handleJoin(sender, msg.sessionId, msg.name, msg.avatarImage);
+          this.handleJoin(sender, msg.sessionId, msg.name, msg.avatar);
           break;
         case "rejoin":
           this.handleRejoin(sender, msg.sessionId);
@@ -285,7 +285,7 @@ export default class DystnServer implements Party.Server {
           this.handleKickPlayer(msg.hostId, msg.playerId);
           break;
         case "changeAvatar":
-          this.handleChangeAvatar(sender.id, msg.avatarImage);
+          this.handleChangeAvatar(sender.id, msg.avatar);
           break;
         case "leaveRoom":
           this.handleLeaveRoom(sender, sender.id);
@@ -372,7 +372,7 @@ export default class DystnServer implements Party.Server {
 
   /** ── Handlers ── */
 
-  private handleJoin(conn: Party.Connection, sessionId: string, name: string, avatarImage?: string) {
+  private handleJoin(conn: Party.Connection, sessionId: string, name: string, avatarInput?: unknown) {
     const trimmedName = name.trim().slice(0, 16);
     if (!trimmedName) throw new Error("Navn er påkrævet");
 
@@ -411,12 +411,17 @@ export default class DystnServer implements Party.Server {
       throw new Error("Navnet er allerede taget");
     }
 
+    const spec = sanitizeAvatarSpec(avatarInput);
     const player: Player = {
       id: generateId(),
       name: trimmedName,
       sessionId,
-      avatarColor: getAvatarColor(this.state.players.map((p) => p.avatarColor)),
-      avatarImage: avatarImage?.slice(0, MAX_AVATAR_LEN),
+      avatarColor: spec
+        ? AVATAR_PALETTE[spec.color]
+        : getAvatarColor(this.state.players.map((p) => p.avatarColor)),
+      avatar: spec
+        ? { shape: spec.shape, eyes: spec.eyes, mouth: spec.mouth, hat: spec.hat }
+        : undefined,
       score: 0,
       isConnected: true,
       lastSeen: Date.now(),
@@ -655,10 +660,13 @@ export default class DystnServer implements Party.Server {
     this.broadcastState();
   }
 
-  private handleChangeAvatar(sessionId: string, avatarImage: string) {
+  private handleChangeAvatar(sessionId: string, avatarInput: unknown) {
     const player = this.state.players.find((p) => p.sessionId === sessionId);
     if (!player) return;
-    player.avatarImage = avatarImage ? avatarImage.slice(0, MAX_AVATAR_LEN) : undefined;
+    const spec = sanitizeAvatarSpec(avatarInput);
+    if (!spec) return;
+    player.avatarColor = AVATAR_PALETTE[spec.color];
+    player.avatar = { shape: spec.shape, eyes: spec.eyes, mouth: spec.mouth, hat: spec.hat };
     this.broadcastState();
   }
 
@@ -794,7 +802,7 @@ export default class DystnServer implements Party.Server {
         _id: p.id,
         name: p.name,
         avatarColor: p.avatarColor,
-        avatarImage: p.avatarImage,
+        avatar: p.avatar,
         score: p.score,
         isConnected: p.isConnected,
         hasSubmitted: submittedPlayerIds.has(p.id),
