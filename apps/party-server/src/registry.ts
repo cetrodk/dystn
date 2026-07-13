@@ -11,3 +11,11 @@ export function getGameHandlers(gameType: string): GameHandlers {
   if (!h) throw new Error(`No handlers registered for game: ${gameType}`);
   return h;
 }
+
+export function hasGameHandlers(gameType: string): boolean {
+  return handlers.has(gameType);
+}
+
+export function getAllGameHandlers(): ReadonlyMap<string, GameHandlers> {
+  return handlers;
+}

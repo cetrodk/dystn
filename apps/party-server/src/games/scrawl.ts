@@ -23,6 +23,7 @@ function nextDrawnIndex(room: RoomState, from: number): number {
 
 registerGameHandlers("scrawl", {
   config: {
+    pack: "free",
     initialPhase: "draw",
     totalRoundsForPlayerCount: () => 1,
     minPlayers: 3, // with 2, the only votable option is the truth

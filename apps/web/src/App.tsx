@@ -8,6 +8,7 @@ const HostLayout = lazy(() => import("@/pages/HostLayout").then((m) => ({ defaul
 const HostView = lazy(() => import("@/pages/HostView").then((m) => ({ default: m.HostView })));
 const HostSettingsPage = lazy(() => import("@/pages/HostSettings").then((m) => ({ default: m.HostSettingsPage })));
 const PlayerView = lazy(() => import("@/pages/PlayerView").then((m) => ({ default: m.PlayerView })));
+const TakPage = lazy(() => import("@/pages/TakPage").then((m) => ({ default: m.TakPage })));
 const SimulatorPage = import.meta.env.DEV
   ? lazy(() => import("@/pages/SimulatorPage").then((m) => ({ default: m.SimulatorPage })))
   : () => null;
@@ -28,6 +29,7 @@ export default function App() {
           <Route path="/play" element={<JoinPage />} />
           <Route path="/join/:code" element={<JoinPage />} />
           <Route path="/play/:code" element={<PlayerView />} />
+          <Route path="/tak" element={<TakPage />} />
           <Route path="/host/:code" element={<HostLayout />}>
             <Route index element={<HostView />} />
             <Route path="settings" element={<HostSettingsPage />} />

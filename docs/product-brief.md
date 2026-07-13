@@ -35,5 +35,5 @@ Write a sentence. The next person draws it. The next person guesses the drawing.
 - **Heads up, not heads down** — phones are for quick input only. The shared screen is where the fun happens.
 - **Breathing room** — reveals are staggered one at a time with dramatic pauses, giving people time to laugh and react.
 - **The room is the party** — create a room once, play all night. Players stay connected across multiple games.
-- **No barriers** — no accounts, no app download, no payment. Open the link and play.
+- **No barriers for guests** — no accounts, no app download, no payment. Open the link and play. (Hosts unlock premium packs with a one-time purchase.)
 - **Danish first** — all text is in Danish. This is built for Danish-speaking groups.

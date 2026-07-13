@@ -18,6 +18,7 @@ function normalizeAnswer(raw: string): string {
 
 registerGameHandlers("fusk", {
   config: {
+    pack: "pack1",
     minPlayers: 3, // voting degenerates with 1-2 players (own/only answer)
   },
 

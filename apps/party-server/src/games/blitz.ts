@@ -7,6 +7,7 @@ import { shuffle } from "../shuffle";
 
 registerGameHandlers("blitz", {
   config: {
+    pack: "free",
     minPlayers: 3, // voting degenerates with 1-2 players (own/only answer)
   },
 

@@ -9,6 +9,7 @@ const FINISH_LINE = 8;
 
 registerGameHandlers("surge", {
   config: {
+    pack: "pack1",
     initialPhase: "countdown",
     totalRoundsForPlayerCount: () => 100, // dynamic: game ends via victory check, not round limit
     minPlayers: 2,

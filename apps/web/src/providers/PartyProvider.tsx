@@ -10,6 +10,7 @@ import {
 } from "react";
 import PartySocket from "partysocket";
 import type { RoomSnapshot } from "@/games/registry";
+import { PARTY_HOST } from "@/lib/partyHost";
 import type { AvatarSpec } from "@/lib/avatar";
 
 /** Message types matching the server's ClientMessage */
@@ -28,7 +29,8 @@ export type ClientMessage =
   | { type: "morphAdvanceReveal"; hostId: string }
   | { type: "changeAvatar"; sessionId: string; avatar: AvatarSpec }
   | { type: "leaveRoom"; sessionId: string }
-  | { type: "hostConnect"; sessionId: string; hostSecret: string };
+  | { type: "hostConnect"; sessionId: string; hostSecret: string; license?: string }
+  | { type: "redeemLicense"; hostId: string; code: string; requestId?: string };
 
 type ServerMessage =
   | { type: "room"; data: RoomSnapshot }
@@ -37,7 +39,24 @@ type ServerMessage =
   | { type: "rejoinFailed" }
   | { type: "kicked" }
   | { type: "roomClosed"; reason: string }
-  | { type: "hostClaimed"; success: boolean };
+  | { type: "hostClaimed"; success: boolean }
+  | {
+      type: "licenseResult";
+      ok: boolean;
+      packs: string[];
+      reason?: "invalid" | "rateLimited" | "denylisted";
+      requestId?: string;
+    };
+
+/** Seneste licens-svar. `at` gør at to ens fejl i træk stadig re-trigger effects. */
+export interface LicenseResult {
+  ok: boolean;
+  packs: string[];
+  reason?: "invalid" | "rateLimited" | "denylisted";
+  /** Ekko af redeemLicense-requestId'et — auto-indløsninger (hostConnect) har intet. */
+  requestId?: string;
+  at: number;
+}
 
 interface PartyContextValue {
   room: RoomSnapshot | null;
@@ -48,20 +67,11 @@ interface PartyContextValue {
   rejoinFailed: boolean;
   /** null = no claim attempted/answered yet; false = claim rejected */
   hostClaimed: boolean | null;
+  /** null indtil serveren har svaret på en indløsning/medbragt kode */
+  licenseResult: LicenseResult | null;
 }
 
 const PartyContext = createContext<PartyContextValue | null>(null);
-
-// Fail the build/boot loudly rather than silently connecting every client to a
-// dead localhost socket in production when VITE_PARTY_HOST is forgotten.
-if (import.meta.env.PROD && !import.meta.env.VITE_PARTY_HOST) {
-  throw new Error(
-    "VITE_PARTY_HOST mangler i produktions-build — sæt den i deploy-miljøet (Vercel/Cloudflare).",
-  );
-}
-
-const PARTY_HOST =
-  (import.meta.env.VITE_PARTY_HOST as string) || "localhost:1999";
 
 export function PartyProvider({
   roomCode,
@@ -78,6 +88,7 @@ export function PartyProvider({
   const [roomClosed, setRoomClosed] = useState<string | null>(null);
   const [rejoinFailed, setRejoinFailed] = useState(false);
   const [hostClaimed, setHostClaimed] = useState<boolean | null>(null);
+  const [licenseResult, setLicenseResult] = useState<LicenseResult | null>(null);
   const wsRef = useRef<PartySocket | null>(null);
 
   useEffect(() => {
@@ -125,6 +136,15 @@ export function PartyProvider({
             // otherwise the host stares at a dead UI that ignores every click.
             setHostClaimed(msg.success);
             break;
+          case "licenseResult":
+            setLicenseResult({
+              ok: msg.ok,
+              packs: msg.packs,
+              reason: msg.reason,
+              requestId: msg.requestId,
+              at: Date.now(),
+            });
+            break;
         }
       } catch {
         // ignore parse errors
@@ -145,7 +165,7 @@ export function PartyProvider({
 
   return (
     <PartyContext.Provider
-      value={{ room, send, error, connected, roomClosed, rejoinFailed, hostClaimed }}
+      value={{ room, send, error, connected, roomClosed, rejoinFailed, hostClaimed, licenseResult }}
     >
       {children}
     </PartyContext.Provider>
@@ -194,6 +214,13 @@ export function useHostClaimed(): boolean | null {
   return ctx.hostClaimed;
 }
 
+/** Seneste licenseResult fra serveren (null indtil første svar) */
+export function useLicenseResult(): LicenseResult | null {
+  const ctx = useContext(PartyContext);
+  if (!ctx) throw new Error("useLicenseResult must be used within PartyProvider");
+  return ctx.licenseResult;
+}
+
 /** Mock provider for simulator — renders game components without a WebSocket */
 export function MockPartyProvider({
   room,
@@ -218,6 +245,7 @@ export function MockPartyProvider({
       roomClosed: null,
       rejoinFailed: false,
       hostClaimed: true as boolean | null,
+      licenseResult: null,
     }),
     [room, send],
   );
