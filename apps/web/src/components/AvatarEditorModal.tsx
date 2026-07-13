@@ -108,10 +108,18 @@ export function AvatarEditorModal({ value, onChange, onClose }: AvatarEditorModa
                   }`}
                 >
                   <div className="h-10 w-10">
-                    <BlobAvatar
-                      traits={{ ...value, [key]: i }}
-                      color={AVATAR_PALETTE[value.color]}
-                    />
+                    {key === "hat" && i === 0 ? (
+                      // "Ingen hat" har intet at vise — en streg i stedet for en tom flise
+                      <div className="grid h-full w-full place-items-center text-lg text-[var(--color-text-muted)]">
+                        –
+                      </div>
+                    ) : (
+                      <BlobAvatar
+                        traits={{ ...value, [key]: i }}
+                        color={AVATAR_PALETTE[value.color]}
+                        part={key}
+                      />
+                    )}
                   </div>
                 </button>
               ))}
