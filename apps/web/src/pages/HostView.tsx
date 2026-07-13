@@ -8,7 +8,7 @@ const QRCodeSVG = lazy(() =>
   import("qrcode.react").then((m) => ({ default: m.QRCodeSVG })),
 );
 import { useSessionId } from "@/providers/SessionProvider";
-import { useRoom, useSend, useHostClaimed } from "@/providers/PartyProvider";
+import { useRoom, useSend, useHostClaimed, useLicenseResult } from "@/providers/PartyProvider";
 import { gameComponents, type RoomSnapshot } from "@/games/registry";
 import { sfxFanfare } from "@/lib/sounds";
 import { useGameMusic } from "@/hooks/useGameMusic";
@@ -17,6 +17,8 @@ import { useVolume } from "@/hooks/useVolume";
 import { ensureResumed } from "@/lib/audio/context";
 import { GameAvatar } from "@/components/GameAvatar";
 import { GamePicker, GAMES, GAME_ICONS } from "@/components/GamePicker";
+import { UnlockModal } from "@/components/UnlockModal";
+import { setStoredLicense } from "@/lib/license";
 import { GameIntro } from "@/components/GameIntro";
 import { UnknownPhase } from "@/components/UnknownPhase";
 import { Logo, Chip, RoomCodeTiles, SectionHeader } from "@/components/Brand";
@@ -332,6 +334,56 @@ export function HostView() {
   const [showIntro, dismissIntro] = useShowIntro(room);
 
   useGameMusic(room);
+
+  // ── Dystn-pakken: oplåsnings-modal + licens-status ──
+  const licenseResult = useLicenseResult();
+  const [showUnlock, setShowUnlock] = useState(false);
+  const [redeeming, setRedeeming] = useState(false);
+  const [unlockError, setUnlockError] = useState<string | null>(null);
+  const pendingRedeem = useRef<{ code: string; remember: boolean } | null>(null);
+
+  const entitlements = room?.entitlements ?? [];
+  const hasPack = entitlements.includes("pack1");
+
+  // Konfetti når pakken låses op LIVE — uanset kilde (modal, /tak-fane via
+  // storage-event ELLER cross-device onRequest, hvor kun snapshottet ændrer
+  // sig). Første snapshot sætter kun baseline, så reload ikke fejrer igen.
+  const prevHasPack = useRef<boolean | null>(null);
+  useEffect(() => {
+    if (!room) return;
+    const had = prevHasPack.current;
+    prevHasPack.current = hasPack;
+    if (had === false && hasPack) {
+      setShowUnlock(false);
+      setUnlockError(null);
+      setRedeeming(false);
+      import("canvas-confetti").then(({ default: confetti }) => {
+        confetti({ particleCount: 180, spread: 90, origin: { y: 0.6 } });
+      });
+    }
+  }, [room, hasPack]);
+
+  // Svar på egne indløsninger: gem koden ved ok (hvis "husk" var valgt), vis
+  // skelnelig dansk fejl ellers. `at`-feltet gør at gentagne ens fejl re-trigger.
+  useEffect(() => {
+    if (!licenseResult) return;
+    setRedeeming(false);
+    if (licenseResult.ok) {
+      const pending = pendingRedeem.current;
+      if (pending?.remember) setStoredLicense(pending.code);
+      pendingRedeem.current = null;
+    } else {
+      pendingRedeem.current = null;
+      setUnlockError(da.license.errors[licenseResult.reason ?? "invalid"]);
+    }
+  }, [licenseResult]);
+
+  function handleRedeem(code: string, remember: boolean) {
+    pendingRedeem.current = { code, remember };
+    setUnlockError(null);
+    setRedeeming(true);
+    send({ type: "redeemLicense", hostId: sessionId, code });
+  }
 
   // Warn before closing/refreshing — only when game is active (lobby or playing)
   const beforeUnloadRef = useRef<((e: BeforeUnloadEvent) => void) | null>(null);
@@ -651,8 +703,18 @@ export function HostView() {
             send({ type: "changeGameType", hostId: sessionId, gameType: gameId });
           }}
           showExternalGames
+          entitlements={entitlements}
+          onUnlockClick={() => { setUnlockError(null); setShowUnlock(true); }}
         />
       </div>
+
+      <UnlockModal
+        open={showUnlock}
+        onClose={() => setShowUnlock(false)}
+        onRedeem={handleRedeem}
+        redeeming={redeeming}
+        error={unlockError}
+      />
     </div>
   );
 }

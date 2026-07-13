@@ -1,12 +1,15 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Swords, Drama, Paintbrush, Phone, Tag, ExternalLink, Scale, SlidersHorizontal } from "lucide-react";
+import { Swords, Drama, Paintbrush, Phone, Tag, ExternalLink, Scale, SlidersHorizontal, Sparkles } from "lucide-react";
 import useEmblaCarousel from "embla-carousel-react";
 import { da } from "@/lib/da";
 
+// Gratis-spillene står FØRST — de betalte samles bag pakkekortet, når pakken
+// ikke er låst op (positiv framing, ikke fire hængelåse).
 export const GAMES = [
   {
     id: "blitz",
+    pack: "free",
     ...da.blitz,
     Icon: Swords,
     color: "var(--color-blitz)",
@@ -14,15 +17,8 @@ export const GAMES = [
     textColor: "#fff",
   },
   {
-    id: "fusk",
-    ...da.fusk,
-    Icon: Drama,
-    color: "var(--color-fusk)",
-    glow: "var(--color-fusk-glow)",
-    textColor: "#0d0b1a",
-  },
-  {
     id: "scrawl",
+    pack: "free",
     ...da.scrawl,
     Icon: Paintbrush,
     color: "var(--color-scrawl)",
@@ -30,7 +26,17 @@ export const GAMES = [
     textColor: "#fff",
   },
   {
+    id: "fusk",
+    pack: "pack1",
+    ...da.fusk,
+    Icon: Drama,
+    color: "var(--color-fusk)",
+    glow: "var(--color-fusk-glow)",
+    textColor: "#0d0b1a",
+  },
+  {
     id: "morph",
+    pack: "pack1",
     ...da.morph,
     Icon: Phone,
     color: "var(--color-morph)",
@@ -39,6 +45,7 @@ export const GAMES = [
   },
   {
     id: "surge",
+    pack: "pack1",
     ...da.surge,
     Icon: Scale,
     color: "var(--color-surge)",
@@ -47,6 +54,7 @@ export const GAMES = [
   },
   {
     id: "hunch",
+    pack: "pack1",
     ...da.hunch,
     Icon: SlidersHorizontal,
     color: "var(--color-hunch)",
@@ -59,25 +67,48 @@ export type GameMeta = (typeof GAMES)[number];
 
 export const GAME_ICONS = { blitz: Swords, fusk: Drama, scrawl: Paintbrush, morph: Phone, surge: Scale, hunch: SlidersHorizontal } as const;
 
+type Slide =
+  | { kind: "game"; game: GameMeta }
+  | { kind: "pack" }
+  | { kind: "external" };
+
 /**
- * Game picker carousel. Clicking a card directly selects the game.
+ * Game picker carousel. Clicking a card directly selects the game. Without
+ * pack1 the four paid games collapse into ONE pack card that opens the unlock
+ * modal; with pack1 (or no entitlements prop, e.g. the simulator) all six show.
  */
 export function GamePicker({
   onSelect,
   showExternalGames = false,
+  entitlements,
+  onUnlockClick,
 }: {
   onSelect: (gameId: string) => void;
   showExternalGames?: boolean;
+  entitlements?: string[];
+  onUnlockClick?: () => void;
 }) {
+  const locked = entitlements !== undefined && !entitlements.includes("pack1");
+
+  const slides = useMemo<Slide[]>(() => {
+    const items: Slide[] = [];
+    for (const game of GAMES) {
+      if (locked && game.pack !== "free") continue;
+      items.push({ kind: "game", game });
+    }
+    if (locked) items.push({ kind: "pack" });
+    if (showExternalGames) items.push({ kind: "external" });
+    return items;
+  }, [locked, showExternalGames]);
+
+  const initialIndex = Math.min(2, slides.length - 1);
   const [emblaRef, emblaApi] = useEmblaCarousel({
     align: "center",
     containScroll: false,
     dragFree: true,
-    startIndex: 2,
+    startIndex: initialIndex,
   });
-  const [activeIndex, setActiveIndex] = useState(2);
-
-  const totalItems = showExternalGames ? GAMES.length + 1 : GAMES.length;
+  const [activeIndex, setActiveIndex] = useState(initialIndex);
 
   const onSelectSlide = useCallback(() => {
     if (!emblaApi) return;
@@ -90,6 +121,11 @@ export function GamePicker({
     onSelectSlide();
     return () => { emblaApi.off("select", onSelectSlide); };
   }, [emblaApi, onSelectSlide]);
+
+  // Slides-listen vokser/skrumper når pakken låses op — hold indekset lovligt
+  useEffect(() => {
+    setActiveIndex((i) => Math.min(i, slides.length - 1));
+  }, [slides.length]);
 
   return (
     <motion.div
@@ -108,77 +144,120 @@ export function GamePicker({
         style={{ mask: "linear-gradient(to right, transparent, black 10%, black 90%, transparent)", WebkitMask: "linear-gradient(to right, transparent, black 10%, black 90%, transparent)" }}
       >
         <div className="flex gap-4 px-2">
-          {GAMES.map((game, i) => {
+          {slides.map((slide, i) => {
             const active = i === activeIndex;
+
+            if (slide.kind === "game") {
+              const game = slide.game;
+              return (
+                <motion.button
+                  key={game.id}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.05 + i * 0.06, type: "spring", stiffness: 200 }}
+                  whileTap={{ scale: 0.96 }}
+                  onClick={() => onSelect(game.id)}
+                  className="nb-press shrink-0 w-[230px] flex flex-col items-start gap-3 rounded-2xl border-[3px] border-[var(--color-ink)] p-5 cursor-pointer"
+                  style={{
+                    background: active ? game.color : "var(--color-paper)",
+                    color: active ? game.textColor : "var(--color-ink)",
+                    boxShadow: active ? "6px 6px 0 var(--color-ink)" : "4px 4px 0 var(--color-ink)",
+                    transform: active ? "translateY(-4px)" : "none",
+                  }}
+                >
+                  <div
+                    className="grid h-14 w-14 place-items-center rounded-xl border-[3px]"
+                    style={{
+                      background: active ? "rgba(255,255,255,0.2)" : game.color,
+                      borderColor: active ? game.textColor : "var(--color-ink)",
+                    }}
+                  >
+                    <game.Icon className="h-7 w-7" style={{ color: "#fff" }} />
+                  </div>
+                  <span className="font-display text-2xl leading-none">{game.name}</span>
+                  <span
+                    className="text-xs leading-relaxed text-left"
+                    style={{ color: active ? game.textColor : "var(--color-text-muted)", opacity: active ? 0.9 : 1 }}
+                  >
+                    {game.description}
+                  </span>
+                </motion.button>
+              );
+            }
+
+            if (slide.kind === "pack") {
+              return (
+                <motion.button
+                  key="dystn-pakken"
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.05 + i * 0.06, type: "spring", stiffness: 200 }}
+                  whileTap={{ scale: 0.96 }}
+                  onClick={() => onUnlockClick?.()}
+                  data-testid="pack-card"
+                  className="nb-press shrink-0 w-[230px] flex flex-col items-start gap-3 rounded-2xl border-[3px] border-[var(--color-ink)] p-5 cursor-pointer"
+                  style={{
+                    background: active ? "var(--color-primary)" : "var(--color-paper)",
+                    color: active ? "#fff" : "var(--color-ink)",
+                    boxShadow: active ? "6px 6px 0 var(--color-ink)" : "4px 4px 0 var(--color-ink)",
+                    transform: active ? "translateY(-4px)" : "none",
+                  }}
+                >
+                  <div
+                    className="grid h-14 w-14 place-items-center rounded-xl border-[3px]"
+                    style={{
+                      background: active ? "rgba(255,255,255,0.2)" : "var(--color-primary)",
+                      borderColor: active ? "#fff" : "var(--color-ink)",
+                    }}
+                  >
+                    <Sparkles className="h-7 w-7" style={{ color: "#fff" }} />
+                  </div>
+                  <span className="font-display text-2xl leading-none">{da.license.packCard.title}</span>
+                  <span
+                    className="text-xs leading-relaxed text-left"
+                    style={{ color: active ? "#fff" : "var(--color-text-muted)", opacity: active ? 0.9 : 1 }}
+                  >
+                    {da.license.packCard.subtitle} · {da.license.price}
+                  </span>
+                </motion.button>
+              );
+            }
+
             return (
-              <motion.button
-                key={game.id}
+              <motion.a
+                key="external"
+                href="https://quizmaster.cetropolis.dk/"
+                target="_blank"
+                rel="noopener noreferrer"
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.05 + i * 0.06, type: "spring", stiffness: 200 }}
                 whileTap={{ scale: 0.96 }}
-                onClick={() => onSelect(game.id)}
-                className="nb-press shrink-0 w-[230px] flex flex-col items-start gap-3 rounded-2xl border-[3px] border-[var(--color-ink)] p-5 cursor-pointer"
-                style={{
-                  background: active ? game.color : "var(--color-paper)",
-                  color: active ? game.textColor : "var(--color-ink)",
-                  boxShadow: active ? "6px 6px 0 var(--color-ink)" : "4px 4px 0 var(--color-ink)",
-                  transform: active ? "translateY(-4px)" : "none",
-                }}
+                className="nb-press shrink-0 w-[230px] flex flex-col items-start gap-3 rounded-2xl border-[3px] border-[var(--color-ink)] bg-[var(--color-paper)] p-5 cursor-pointer"
+                style={{ boxShadow: "4px 4px 0 var(--color-ink)" }}
               >
                 <div
-                  className="grid h-14 w-14 place-items-center rounded-xl border-[3px]"
-                  style={{
-                    background: active ? "rgba(255,255,255,0.2)" : game.color,
-                    borderColor: active ? game.textColor : "var(--color-ink)",
-                  }}
+                  className="grid h-14 w-14 place-items-center rounded-xl border-[3px] border-[var(--color-ink)]"
+                  style={{ background: "var(--color-pris)" }}
                 >
-                  <game.Icon className="h-7 w-7" style={{ color: "#fff" }} />
+                  <Tag className="h-7 w-7" style={{ color: "#fff" }} />
                 </div>
-                <span className="font-display text-2xl leading-none">{game.name}</span>
-                <span
-                  className="text-xs leading-relaxed text-left"
-                  style={{ color: active ? game.textColor : "var(--color-text-muted)", opacity: active ? 0.9 : 1 }}
-                >
-                  {game.description}
+                <span className="font-display text-2xl leading-none" style={{ color: "var(--color-pris)" }}>
+                  {da.pris.name}
                 </span>
-              </motion.button>
+                <span className="text-xs leading-relaxed text-left text-[var(--color-text-muted)]">
+                  {da.pris.description}
+                </span>
+                <ExternalLink className="h-3.5 w-3.5 text-[var(--color-text-muted)]" />
+              </motion.a>
             );
           })}
-
-          {showExternalGames && (
-            <motion.a
-              href="https://quizmaster.cetropolis.dk/"
-              target="_blank"
-              rel="noopener noreferrer"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.05 + GAMES.length * 0.06, type: "spring", stiffness: 200 }}
-              whileTap={{ scale: 0.96 }}
-              className="nb-press shrink-0 w-[230px] flex flex-col items-start gap-3 rounded-2xl border-[3px] border-[var(--color-ink)] bg-[var(--color-paper)] p-5 cursor-pointer"
-              style={{ boxShadow: "4px 4px 0 var(--color-ink)" }}
-            >
-              <div
-                className="grid h-14 w-14 place-items-center rounded-xl border-[3px] border-[var(--color-ink)]"
-                style={{ background: "var(--color-pris)" }}
-              >
-                <Tag className="h-7 w-7" style={{ color: "#fff" }} />
-              </div>
-              <span className="font-display text-2xl leading-none" style={{ color: "var(--color-pris)" }}>
-                {da.pris.name}
-              </span>
-              <span className="text-xs leading-relaxed text-left text-[var(--color-text-muted)]">
-                {da.pris.description}
-              </span>
-              <ExternalLink className="h-3.5 w-3.5 text-[var(--color-text-muted)]" />
-            </motion.a>
-          )}
         </div>
       </div>
 
       {/* Dot indicators */}
       <div className="flex gap-1.5">
-        {Array.from({ length: totalItems }).map((_, i) => (
+        {Array.from({ length: slides.length }).map((_, i) => (
           <button
             key={i}
             onClick={() => emblaApi?.scrollTo(i)}
