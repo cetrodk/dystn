@@ -77,6 +77,10 @@ export interface GameConfig {
    *  spillet som betalt ved runtime — et nyt spil kan ikke tavst blive gratis.
    *  packs.test.ts asserter, at alle registrerede spil sætter det eksplicit. */
   pack?: "free" | "pack1";
+  /** Afslut ALDRIG fasen tidligt, selv om alle har indsendt — timeren er selve
+   *  spillet (Surge). Bemærk: at returnere Infinity fra getExpectedSubmitterCount
+   *  virker IKKE, fordi serveren klamper værdien mod antal tilstedeværende. */
+  neverAutoAdvance?: boolean;
 }
 
 /**

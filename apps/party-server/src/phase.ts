@@ -39,6 +39,44 @@ export function getPhaseDuration(phase: string, settings?: Record<string, unknow
   return DEFAULT_DURATIONS[basePhase] ?? 0;
 }
 
+/** Faser hvor "alle har indsendt" kan afslutte fasen før tid. */
+export const AUTO_ADVANCE_PHASES = [
+  "submit", "vote", "draw", "guess", "write", "commit", "clue",
+];
+
+/**
+ * Skal fasen afsluttes, fordi alle forventede spillere har indsendt?
+ *
+ * Ren funktion, så den kan testes uden en Durable Object. Tæller kun spillere,
+ * der er forbundet (eller allerede har indsendt) — ellers ville en spiller, der
+ * er droppet ud, tvinge resten til at vente timeren ud.
+ */
+export function shouldAutoAdvance(room: RoomState): boolean {
+  if (room.status !== "playing" || !room.gameType) return false;
+
+  const currentPhase = room.currentPhase ?? "";
+  const base = currentPhase.split("_")[0];
+  if (!AUTO_ADVANCE_PHASES.includes(base)) return false;
+
+  const handlers = getGameHandlers(room.gameType);
+  if (handlers.config?.neverAutoAdvance) return false;
+
+  const phaseSubmissions = room.submissions.filter(
+    (s) => s.round === room.roundNumber && s.phase === currentPhase,
+  );
+  const submittedIds = new Set(phaseSubmissions.map((s) => s.playerId));
+  const presentCount = room.players.filter(
+    (p) => p.isConnected || submittedIds.has(p.id),
+  ).length;
+
+  const raw = handlers.getExpectedSubmitterCount?.(room);
+  // Et ikke-endeligt tal betyder "aldrig auto-fremdrift" — ikke "klamp til alle".
+  if (raw !== undefined && !Number.isFinite(raw)) return false;
+  const expectedCount = raw !== undefined ? Math.min(raw, presentCount) : presentCount;
+
+  return expectedCount > 0 && phaseSubmissions.length >= expectedCount;
+}
+
 /** Advance the game to the next phase. Mutates room state in place. */
 export function advancePhase(room: RoomState, event: string): void {
   const currentPhase = room.currentPhase;

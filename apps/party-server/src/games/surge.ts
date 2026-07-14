@@ -13,6 +13,9 @@ registerGameHandlers("surge", {
     initialPhase: "countdown",
     totalRoundsForPlayerCount: () => 100, // dynamic: game ends via victory check, not round limit
     minPlayers: 2,
+    // Runden er et kapløb med uret: brikken er "transit", indtil den lander, så
+    // en fase, der slutter når alle har trykket, klipper de sidste svar af.
+    neverAutoAdvance: true,
   },
 
   setupRound(room: RoomState): Record<string, unknown> {
@@ -209,11 +212,6 @@ registerGameHandlers("surge", {
       },
       scoreDeltas,
     };
-  },
-
-  // Prevent auto-advance: the timer always runs
-  getExpectedSubmitterCount(): number {
-    return Infinity;
   },
 
   filterForPlayer(room: RoomState, _player: Player | null): Record<string, unknown> {
