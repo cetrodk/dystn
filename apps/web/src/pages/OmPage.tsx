@@ -3,7 +3,12 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { AnimatedLogo, Chip, Logo, SectionHeader } from "@/components/Brand";
 import { unlockGate } from "@/lib/gate";
-import { normalizeLicenseInput, setStoredLicense, withDashes } from "@/lib/license";
+import {
+  formatLicenseInputLive,
+  normalizeLicenseInput,
+  setStoredLicense,
+  withDashes,
+} from "@/lib/license";
 import { da } from "@/lib/da";
 
 // Firmaoplysninger — CVR-linjen vises først, når værdien er udfyldt.
@@ -285,10 +290,11 @@ function GateCodeForm() {
           type="text"
           value={codeInput}
           onChange={(e) => {
-            setCodeInput(e.target.value);
+            setCodeInput(formatLicenseInputLive(e.target.value, codeInput));
             setFormatError(false);
           }}
           placeholder={da.license.modal.codePlaceholder}
+          maxLength={28}
           autoFocus
           autoCapitalize="characters"
           autoCorrect="off"

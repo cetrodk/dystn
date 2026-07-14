@@ -78,6 +78,24 @@ export function withDashes(canonical: string): string {
   return canonical.replace(/(.{6})(?=.)/g, "$1-");
 }
 
+/**
+ * Live-formatering af kodeinput, mens der tastes: uppercase, kun A–Z/0–9,
+ * grupper à 6 med bindestreger. Den hængende bindestreg efter en netop
+ * fuldendt gruppe tilføjes kun, når inputtet voksede — ellers ville
+ * backspace hen over en bindestreg sidde fast (slet streg → reformatér →
+ * streg igen).
+ */
+export function formatLicenseInputLive(value: string, previous: string): string {
+  const strip = (s: string) => s.toUpperCase().replace(/[^0-9A-Z]/g, "");
+  const cleaned = strip(value).slice(0, 24);
+  const grouped = withDashes(cleaned);
+  const grew = cleaned.length > strip(previous).length;
+  if (grew && cleaned.length < 24 && cleaned.length % 6 === 0) {
+    return grouped + "-";
+  }
+  return grouped;
+}
+
 export type RedeemHttpResult =
   | { ok: true; packs: string[] }
   | { ok: false; reason: "invalid" | "rateLimited" | "denylisted" | "roomNotFound" | "network" };
