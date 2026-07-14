@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { AnimatedLogo, Chip, Logo, SectionHeader } from "@/components/Brand";
 import { unlockGate } from "@/lib/gate";
+import { GAMES } from "@/lib/games";
 import {
-  formatLicenseInputLive,
+  formatLicenseInputEvent,
+  getStoredLicense,
   normalizeLicenseInput,
   setStoredLicense,
   withDashes,
@@ -18,15 +20,6 @@ const COMPANY = {
   email: da.license.supportEmail,
 };
 
-const GAMES = [
-  { key: "blitz", free: true },
-  { key: "fusk", free: false },
-  { key: "scrawl", free: true },
-  { key: "morph", free: false },
-  { key: "surge", free: false },
-  { key: "hunch", free: false },
-] as const;
-
 const sectionReveal = {
   initial: { opacity: 0, y: 24 },
   whileInView: { opacity: 1, y: 0 },
@@ -39,7 +32,13 @@ const sectionReveal = {
  * I gate-mode (midlertidig launch-gate, se lib/gate.ts) er alle veje
  * ind i selve appen skjult, og der vises "vi åbner snart" i stedet.
  */
-export function OmPage({ gate = false }: { gate?: boolean }) {
+export function OmPage({
+  gate = false,
+  onUnlocked,
+}: {
+  gate?: boolean;
+  onUnlocked?: () => void;
+}) {
   useEffect(() => {
     document.title = da.om.pageTitle;
     return () => {
@@ -100,7 +99,7 @@ export function OmPage({ gate = false }: { gate?: boolean }) {
                 {COMPANY.email}
               </a>
             </p>
-            <GateCodeForm />
+            <GateCodeForm onUnlocked={onUnlocked} />
           </div>
         ) : (
           <Link
@@ -135,34 +134,33 @@ export function OmPage({ gate = false }: { gate?: boolean }) {
       <motion.section {...sectionReveal} className="flex flex-col gap-6">
         <SectionHeader n="02" title={da.om.games.title} sub={da.om.games.sub} />
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {GAMES.map((game) => {
-            const meta = da[game.key];
-            return (
-              <div key={game.key} className="nb-card flex items-start gap-4 rounded-2xl p-5">
-                <span
-                  className="grid h-11 w-11 shrink-0 place-items-center rounded-[10px] font-display text-xl font-bold text-white nb-border"
-                  style={{
-                    background: `var(--color-${game.key})`,
-                    boxShadow: "3px 3px 0 var(--color-ink)",
-                    rotate: "-3deg",
-                  }}
-                >
-                  {meta.name[0]}
-                </span>
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="font-display text-lg font-bold">{meta.name}</h3>
-                    <span className="rounded-full border-2 border-[var(--color-ink)] px-2 py-0.5 font-mono text-[10px] font-bold tracking-[0.12em]">
-                      {game.free ? da.om.games.free.toUpperCase() : da.om.games.inPack.toUpperCase()}
-                    </span>
-                  </div>
-                  <p className="mt-1 text-sm leading-relaxed text-[var(--color-text-muted)]">
-                    {meta.description}
-                  </p>
+          {GAMES.map((game) => (
+            <div key={game.id} className="nb-card flex items-start gap-4 rounded-2xl p-5">
+              <span
+                className="grid h-11 w-11 shrink-0 place-items-center rounded-[10px] font-display text-xl font-bold text-white nb-border"
+                style={{
+                  background: game.color,
+                  boxShadow: "3px 3px 0 var(--color-ink)",
+                  rotate: "-3deg",
+                }}
+              >
+                {game.name[0]}
+              </span>
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="font-display text-lg font-bold">{game.name}</h3>
+                  <span className="rounded-full border-2 border-[var(--color-ink)] px-2 py-0.5 font-mono text-[10px] font-bold tracking-[0.12em]">
+                    {game.pack === "free"
+                      ? da.om.games.free.toUpperCase()
+                      : da.om.games.inPack.toUpperCase()}
+                  </span>
                 </div>
+                <p className="mt-1 text-sm leading-relaxed text-[var(--color-text-muted)]">
+                  {game.description}
+                </p>
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
       </motion.section>
 
@@ -254,7 +252,8 @@ export function OmPage({ gate = false }: { gate?: boolean }) {
  * gemmes som licens (spillene låses op ved første rum, hvor serveren
  * dømmer signaturen) og låser samtidig gaten op for denne browser.
  */
-function GateCodeForm() {
+function GateCodeForm({ onUnlocked }: { onUnlocked?: () => void }) {
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [codeInput, setCodeInput] = useState("");
   const [formatError, setFormatError] = useState(false);
@@ -266,9 +265,14 @@ function GateCodeForm() {
       setFormatError(true);
       return;
     }
-    setStoredLicense(withDashes(canonical));
+    // Overskriv aldrig en allerede gemt licens (kundens eneste lokale kopi)
+    // med en uverificeret kode — gaten skal bare låses op.
+    if (!getStoredLicense()) {
+      setStoredLicense(withDashes(canonical));
+    }
     unlockGate();
-    window.location.assign("/");
+    navigate("/");
+    onUnlocked?.();
   }
 
   if (!open) {
@@ -290,11 +294,10 @@ function GateCodeForm() {
           type="text"
           value={codeInput}
           onChange={(e) => {
-            setCodeInput(formatLicenseInputLive(e.target.value, codeInput));
+            setCodeInput(formatLicenseInputEvent(e.currentTarget, codeInput));
             setFormatError(false);
           }}
           placeholder={da.license.modal.codePlaceholder}
-          maxLength={28}
           autoFocus
           autoCapitalize="characters"
           autoCorrect="off"

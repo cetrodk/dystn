@@ -78,6 +78,8 @@ export function withDashes(canonical: string): string {
   return canonical.replace(/(.{6})(?=.)/g, "$1-");
 }
 
+const stripCodeChars = (s: string) => s.toUpperCase().replace(/[^0-9A-Z]/g, "");
+
 /**
  * Live-formatering af kodeinput, mens der tastes: uppercase, kun A–Z/0–9,
  * grupper à 6 med bindestreger. Den hængende bindestreg efter en netop
@@ -86,14 +88,42 @@ export function withDashes(canonical: string): string {
  * streg igen).
  */
 export function formatLicenseInputLive(value: string, previous: string): string {
-  const strip = (s: string) => s.toUpperCase().replace(/[^0-9A-Z]/g, "");
-  const cleaned = strip(value).slice(0, 24);
+  const cleaned = stripCodeChars(value).slice(0, 24);
   const grouped = withDashes(cleaned);
-  const grew = cleaned.length > strip(previous).length;
+  const grew = cleaned.length > stripCodeChars(previous).length;
   if (grew && cleaned.length < 24 && cleaned.length % 6 === 0) {
     return grouped + "-";
   }
   return grouped;
+}
+
+/** Indeks i den formaterede streng lige efter n kodetegn (og en evt. bindestreg). */
+function caretAfterCodeChars(formatted: string, n: number): number {
+  if (n <= 0) return 0;
+  let count = 0;
+  for (let i = 0; i < formatted.length; i++) {
+    if (formatted[i] === "-") continue;
+    count++;
+    if (count === n) {
+      return formatted[i + 1] === "-" ? i + 2 : i + 1;
+    }
+  }
+  return formatted.length;
+}
+
+/**
+ * onChange-håndtering for kodefelter: formaterer feltets værdi og lægger
+ * markøren tilbage, hvor brugeren redigerede — omgrupperingen flytter ellers
+ * markøren til slutningen (React sætter value, browseren kollapser
+ * selektionen), så tastefejl midt i koden ikke kan rettes på stedet.
+ */
+export function formatLicenseInputEvent(el: HTMLInputElement, previous: string): string {
+  const caret = el.selectionStart ?? el.value.length;
+  const codeCharsBeforeCaret = stripCodeChars(el.value.slice(0, caret)).length;
+  const next = formatLicenseInputLive(el.value, previous);
+  const pos = caretAfterCodeChars(next, codeCharsBeforeCaret);
+  requestAnimationFrame(() => el.setSelectionRange(pos, pos));
+  return next;
 }
 
 export type RedeemHttpResult =

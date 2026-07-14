@@ -2,7 +2,7 @@ import { Suspense, lazy, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles } from "lucide-react";
 import { da } from "@/lib/da";
-import { formatLicenseInputLive, normalizeLicenseInput, withDashes } from "@/lib/license";
+import { formatLicenseInputEvent, normalizeLicenseInput, withDashes } from "@/lib/license";
 
 const QRCodeSVG = lazy(() =>
   import("qrcode.react").then((m) => ({ default: m.QRCodeSVG })),
@@ -108,9 +108,8 @@ export function UnlockModal({
               <input
                 type="text"
                 value={codeInput}
-                onChange={(e) => { setCodeInput(formatLicenseInputLive(e.target.value, codeInput)); setFormatError(false); }}
+                onChange={(e) => { setCodeInput(formatLicenseInputEvent(e.currentTarget, codeInput)); setFormatError(false); }}
                 placeholder={da.license.modal.codePlaceholder}
-                maxLength={28}
                 autoCapitalize="characters"
                 autoCorrect="off"
                 spellCheck={false}
