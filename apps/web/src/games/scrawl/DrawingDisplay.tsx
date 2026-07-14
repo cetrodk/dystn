@@ -11,9 +11,13 @@ interface Props {
   /** Accepts either the new { strokes, viewBoxHeight } format or a raw strokes array */
   data: DrawingData | Stroke[];
   className?: string;
+  /** Wrapperens aspect-ratio-klasse. `null` = lad layoutet bestemme størrelsen —
+   *  SVG'ens preserveAspectRatio centrerer og skalerer tegningen alligevel.
+   *  Default bevarer 4:3 for kaldsteder uden egen højde (morph, /drawtest). */
+  aspect?: string | null;
 }
 
-export function DrawingDisplay({ data, className = "" }: Props) {
+export function DrawingDisplay({ data, className = "", aspect = "aspect-[4/3]" }: Props) {
   // data can be null/undefined when a player never submitted a drawing (timeout,
   // disconnect, empty canvas) — Morph feeds those straight in. Never deref blind.
   const strokes = Array.isArray(data) ? data : (data?.strokes ?? []);
@@ -29,7 +33,7 @@ export function DrawingDisplay({ data, className = "" }: Props) {
 
   return (
     <div
-      className={`rounded-xl bg-[var(--color-surface)] aspect-[4/3] ${className}`}
+      className={`rounded-xl bg-[var(--color-surface)] ${aspect ?? ""} ${className}`}
     >
       <svg
         viewBox={`0 0 ${VIEWBOX_WIDTH} ${viewBoxHeight}`}
