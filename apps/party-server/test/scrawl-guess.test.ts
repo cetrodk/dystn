@@ -118,6 +118,25 @@ describe("scrawl buildVoteData — fletning og sikkerhedsnet", () => {
     );
   });
 
+  it("løgne af ren tegnsætning (tom normaliseret nøgle) flettes aldrig", () => {
+    const { room, guessers } = makeGuessRoom("en hund");
+    room.submissions = [
+      makeSubmission(guessers[0].id, "guess_0", "???"),
+      makeSubmission(guessers[1].id, "guess_0", "!!!"),
+    ];
+
+    const data = scrawl.buildVoteData(room);
+    const answers = data.answers as Array<{
+      id: string;
+      playerId: string | null;
+      mergedPlayerIds?: string[];
+    }>;
+
+    // To separate løgne + sandheden — ingen falsk kredit via mergedPlayerIds
+    expect(answers).toHaveLength(3);
+    expect(answers.every((a) => a.mergedPlayerIds === undefined)).toBe(true);
+  });
+
   it("en løgn, der normaliseret er facit, optræder aldrig som selvstændig mulighed", () => {
     const { room, guessers } = makeGuessRoom("en hund");
     // Simulerer en indsendelse, der er sluppet uden om afvisningen

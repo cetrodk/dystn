@@ -145,7 +145,9 @@ registerGameHandlers("scrawl", {
       // fra før normaliserings-afvisningen), må aldrig stå som selvstændig
       // mulighed ved siden af sandheden — kun TRUTH_ID bærer det rigtige svar.
       if (key && key === truthKey) continue;
-      const existing = seen.get(key);
+      // En tom nøgle (ren tegnsætning som "???" og "!!!") må aldrig flette to
+      // urelaterede løgne — så ville begge forfattere få point for den enes tekst.
+      const existing = key ? seen.get(key) : undefined;
       if (existing) {
         existing.mergedPlayerIds = existing.mergedPlayerIds ?? [
           existing.playerId,
@@ -158,7 +160,7 @@ registerGameHandlers("scrawl", {
           playerId: s.playerId,
         };
         options.push(entry);
-        seen.set(key, entry);
+        if (key) seen.set(key, entry);
       }
     }
 
