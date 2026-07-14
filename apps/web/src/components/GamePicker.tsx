@@ -3,69 +3,15 @@ import { motion } from "framer-motion";
 import { Swords, Drama, Paintbrush, Phone, Tag, ExternalLink, Scale, SlidersHorizontal, Sparkles } from "lucide-react";
 import useEmblaCarousel from "embla-carousel-react";
 import { da } from "@/lib/da";
-
-// Gratis-spillene står FØRST — de betalte samles bag pakkekortet, når pakken
-// ikke er låst op (positiv framing, ikke fire hængelåse).
-export const GAMES = [
-  {
-    id: "blitz",
-    pack: "free",
-    ...da.blitz,
-    Icon: Swords,
-    color: "var(--color-blitz)",
-    glow: "var(--color-blitz-glow)",
-    textColor: "#fff",
-  },
-  {
-    id: "scrawl",
-    pack: "free",
-    ...da.scrawl,
-    Icon: Paintbrush,
-    color: "var(--color-scrawl)",
-    glow: "var(--color-scrawl-glow)",
-    textColor: "#fff",
-  },
-  {
-    id: "fusk",
-    pack: "pack1",
-    ...da.fusk,
-    Icon: Drama,
-    color: "var(--color-fusk)",
-    glow: "var(--color-fusk-glow)",
-    textColor: "#0d0b1a",
-  },
-  {
-    id: "morph",
-    pack: "pack1",
-    ...da.morph,
-    Icon: Phone,
-    color: "var(--color-morph)",
-    glow: "var(--color-morph-glow)",
-    textColor: "#0d0b1a",
-  },
-  {
-    id: "surge",
-    pack: "pack1",
-    ...da.surge,
-    Icon: Scale,
-    color: "var(--color-surge)",
-    glow: "var(--color-surge-glow)",
-    textColor: "#fff",
-  },
-  {
-    id: "hunch",
-    pack: "pack1",
-    ...da.hunch,
-    Icon: SlidersHorizontal,
-    color: "var(--color-hunch)",
-    glow: "var(--color-hunch-glow)",
-    textColor: "#0d0b1a",
-  },
-] as const;
-
-export type GameMeta = (typeof GAMES)[number];
+import { GAMES as GAME_LIST } from "@/lib/games";
 
 export const GAME_ICONS = { blitz: Swords, fusk: Drama, scrawl: Paintbrush, morph: Phone, surge: Scale, hunch: SlidersHorizontal } as const;
+
+// Spillisten (id, tier, farver, tekster) ligger i lib/games.ts og deles med
+// /om-siden; her lægges kun ikonerne oveni.
+export const GAMES = GAME_LIST.map((g) => ({ ...g, Icon: GAME_ICONS[g.id] }));
+
+export type GameMeta = (typeof GAMES)[number];
 
 type Slide =
   | { kind: "game"; game: GameMeta }

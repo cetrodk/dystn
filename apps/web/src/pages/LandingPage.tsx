@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { generateRoomCode } from "@/hooks/useCreateRoom";
 import { AnimatedLogo } from "@/components/Brand";
@@ -137,9 +137,16 @@ export function LandingPage() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.8 }}
-        className="absolute bottom-4 text-[10px] tracking-[0.2em] text-[var(--color-text-muted)]/30 uppercase"
+        className="absolute bottom-4 z-20 flex items-center gap-2 text-[10px] tracking-[0.2em] text-[var(--color-text-muted)]/30 uppercase"
       >
-        &copy; 2026 Dystn
+        <span>&copy; 2026 Dystn</span>
+        <span aria-hidden>·</span>
+        <Link
+          to="/om"
+          className="underline underline-offset-4 hover:text-[var(--color-text-muted)] transition-colors"
+        >
+          {da.om.linkLabel}
+        </Link>
       </motion.footer>
     </div>
   );
