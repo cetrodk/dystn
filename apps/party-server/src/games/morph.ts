@@ -72,7 +72,7 @@ registerGameHandlers("morph", {
   },
 
   onVote(): void {
-    throw new Error("Ingen afstemning i Telefon");
+    throw new Error("Morph har ingen afstemningsfase");
   },
 
   computeResults(room: RoomState): {

@@ -77,7 +77,7 @@ registerGameHandlers("hunch", {
       }
       const pos = Number(content);
       if (!Number.isInteger(pos) || pos < 1 || pos > 10) {
-        throw new Error("Ugyldigt gæt — vælg 1-10");
+        throw new Error("Ugyldigt gæt — vælg 1–10");
       }
       upsertSubmission(room, player.id, "guess", pos);
     }

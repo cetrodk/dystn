@@ -28,11 +28,11 @@ test.describe("Blitz", () => {
       await p.click("button:has-text('Send')");
     }
     for (const p of players) {
-      await waitForText(p, "Venter på andre...", 5000);
+      await waitForText(p, "Venter på andre…", 5000);
     }
 
     // Present phase on the host, then vote phase on phones
-    await waitForText(host, "Lad os se hvad I har fundet på...", 10000);
+    await waitForText(host, "Lad os se, hvad I har fundet på…", 10000);
     for (const p of players) {
       await waitForText(p, "Stem på det bedste svar", 60000);
       // Vote for the first answer that isn't marked as the player's own
