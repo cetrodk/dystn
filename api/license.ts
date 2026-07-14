@@ -76,6 +76,9 @@ export async function handleLicenseRequest(
   }
 }
 
-export default function handler(req: Request): Promise<Response> {
+// Navngiven metode-export ⇒ Vercel bruger web-handler-signaturen (Request →
+// Response). Et default-export får den gamle Node-signatur (req, res), hvor
+// req.text()/new URL(req.url) crasher med FUNCTION_INVOCATION_FAILED.
+export function GET(req: Request): Promise<Response> {
   return handleLicenseRequest(req, process.env as Record<string, string | undefined>);
 }

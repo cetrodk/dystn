@@ -146,6 +146,9 @@ export async function handleWebhookRequest(
   }
 }
 
-export default function handler(req: Request): Promise<Response> {
+// Navngiven metode-export ⇒ web-handler-signaturen (rå Request, så req.text()
+// giver de eksakte bytes signaturen dækker). Default-export får Node-signaturen
+// (req, res) og crasher — se api/license.ts.
+export function POST(req: Request): Promise<Response> {
   return handleWebhookRequest(req, process.env as Record<string, string | undefined>);
 }
