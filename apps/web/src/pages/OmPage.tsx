@@ -7,7 +7,7 @@ import { da } from "@/lib/da";
 // Firmaoplysninger — CVR-linjen vises først, når værdien er udfyldt.
 const COMPANY = {
   name: "Cetro",
-  cvr: "",
+  cvr: "33222424",
   email: da.license.supportEmail,
 };
 
