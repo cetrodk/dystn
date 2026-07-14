@@ -841,10 +841,16 @@ export default class DystnServer implements Party.Server {
         if (!entry.cooldownUntil || now >= entry.cooldownUntil) this.licenseThrottle.delete(key);
       }
     }
+    // Kilde til logning: "ws" (modal), "http" (/tak) eller "hostConnect".
+    // Selve koden logges ALDRIG — kun serialHex, som er nok til denylist.
+    const source = throttleKey ? throttleKey.split(":")[0] : "hostConnect";
     if (throttleKey) {
       const entry = this.licenseThrottle.get(throttleKey);
       if (entry?.cooldownUntil) {
-        if (now < entry.cooldownUntil) return { ok: false, reason: "rateLimited" };
+        if (now < entry.cooldownUntil) {
+          console.log(`[${this.state.code}] licens: rateLimited kilde=${source}`);
+          return { ok: false, reason: "rateLimited" };
+        }
         this.licenseThrottle.delete(throttleKey);
       }
     }
@@ -852,9 +858,13 @@ export default class DystnServer implements Party.Server {
     const denylist = denylistFromEnv(this.room.env);
     const result = await verifyLicense(code, keyring, denylist);
     if (result.ok) {
+      console.log(
+        `[${this.state.code}] licens: ok serial=${result.serialHex} packs=${result.packs.join(",")} kilde=${source}`,
+      );
       if (throttleKey) this.licenseThrottle.delete(throttleKey);
       return { ok: true, packs: result.packs };
     }
+    console.log(`[${this.state.code}] licens: ${result.reason} kilde=${source}`);
     if (throttleKey) {
       const entry = this.licenseThrottle.get(throttleKey) ?? { fails: 0 };
       entry.fails += 1;
