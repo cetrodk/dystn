@@ -147,12 +147,7 @@ export function Logo({ className = "" }: { className?: string }) {
       >
         D
       </div>
-      <div>
-        <div className="font-display text-[1.4rem] leading-none">Dystn</div>
-        <div className="mt-[3px] font-mono text-[10px] tracking-[0.2em] text-[var(--color-text-muted)]">
-          PARTY PACK
-        </div>
-      </div>
+      <div className="font-display text-[1.4rem] leading-none">Dystn</div>
     </div>
   );
 }

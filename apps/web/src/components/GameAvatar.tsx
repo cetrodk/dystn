@@ -36,10 +36,6 @@ export function BlobAvatar({
   part?: BlobPart;
 }) {
   const { shape, eyes, mouth, hat } = traits;
-  // Øjne: 0=standard, 1=kigger venstre, 2=kigger højre, 3=søvnige, 4=store
-  const eyeOffset = eyes === 1 ? -3 : eyes === 2 ? 3 : 0;
-  const eyeR = eyes === 4 ? 6 : 4.5;
-  const glintR = eyes === 4 ? 2 : 1.4;
   const show = (p: Exclude<BlobPart, "full">) => part === "full" || part === p;
 
   return (
@@ -76,20 +72,45 @@ export function BlobAvatar({
       {show("hat") && hat === 3 && (
         <path d="M30 30 Q50 18 70 30" stroke="currentColor" strokeWidth="3" fill="none" />
       )}
-      {show("eyes") &&
-        (eyes === 3 ? (
-          <g>
-            <path d="M35 48 Q40 53 45 48" stroke="currentColor" strokeWidth="3" fill="none" strokeLinecap="round" />
-            <path d="M57 48 Q62 53 67 48" stroke="currentColor" strokeWidth="3" fill="none" strokeLinecap="round" />
-          </g>
-        ) : (
-          <g>
-            <circle cx={40 + eyeOffset} cy="48" r={eyeR} fill="currentColor" />
-            <circle cx={62 + eyeOffset} cy="48" r={eyeR} fill="currentColor" />
-            <circle cx={41 + eyeOffset} cy="47" r={glintR} fill="var(--color-paper)" />
-            <circle cx={63 + eyeOffset} cy="47" r={glintR} fill="var(--color-paper)" />
-          </g>
-        ))}
+      {/* Øjne — fem klart forskellige familier, så de kan kendes fra hinanden
+          selv i vælgerens 40 px-miniaturer:
+          0=normale med glimt, 1=rigtig store, 2=smalle streger, 3=søvnige buer,
+          4=blink (ét lukket, ét åbent — asymmetri læses øjeblikkeligt) */}
+      {show("eyes") && eyes === 0 && (
+        <g>
+          <circle cx="40" cy="48" r="4.5" fill="currentColor" />
+          <circle cx="62" cy="48" r="4.5" fill="currentColor" />
+          <circle cx="41" cy="47" r="1.4" fill="var(--color-paper)" />
+          <circle cx="63" cy="47" r="1.4" fill="var(--color-paper)" />
+        </g>
+      )}
+      {show("eyes") && eyes === 1 && (
+        <g>
+          <circle cx="40" cy="48" r="8.5" fill="currentColor" />
+          <circle cx="62" cy="48" r="8.5" fill="currentColor" />
+          <circle cx="42.5" cy="45.5" r="3" fill="var(--color-paper)" />
+          <circle cx="64.5" cy="45.5" r="3" fill="var(--color-paper)" />
+        </g>
+      )}
+      {show("eyes") && eyes === 2 && (
+        <g>
+          <path d="M34 48 L46 48" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" />
+          <path d="M56 48 L68 48" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" />
+        </g>
+      )}
+      {show("eyes") && eyes === 3 && (
+        <g>
+          <path d="M35 48 Q40 53 45 48" stroke="currentColor" strokeWidth="3" fill="none" strokeLinecap="round" />
+          <path d="M57 48 Q62 53 67 48" stroke="currentColor" strokeWidth="3" fill="none" strokeLinecap="round" />
+        </g>
+      )}
+      {show("eyes") && eyes === 4 && (
+        <g>
+          <path d="M34 48 Q40 52 46 48" stroke="currentColor" strokeWidth="3" fill="none" strokeLinecap="round" />
+          <circle cx="62" cy="48" r="5.5" fill="currentColor" />
+          <circle cx="63.5" cy="46.5" r="1.8" fill="var(--color-paper)" />
+        </g>
+      )}
       {show("mouth") && mouth === 0 && (
         <path d="M38 64 Q50 74 62 64" stroke="currentColor" strokeWidth="3" fill="none" strokeLinecap="round" />
       )}
