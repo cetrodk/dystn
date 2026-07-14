@@ -1,7 +1,9 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { AnimatedLogo, Chip, Logo, SectionHeader } from "@/components/Brand";
+import { unlockGate } from "@/lib/gate";
+import { normalizeLicenseInput, setStoredLicense, withDashes } from "@/lib/license";
 import { da } from "@/lib/da";
 
 // Firmaoplysninger — CVR-linjen vises først, når værdien er udfyldt.
@@ -93,6 +95,7 @@ export function OmPage({ gate = false }: { gate?: boolean }) {
                 {COMPANY.email}
               </a>
             </p>
+            <GateCodeForm />
           </div>
         ) : (
           <Link
@@ -238,5 +241,72 @@ export function OmPage({ gate = false }: { gate?: boolean }) {
         </footer>
       </div>
     </div>
+  );
+}
+
+/**
+ * "Jeg har en kode" på gate-siden: en licens-/gavekode i gyldigt format
+ * gemmes som licens (spillene låses op ved første rum, hvor serveren
+ * dømmer signaturen) og låser samtidig gaten op for denne browser.
+ */
+function GateCodeForm() {
+  const [open, setOpen] = useState(false);
+  const [codeInput, setCodeInput] = useState("");
+  const [formatError, setFormatError] = useState(false);
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const canonical = normalizeLicenseInput(codeInput);
+    if (!canonical) {
+      setFormatError(true);
+      return;
+    }
+    setStoredLicense(withDashes(canonical));
+    unlockGate();
+    window.location.assign("/");
+  }
+
+  if (!open) {
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        className="nb-border nb-press mt-4 rounded-xl bg-[var(--color-ink)] px-4 py-2.5 font-display text-sm font-bold text-[var(--color-paper)] nb-shadow-sm cursor-pointer"
+      >
+        {da.om.code.haveCode}
+      </button>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="mt-4 flex flex-col gap-2">
+      <p className="text-sm leading-relaxed text-[var(--color-text-muted)]">{da.om.code.hint}</p>
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <input
+          type="text"
+          value={codeInput}
+          onChange={(e) => {
+            setCodeInput(e.target.value);
+            setFormatError(false);
+          }}
+          placeholder={da.license.modal.codePlaceholder}
+          autoFocus
+          autoCapitalize="characters"
+          autoCorrect="off"
+          spellCheck={false}
+          className="nb-border min-w-0 flex-1 rounded-xl bg-[var(--color-paper)] px-3 py-2.5 font-mono text-sm tracking-wider uppercase placeholder:text-[var(--color-text-muted)]/50 focus:outline-none"
+        />
+        <button
+          type="submit"
+          className="nb-border nb-press rounded-xl bg-[var(--color-primary)] px-4 py-2.5 font-display text-sm font-bold text-[var(--color-paper)] nb-shadow-sm cursor-pointer"
+        >
+          {da.om.code.submit}
+        </button>
+      </div>
+      {formatError && (
+        <p className="text-sm font-semibold text-[var(--color-danger,#c0392b)]">
+          {da.license.errors.badFormat}
+        </p>
+      )}
+    </form>
   );
 }

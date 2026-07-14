@@ -2,7 +2,7 @@ import { Suspense, lazy, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles } from "lucide-react";
 import { da } from "@/lib/da";
-import { normalizeLicenseInput } from "@/lib/license";
+import { normalizeLicenseInput, withDashes } from "@/lib/license";
 
 const QRCodeSVG = lazy(() =>
   import("qrcode.react").then((m) => ({ default: m.QRCodeSVG })),
@@ -11,11 +11,6 @@ const QRCodeSVG = lazy(() =>
 // Payment Linket er et build-time-valg; mangler det (dev/e2e), degraderer
 // modalen yndefuldt til kun kode-indløsning i stedet for at crashe.
 const PAYMENT_LINK = import.meta.env.VITE_STRIPE_PAYMENT_LINK as string | undefined;
-
-/** Kanonisk 24-tegns kode → XXXXXX-XXXXXX-XXXXXX-XXXXXX til visning/lagring. */
-function withDashes(canonical: string): string {
-  return canonical.replace(/(.{6})(?=.)/g, "$1-");
-}
 
 /**
  * Oplåsnings-modal for Dystn-pakken. To tilstande:

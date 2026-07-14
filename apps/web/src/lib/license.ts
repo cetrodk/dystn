@@ -73,6 +73,11 @@ export function normalizeLicenseInput(input: string): string | null {
   return cleaned;
 }
 
+/** Kanonisk 24-tegns kode → XXXXXX-XXXXXX-XXXXXX-XXXXXX til visning/lagring. */
+export function withDashes(canonical: string): string {
+  return canonical.replace(/(.{6})(?=.)/g, "$1-");
+}
+
 export type RedeemHttpResult =
   | { ok: true; packs: string[] }
   | { ok: false; reason: "invalid" | "rateLimited" | "denylisted" | "roomNotFound" | "network" };

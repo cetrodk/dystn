@@ -329,6 +329,11 @@ export const da = {
     comingSoon: "Vi åbner snart",
     comingSoonBody:
       "Vi lægger sidste hånd på Dystn. Skriv til os, hvis du vil have besked, når vi åbner dørene.",
+    code: {
+      haveCode: "Jeg har en kode",
+      hint: "Har du fået en kode af os? Indtast den her, så er du inde — og alle spil følger med.",
+      submit: "Lås op og spil",
+    },
     how: {
       title: "Sådan virker det",
       sub: "Fra sofa til dyst på under et minut",
