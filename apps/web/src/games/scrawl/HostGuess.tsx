@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { CountdownTimer } from "@dystn/ui/CountdownTimer";
 import { sfxTick, sfxUrgent } from "@/lib/sounds";
 import { da } from "@/lib/da";
+import { PlayerPill } from "@/components/PlayerPill";
 import { DrawingDisplay } from "./DrawingDisplay";
 import type { PhaseComponentProps } from "../registry";
 
@@ -59,40 +60,13 @@ export default function HostGuess({ room }: PhaseComponentProps) {
       {/* Player pills at bottom */}
       <div className="flex flex-wrap justify-center gap-3 mt-4">
         <AnimatePresence>
-          {room.players?.map((p: any) => {
-            const isArtist = p._id === phaseData.currentArtistId;
-            return (
-              <motion.div
-                key={p._id}
-                layout
-                animate={{
-                  backgroundColor: isArtist
-                    ? p.avatarColor
-                    : p.hasSubmitted
-                      ? p.avatarColor
-                      : "var(--color-surface)",
-                  opacity: isArtist ? 0.6 : p.hasSubmitted ? 1 : 0.4,
-                  color: isArtist || p.hasSubmitted ? "#fff" : "var(--color-text)",
-                  scale: !isArtist && p.hasSubmitted ? [1, 1.15, 1] : 1,
-                }}
-                transition={{ duration: 0.3 }}
-                className="flex items-center gap-2 rounded-full px-4 py-2"
-              >
-                <span className="text-base font-semibold">{p.name}</span>
-                {isArtist ? (
-                  <span className="text-sm">✏️</span>
-                ) : p.hasSubmitted ? (
-                  <motion.span
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    className="text-sm"
-                  >
-                    ✓
-                  </motion.span>
-                ) : null}
-              </motion.div>
-            );
-          })}
+          {room.players?.map((p: any) => (
+            <PlayerPill
+              key={p._id}
+              player={p}
+              isArtist={p._id === phaseData.currentArtistId}
+            />
+          ))}
         </AnimatePresence>
       </div>
     </div>

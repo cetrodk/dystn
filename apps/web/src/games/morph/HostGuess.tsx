@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { CountdownTimer } from "@dystn/ui/CountdownTimer";
 import { sfxTick, sfxUrgent } from "@/lib/sounds";
 import { da } from "@/lib/da";
+import { PlayerPill } from "@/components/PlayerPill";
 import type { PhaseComponentProps } from "../registry";
 
 export default function HostGuess({ room }: PhaseComponentProps) {
@@ -45,31 +46,7 @@ export default function HostGuess({ room }: PhaseComponentProps) {
       <div className="flex flex-wrap justify-center gap-3">
         <AnimatePresence>
           {room.players?.map((p: any) => (
-            <motion.div
-              key={p._id}
-              layout
-              animate={{
-                backgroundColor: p.hasSubmitted
-                  ? p.avatarColor
-                  : "var(--color-surface)",
-                color: p.hasSubmitted ? "#fff" : "var(--color-text)",
-                opacity: p.hasSubmitted ? 1 : 0.4,
-                scale: p.hasSubmitted ? [1, 1.15, 1] : 1,
-              }}
-              transition={{ duration: 0.3 }}
-              className="flex items-center gap-2 rounded-full px-4 py-2"
-            >
-              <span className="text-base font-semibold">{p.name}</span>
-              {p.hasSubmitted ? (
-                <motion.span
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  className="text-sm"
-                >
-                  ✓
-                </motion.span>
-              ) : null}
-            </motion.div>
+            <PlayerPill key={p._id} player={p} />
           ))}
         </AnimatePresence>
       </div>

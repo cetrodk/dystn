@@ -116,7 +116,9 @@ export function AvatarEditorModal({ value, onChange, onClose }: AvatarEditorModa
                     ) : (
                       <BlobAvatar
                         traits={{ ...value, [key]: i }}
-                        color={AVATAR_PALETTE[value.color]}
+                        // Form-miniaturer er sorte silhuetter — farven vælges
+                        // i swatch-rækken, og øjne/mund/hat er i forvejen ink.
+                        color={key === "shape" ? "var(--color-ink)" : AVATAR_PALETTE[value.color]}
                         part={key}
                       />
                     )}

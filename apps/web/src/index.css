@@ -2,7 +2,7 @@
 
 /* ============================================================
    DYSTN — Warm Editorial theme
-   Inspired by the "Dystn Party Pack" design handoff:
+   Inspired by the "Dystn" design handoff:
    cream paper, dark ink, chunky Fraunces serif, hard offset
    shadows (neo-brutalist), bold accent tiles.
    Everything is driven by CSS variables so themes are
@@ -288,10 +288,15 @@ input[type="range"]::-moz-range-thumb {
 .no-scrollbar { scrollbar-width: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 
-/* Global focus-visible ring for keyboard navigation */
-:focus-visible {
-  outline: 3px solid var(--color-accent);
-  outline-offset: 2px;
+/* Global focus-visible ring for keyboard navigation. I @layer base, så
+   Tailwind-utilities (fx focus:outline-none) kan overskrive den — ulayeret
+   CSS slår ellers al layeret CSS uanset specificity. Ink frem for accent,
+   så ringen følger temaet i stedet for at stikke ud i blåt. */
+@layer base {
+  :focus-visible {
+    outline: 3px solid var(--color-ink);
+    outline-offset: 2px;
+  }
 }
 
 /* Respect reduced-motion preferences */

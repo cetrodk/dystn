@@ -84,68 +84,61 @@ export function JoinPage() {
             <span>DELTAG</span>
           </div>
           {/* Room code input */}
-          <div className="group relative">
-            <input
-              type="text"
-              maxLength={4}
-              value={code}
-              onChange={(e) =>
-                setCode(e.target.value.toUpperCase().replace(/[^A-Z]/g, ""))
-              }
-              placeholder={da.enterCode}
-              className="w-full rounded-2xl border-[3px] border-[var(--color-ink)] bg-[var(--color-bg)] p-4 text-center font-display text-4xl uppercase tracking-[0.3em] placeholder:text-[var(--color-text-muted)]/50 placeholder:text-base placeholder:tracking-normal placeholder:font-normal focus:outline-none"
-              style={{ boxShadow: "4px 4px 0 var(--color-ink)" }}
-              autoComplete="off"
-              autoFocus
-            />
-            {/* Subtle success indicator when code is filled */}
-            <motion.div
-              className="absolute right-4 top-1/2 -translate-y-1/2"
-              initial={false}
-              animate={{ opacity: code.length === 4 ? 1 : 0, scale: code.length === 4 ? 1 : 0.5 }}
-            >
-              <div
-                className="h-3 w-3 rounded-full border-2 border-[var(--color-ink)]"
-                style={{ background: "var(--color-success)" }}
-              />
-            </motion.div>
-          </div>
-
-          {/* Name + avatar input */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, type: "spring", stiffness: 150, damping: 18 }}
-            className="relative flex items-center gap-2 rounded-2xl border-[3px] border-[var(--color-ink)] bg-[var(--color-surface)] pl-2"
+          <input
+            type="text"
+            maxLength={4}
+            value={code}
+            onChange={(e) =>
+              setCode(e.target.value.toUpperCase().replace(/[^A-Z]/g, ""))
+            }
+            placeholder={da.enterCode}
+            className="w-full rounded-2xl border-[3px] border-[var(--color-ink)] bg-[var(--color-bg)] p-4 text-center font-display text-4xl uppercase tracking-[0.3em] placeholder:text-[var(--color-text-muted)]/50 placeholder:text-base placeholder:tracking-normal placeholder:font-normal"
             style={{ boxShadow: "4px 4px 0 var(--color-ink)" }}
+            autoComplete="off"
+            autoFocus
+          />
+
+          {/* Avatar — stor og klikbar; første møde med figuren skal kunne ses */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.16, type: "spring", stiffness: 150, damping: 18 }}
+            className="relative mx-auto mt-1"
           >
             <button
               type="button"
               onClick={() => setAvatarModalOpen(true)}
               aria-label={da.avatar.title}
-              className="shrink-0 flex items-center justify-center h-11 w-11 rounded-full border-2 border-[var(--color-ink)] bg-[var(--color-surface-light)] hover:bg-[var(--color-primary)]/20 transition-colors cursor-pointer overflow-hidden p-0.5"
+              className="flex h-28 w-28 items-center justify-center rounded-full border-[3px] border-[var(--color-ink)] bg-[var(--color-surface-light)] p-2 transition-colors hover:bg-[var(--color-primary)]/20 cursor-pointer"
+              style={{ boxShadow: "4px 4px 0 var(--color-ink)" }}
             >
               <BlobAvatar traits={avatar} color={AVATAR_PALETTE[avatar.color]} />
             </button>
-            <input
-              type="text"
-              maxLength={16}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder={da.enterName}
-              className="min-w-0 flex-1 bg-transparent p-4 text-center text-xl placeholder:text-[var(--color-text-muted)]/50 focus:outline-none"
-              autoComplete="off"
-            />
-            {/* Shuffle — mirrors the avatar button so the text stays centered */}
             <button
               type="button"
               onClick={() => setAvatar(randomAvatar())}
               aria-label={da.avatar.shuffle}
-              className="shrink-0 flex items-center justify-center h-11 w-11 mr-2 rounded-full border-2 border-[var(--color-ink)] bg-[var(--color-surface-light)] hover:bg-[var(--color-primary)]/20 transition-colors cursor-pointer text-lg"
+              className="absolute -bottom-1 -right-2 flex h-10 w-10 items-center justify-center rounded-full border-2 border-[var(--color-ink)] bg-[var(--color-surface)] text-lg transition-colors hover:bg-[var(--color-primary)]/20 cursor-pointer"
+              style={{ boxShadow: "2px 2px 0 var(--color-ink)" }}
             >
               ↻
             </button>
           </motion.div>
+
+          {/* Name input */}
+          <motion.input
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, type: "spring", stiffness: 150, damping: 18 }}
+            type="text"
+            maxLength={16}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder={da.enterName}
+            className="w-full rounded-2xl border-[3px] border-[var(--color-ink)] bg-[var(--color-surface)] p-4 text-center text-xl placeholder:text-[var(--color-text-muted)]/50"
+            style={{ boxShadow: "4px 4px 0 var(--color-ink)" }}
+            autoComplete="off"
+          />
 
           <AnimatePresence>
             {avatarModalOpen ? (
