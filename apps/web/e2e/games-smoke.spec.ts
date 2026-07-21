@@ -14,12 +14,12 @@ const GAMES: Array<{ name: string; hostText: string; playerCheck: (p: Page) => P
   },
   {
     name: "Scrawl",
-    hostText: "Alle tegner deres hemmelige ord...",
+    hostText: "Alle tegner deres hemmelige ord…",
     playerCheck: async (p) => waitForText(p, "Tegn", 15000),
   },
   {
     name: "Morph",
-    hostText: "Alle skriver en sætning...",
+    hostText: "Alle skriver en sætning…",
     playerCheck: async (p) => waitForText(p, "Send", 15000),
   },
   {

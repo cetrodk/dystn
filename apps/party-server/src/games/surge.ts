@@ -107,11 +107,11 @@ registerGameHandlers("surge", {
   },
 
   buildVoteData(): Record<string, unknown> {
-    throw new Error("Sandhed has no vote phase");
+    throw new Error("Surge har ingen afstemningsfase");
   },
 
   onVote(): void {
-    throw new Error("Sandhed has no vote phase");
+    throw new Error("Surge har ingen afstemningsfase");
   },
 
   computeResults(room: RoomState): {

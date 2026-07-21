@@ -63,8 +63,8 @@ export async function selectAndStartGame(hostPage: Page, gameName: string) {
     .locator(`button:has-text("${gameName}")`)
     .first()
     .dispatchEvent("click");
-  await expect(hostPage.locator("text=Start Spil")).toBeVisible({ timeout: 5000 });
-  await hostPage.click("text=Start Spil");
+  await expect(hostPage.locator("text=Start spillet")).toBeVisible({ timeout: 5000 });
+  await hostPage.click("text=Start spillet");
 }
 
 export async function waitForText(page: Page, text: string, timeout = 10000) {
