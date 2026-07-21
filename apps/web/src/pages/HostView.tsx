@@ -1,12 +1,7 @@
-import { Suspense, lazy, useEffect, useState, useRef } from "react";
+import { Suspense, useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { Settings, SkipForward, Square, WifiOff, Volume2, VolumeX } from "lucide-react";
-
-// Lazy-load QR code (only used in lobby)
-const QRCodeSVG = lazy(() =>
-  import("qrcode.react").then((m) => ({ default: m.QRCodeSVG })),
-);
 import { useSessionId } from "@/providers/SessionProvider";
 import { useRoom, useSend, useHostClaimed, useLicenseResult, usePartyConnection } from "@/providers/PartyProvider";
 import { gameComponents, type RoomSnapshot } from "@/games/registry";
@@ -21,7 +16,8 @@ import { UnlockModal } from "@/components/UnlockModal";
 import { newRedeemRequestId, trackRedeemForStorage } from "@/lib/license";
 import { GameIntro } from "@/components/GameIntro";
 import { UnknownPhase } from "@/components/UnknownPhase";
-import { Logo, Chip, RoomCodeTiles, SectionHeader } from "@/components/Brand";
+import { Logo, Chip, SectionHeader } from "@/components/Brand";
+import { JoinPanel } from "@/components/JoinPanel";
 import { da } from "@/lib/da";
 import { clearHostSession } from "@/lib/session";
 
@@ -43,8 +39,21 @@ function HostToolbar({
   const game = room.gameType ? getGameInfo(room.gameType) : DEFAULT_GAME_META;
   const GameIcon = GAME_ICONS[room.gameType as keyof typeof GAME_ICONS];
   const [confirmStop, setConfirmStop] = useState(false);
+  const [showJoinPanel, setShowJoinPanel] = useState(false);
+
+  // Luk rumkode-overlayet på Escape. Spillet kører videre bagved —
+  // overlayet er rent visuelt, og timeren er serverstyret.
+  useEffect(() => {
+    if (!showJoinPanel) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setShowJoinPanel(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [showJoinPanel]);
 
   return (
+    <>
     <motion.div
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
@@ -52,12 +61,14 @@ function HostToolbar({
     >
       <div className="flex items-center gap-3">
         {GameIcon && <GameIcon className="h-5 w-5" style={{ color: game.color }} />}
-        <span
-          className="font-mono text-sm font-bold tracking-widest"
+        <button
+          onClick={() => setShowJoinPanel(true)}
+          title={da.joinPanel.showPanelLabel}
+          className="rounded-lg px-2 py-1 -mx-2 font-mono text-sm font-bold tracking-widest hover:bg-[var(--color-surface-light)] transition-colors cursor-pointer"
           style={{ color: game.color }}
         >
           {room.code}
-        </span>
+        </button>
         {room.roundNumber != null && (
           <span className="text-xs text-[var(--color-text-muted)]">
             R{room.roundNumber}/{room.totalRounds}
@@ -119,6 +130,32 @@ function HostToolbar({
         </button>
       </div>
     </motion.div>
+
+    {/* Rumkode-overlay: kode + QR + link, mens spillet kører videre bagved.
+        Søskende til toolbaren — dens transform må ikke blive containing
+        block for fixed inset-0. */}
+    <AnimatePresence>
+      {showJoinPanel && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+          onClick={() => setShowJoinPanel(false)}
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            onClick={(e) => e.stopPropagation()}
+            className="nb-card max-h-[90dvh] overflow-y-auto rounded-2xl p-6 sm:p-8"
+          >
+            <JoinPanel code={room.code} size="overlay" note={da.joinPanel.midGameNote} />
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+    </>
   );
 }
 
@@ -546,7 +583,7 @@ export function HostView() {
           onLeave={handleLeave}
         />
 
-        <div className="flex flex-1 min-h-0 flex-col lg:flex-row px-6 lg:px-10 pb-6 gap-6">
+        <div className="flex flex-1 min-h-0 flex-col lg:flex-row px-6 lg:px-10 pb-6 gap-6 overflow-y-auto lg:overflow-visible">
           {/* Left: Game hero + rules + start (primary focus) */}
           <div className="flex flex-1 min-w-0 flex-col items-center justify-center gap-8">
             {/* Game icon + title */}
@@ -609,25 +646,22 @@ export function HostView() {
             </motion.div>
           </div>
 
-          {/* Mobile: compact player count + room code */}
-          <div className="flex lg:hidden items-center justify-center gap-4 text-sm text-[var(--color-text-muted)]">
-            <span className="font-mono font-bold tracking-widest text-[var(--color-primary)]">{room.code}</span>
-            <span>·</span>
-            <span><span className="font-bold text-[var(--color-text)]">{room.players.length}</span>/{MAX_PLAYERS} {da.playersJoined}</span>
+          {/* Mobile: join-panel + player count — QR og link forsvinder ikke,
+              fordi skærmen er smal */}
+          <div className="flex lg:hidden flex-col items-center gap-3">
+            <JoinPanel code={room.code} size="compact" />
+            <span className="text-sm text-[var(--color-text-muted)]"><span className="font-bold text-[var(--color-text)]">{room.players.length}</span>/{MAX_PLAYERS} {da.playersJoined}</span>
           </div>
 
-          {/* Right: Room code (compact) + players */}
+          {/* Right: Room code + QR (compact) + players — lobbyen skal blive
+              ved med at føles som en lobby, indtil spillet faktisk starter */}
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             className="hidden lg:flex flex-col gap-5 shrink-0 w-[340px] justify-center"
           >
-            {/* Compact room code */}
             <div className="nb-card flex flex-col items-center gap-3 rounded-2xl p-5">
-              <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--color-text-muted)]">
-                {da.roomCode}
-              </p>
-              <RoomCodeTiles code={room.code} size="sm" />
+              <JoinPanel code={room.code} size="compact" />
             </div>
 
             {/* Players */}
@@ -655,48 +689,15 @@ export function HostView() {
         />
 
       {/* Hero: Room code + QR + Players */}
-      <div className="flex flex-1 min-h-0 items-center px-6 lg:px-10 gap-8 lg:gap-12">
-        {/* QR column */}
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="hidden lg:flex flex-col items-center gap-2 shrink-0"
-        >
-          <Suspense fallback={<div className="h-[120px] w-[120px] rounded-xl bg-[var(--color-surface-light)]" />}>
-            <div
-              className="rounded-xl border-[3px] border-[var(--color-ink)] bg-white p-2"
-              style={{ boxShadow: "5px 5px 0 var(--color-ink)" }}
-            >
-              <QRCodeSVG
-                value={`${window.location.origin}/join/${room.code}`}
-                size={104}
-                fgColor="#1a1714"
-                bgColor="white"
-              />
-            </div>
-          </Suspense>
-          <div className="mt-1 font-mono text-[10px] tracking-[0.15em] text-[var(--color-text-muted)]">
-            SCAN FOR AT DELTAGE
-          </div>
-        </motion.div>
-
-        {/* Room code — center hero */}
+      <div className="flex flex-1 min-h-0 items-center px-6 lg:px-10 gap-8 lg:gap-12 overflow-y-auto">
+        {/* Room code + QR + link — center hero, QR skjules aldrig */}
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ type: "spring", stiffness: 200 }}
           className="flex-1 flex flex-col items-center text-center"
         >
-          <div className="font-mono text-xs tracking-[0.18em] text-[var(--color-text-muted)] mb-2">
-            ── TRIN ÉT ──&nbsp;&nbsp;DELTAG I RUMMET
-          </div>
-          <div className="text-sm font-semibold uppercase tracking-[0.12em] mb-4">
-            Gå til{" "}
-            <span className="text-[var(--color-primary)]">
-              {window.location.host}/join
-            </span>
-          </div>
-          <RoomCodeTiles code={room.code} size="lg" />
+          <JoinPanel code={room.code} size="hero" />
           {/* Mobile: player count */}
           <p className="lg:hidden text-sm text-[var(--color-text-muted)] mt-5">
             <span className="font-bold text-[var(--color-text)]">{room.players.length}</span>/{MAX_PLAYERS} {da.playersJoined}

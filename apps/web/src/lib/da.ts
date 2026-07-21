@@ -45,6 +45,19 @@ export const da = {
   needMorePlayers: (min: number) => `Mindst ${min} ${pluralPlayers(min)}`,
   roomCode: "Rumkode",
 
+  // Join-panel: rumkode + QR + link (lobby og rumkode-overlay under spil)
+  joinPanel: {
+    stepOne: "TRIN ÉT",
+    joinTheRoom: "DELTAG I RUMMET",
+    goTo: "Gå til",
+    scanToJoin: "SCAN FOR AT DELTAGE",
+    showPanelLabel: "Vis rumkode og QR",
+    /** Ærlig linje under spil: serveren lukker ikke nye spillere ind midt i
+     *  et spil — overlayet er til "hvad var koden?" og gen-tilslutning. */
+    midGameNote:
+      "Nye spillere kan først komme ind, når spillet er slut. Er du røget ud, kan du scanne og komme tilbage.",
+  },
+
   // Game common
   timeLeft: "Tid tilbage",
   round: "Runde",
