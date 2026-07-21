@@ -20,20 +20,20 @@ export default function HostGuess({ room }: PhaseComponentProps) {
   }, []);
 
   return (
-    <div className="fixed inset-0 flex flex-col items-center p-4 sm:p-6 pt-14 overflow-hidden">
-      {/* Top bar */}
-      <div className="flex w-full items-center justify-between mb-4">
-        <div className="text-sm uppercase tracking-widest text-[var(--color-text-muted)]">
+    <div className="flex h-full w-full min-h-0 min-w-0 flex-col items-center">
+      {/* Top bar — timeren må aldrig krympe; overskriften må gerne wrappe */}
+      <div className="flex w-full items-center justify-between gap-4 mb-4">
+        <div className="shrink-0 text-sm uppercase tracking-widest text-[var(--color-text-muted)]">
           {da.scrawl.drawing} {drawingIndex} {da.of} {totalDrawings}
         </div>
         <motion.h2
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="font-display text-3xl font-bold text-[var(--color-text)]"
+          className="min-w-0 flex-1 text-center font-display text-3xl font-bold text-[var(--color-text)]"
         >
           {da.scrawl.whatIsBeingDrawn}
         </motion.h2>
-        <div className="flex items-center gap-4">
+        <div className="flex shrink-0 items-center gap-4">
           <div className="text-5xl sm:text-8xl font-mono font-bold text-[var(--color-primary)] glow-text">
             <CountdownTimer
               deadline={room.phaseDeadline ?? null}
@@ -51,9 +51,9 @@ export default function HostGuess({ room }: PhaseComponentProps) {
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ type: "spring", stiffness: 200 }}
-        className="flex-1 w-full min-h-0 flex items-center justify-center"
+        className="flex-1 w-full min-h-0 min-w-0 flex items-center justify-center"
       >
-        <DrawingDisplay data={drawingData} className="max-h-full max-w-full w-auto h-full" />
+        <DrawingDisplay data={drawingData} aspect={null} className="h-full w-full" />
       </motion.div>
 
       {/* Player pills at bottom */}

@@ -46,17 +46,18 @@ export default function HostReveal({ room, sessionId }: PhaseComponentProps) {
   const showTruth = stage === "final" || stage === "done";
 
   return (
-    <div className="fixed inset-0 flex flex-col lg:flex-row p-4 sm:p-6 pt-14 gap-8 overflow-hidden">
+    <div className="flex h-full w-full min-h-0 min-w-0 flex-col lg:flex-row gap-8">
       <div className="flex-[3] flex flex-col min-h-0 min-w-0">
         <div className="text-sm uppercase tracking-widest text-[var(--color-text-muted)] mb-3">
           {da.scrawl.drawing} {drawingIndex + 1} {da.of} {totalDrawings}
         </div>
-        <div className="flex-1 min-h-0 flex items-center justify-center">
-          <DrawingDisplay data={drawingData} className="max-h-full max-w-full w-auto h-full" />
+        <div className="flex-1 min-h-0 min-w-0 flex items-center justify-center">
+          <DrawingDisplay data={drawingData} aspect={null} className="h-full w-full" />
         </div>
       </div>
 
-      <div className="flex-[2] flex flex-col justify-center gap-5 overflow-y-auto">
+      {/* min-w-0: kolonnen må aldrig vokse ud over sin flex-andel og blive klippet */}
+      <div className="flex-[2] flex flex-col justify-center gap-5 min-h-0 min-w-0 overflow-y-auto">
         <AnimatePresence>
           {stage === "intro" && (
             <motion.p
