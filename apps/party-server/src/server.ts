@@ -267,6 +267,13 @@ export default class DystnServer implements Party.Server {
 
     // console.log(`[${this.state.code}] ${msg.type} from ${sender.id}`, msg.type === "join" ? msg.name : "");
 
+    // Heartbeat: klienten pinger for at opdage zombie-sockets efter browser-
+    // throttling (Brave/mobil). Svar før al auth/state — ping rører intet rum.
+    if (msg.type === "ping") {
+      sender.send(JSON.stringify({ type: "pong" } satisfies ServerMessage));
+      return;
+    }
+
     // Authorize host-only actions by the connection identity, never by a
     // client-supplied hostId. conn.id === the sessionId the socket connected
     // with, and hostConnect binds hostId to that sessionId, so the real host's

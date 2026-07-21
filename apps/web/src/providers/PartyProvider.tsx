@@ -30,9 +30,11 @@ export type ClientMessage =
   | { type: "changeAvatar"; sessionId: string; avatar: AvatarSpec }
   | { type: "leaveRoom"; sessionId: string }
   | { type: "hostConnect"; sessionId: string; hostSecret: string; license?: string }
-  | { type: "redeemLicense"; hostId: string; code: string; requestId?: string };
+  | { type: "redeemLicense"; hostId: string; code: string; requestId?: string }
+  | { type: "ping" };
 
 type ServerMessage =
+  | { type: "pong" }
   | { type: "room"; data: RoomSnapshot }
   | { type: "error"; message: string }
   | { type: "joined"; playerId: string; roomCode: string }
@@ -100,7 +102,59 @@ export function PartyProvider({
       id: sessionId,
     });
 
+    // ── Heartbeat + vågn-op ──
+    // Brave og mobilbrowsere throttler baggrundsfaner så hårdt, at en død
+    // socket kan stå som OPEN i minutter uden at 'close' fyrer. Ping/pong
+    // opdager zombien, og visibility/pageshow/online-listeners tvinger et
+    // øjeblikkeligt reconnect når fanen vågner, i stedet for at brugeren
+    // venter på exponential backoff mod en socket, der aldrig svarer.
+    const HEARTBEAT_INTERVAL_MS = 20_000;
+    const PONG_TIMEOUT_MS = 10_000;
+    let lastPongAt = 0;
+    let pingSentAt = 0;
+    let zombieCheck: ReturnType<typeof setTimeout> | null = null;
+
+    const pongMissing = () =>
+      pingSentAt > lastPongAt && Date.now() - pingSentAt >= PONG_TIMEOUT_MS;
+
+    const sendPing = () => {
+      if (ws.readyState !== WebSocket.OPEN) return;
+      pingSentAt = Date.now();
+      ws.send(JSON.stringify({ type: "ping" } satisfies ClientMessage));
+    };
+
+    const heartbeat = setInterval(() => {
+      if (ws.readyState !== WebSocket.OPEN) return;
+      if (pongMissing()) {
+        ws.reconnect();
+        return;
+      }
+      sendPing();
+    }, HEARTBEAT_INTERVAL_MS);
+
+    const wake = () => {
+      if (document.visibilityState === "hidden") return;
+      if (ws.readyState !== WebSocket.OPEN) {
+        // Springer backoff-ventetiden over — brugeren kigger på skærmen nu.
+        ws.reconnect();
+        return;
+      }
+      // Socketen SER åben ud, men kan være en zombie — afgør det med et ping.
+      sendPing();
+      if (zombieCheck) clearTimeout(zombieCheck);
+      zombieCheck = setTimeout(() => {
+        if (pongMissing()) ws.reconnect();
+      }, PONG_TIMEOUT_MS + 500);
+    };
+    document.addEventListener("visibilitychange", wake);
+    window.addEventListener("pageshow", wake);
+    window.addEventListener("online", wake);
+
     ws.addEventListener("open", () => {
+      // Nulstil så et ubesvaret ping fra FØR reconnect ikke straks dræber
+      // den nye, sunde forbindelse.
+      lastPongAt = Date.now();
+      pingSentAt = 0;
       setConnected(true);
       setError(null);
     });
@@ -113,6 +167,9 @@ export function PartyProvider({
       try {
         const msg: ServerMessage = JSON.parse(event.data);
         switch (msg.type) {
+          case "pong":
+            lastPongAt = Date.now();
+            break;
           case "room":
             setRoom(msg.data);
             break;
@@ -154,6 +211,11 @@ export function PartyProvider({
     wsRef.current = ws;
 
     return () => {
+      clearInterval(heartbeat);
+      if (zombieCheck) clearTimeout(zombieCheck);
+      document.removeEventListener("visibilitychange", wake);
+      window.removeEventListener("pageshow", wake);
+      window.removeEventListener("online", wake);
       ws.close();
       wsRef.current = null;
     };

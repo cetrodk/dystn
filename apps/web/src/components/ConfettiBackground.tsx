@@ -1,3 +1,5 @@
+import { useSyncExternalStore } from "react";
+
 const DOTS = Array.from({ length: 10 }, (_, i) => ({
   id: i,
   x: Math.random() * 100,
@@ -8,7 +10,19 @@ const DOTS = Array.from({ length: 10 }, (_, i) => ({
   duration: 3 + Math.random() * 3,
 }));
 
+function subscribeVisibility(onChange: () => void) {
+  document.addEventListener("visibilitychange", onChange);
+  return () => document.removeEventListener("visibilitychange", onChange);
+}
+
 export function ConfettiBackground() {
+  // Komponenten er mountet globalt hele sessionen — pausér de evige
+  // animationer i skjulte faner, så de ikke æder CPU/batteri i baggrunden.
+  const visible = useSyncExternalStore(
+    subscribeVisibility,
+    () => document.visibilityState === "visible",
+  );
+
   return (
     <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
       {DOTS.map((dot) => (
@@ -23,6 +37,7 @@ export function ConfettiBackground() {
             background: dot.color,
             animationDuration: `${dot.duration}s`,
             animationDelay: `${dot.delay}s`,
+            animationPlayState: visible ? undefined : "paused",
           }}
         />
       ))}

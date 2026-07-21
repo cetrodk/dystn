@@ -131,10 +131,12 @@ export type ClientMessage =
   | { type: "leaveRoom"; sessionId: string }
   | { type: "morphAdvanceReveal"; hostId: string }
   | { type: "hostConnect"; sessionId: string; hostSecret: string; license?: string }
-  | { type: "redeemLicense"; hostId: string; code: string; requestId?: string };
+  | { type: "redeemLicense"; hostId: string; code: string; requestId?: string }
+  | { type: "ping" };
 
 /** Server → Client */
 export type ServerMessage =
+  | { type: "pong" }
   | { type: "room"; data: RoomSnapshot }
   | { type: "error"; message: string }
   | { type: "joined"; playerId: string; roomCode: string }

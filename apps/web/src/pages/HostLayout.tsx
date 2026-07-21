@@ -1,8 +1,9 @@
 import { useEffect, useRef } from "react";
 import { Outlet, useParams } from "react-router-dom";
 import { useSessionId } from "@/providers/SessionProvider";
-import { PartyProvider, useLicenseResult, usePartyConnection, useSend } from "@/providers/PartyProvider";
+import { PartyProvider, useLicenseResult, usePartyConnection, useRoom, useSend } from "@/providers/PartyProvider";
 import { getHostSession } from "@/lib/session";
+import { ConnectionLostBanner } from "@/components/ConnectionLostBanner";
 import {
   getStoredLicense,
   LICENSE_STORAGE_KEY,
@@ -83,6 +84,17 @@ function LicensePersistence() {
 }
 
 /**
+ * Værten havde ingen indikator ved mistet forbindelse — skærmen stod bare med
+ * et frosset snapshot. `room`-guarden undgår et blink før første connect.
+ */
+function HostConnectionBanner() {
+  const room = useRoom();
+  const { connected } = usePartyConnection();
+  if (connected || !room) return null;
+  return <ConnectionLostBanner />;
+}
+
+/**
  * Layout route that shares ONE PartyProvider between /host/:code and
  * /host/:code/settings, so opening settings doesn't close the host's
  * websocket and auto-pause the game for everyone.
@@ -104,6 +116,7 @@ export function HostLayout() {
       <HostConnectionManager sessionId={sessionId} />
       <LicenseStorageListener sessionId={sessionId} />
       <LicensePersistence />
+      <HostConnectionBanner />
       <Outlet />
     </PartyProvider>
   );

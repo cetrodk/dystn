@@ -10,6 +10,7 @@ import { AVATAR_PALETTE, parseStoredAvatar, traitsFromName, type AvatarSpec } fr
 import { GameIntro } from "@/components/GameIntro";
 import { UnknownPhase } from "@/components/UnknownPhase";
 import { useShowIntro } from "@/hooks/useShowIntro";
+import { ConnectionLostBanner } from "@/components/ConnectionLostBanner";
 import { da, pluralPlayers } from "@/lib/da";
 import { PLAYER_NAME_KEY, PLAYER_AVATAR_KEY, getRoomSessionId } from "@/lib/session";
 
@@ -76,15 +77,6 @@ function FeedbackToast({ message }: { message: string }) {
     >
       {message}
     </motion.div>
-  );
-}
-
-function ConnectionLostBanner() {
-  return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-center gap-2 bg-[var(--color-warning)]/15 py-2 text-xs font-semibold text-[var(--color-warning)] backdrop-blur-md">
-      <WifiOff className="h-4 w-4" />
-      {da.connectionLost}
-    </div>
   );
 }
 
