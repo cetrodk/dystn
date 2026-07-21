@@ -134,6 +134,10 @@ export function PartyProvider({
 
     const wake = () => {
       if (document.visibilityState === "hidden") return;
+      // visibilitychange/pageshow/online fyrer ofte i klynge ved oplåsning —
+      // et reconnect() midt i et igangværende handshake ville afbryde og
+      // genstarte det (partysocket lukker også en CONNECTING socket).
+      if (ws.readyState === WebSocket.CONNECTING) return;
       if (ws.readyState !== WebSocket.OPEN) {
         // Springer backoff-ventetiden over — brugeren kigger på skærmen nu.
         ws.reconnect();
