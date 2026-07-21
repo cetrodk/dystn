@@ -5,6 +5,7 @@ import { getSubmissions, upsertSubmission, validateVote } from "../submissions";
 import { scrawlPrompts as allPrompts } from "./prompts/loader";
 import { TRUTH_ID, MAX_STROKES, MAX_DRAWING_BYTES } from "../constants";
 import { shuffle } from "../shuffle";
+import { isEffectivelySameWord, normalizeText } from "../text";
 
 /**
  * Find the next drawing index (>= from) whose artist actually submitted a
@@ -93,11 +94,12 @@ registerGameHandlers("scrawl", {
       // Lowercase first char to match prompt word casing
       text = text[0].toLowerCase() + text.slice(1);
 
-      // Check if matches real word (case-insensitive)
+      // Afvis en "løgn", der reelt er facit — normaliseret sammenligning, så
+      // "hund" også rammes, når facit er "en hund" (artikel, kasus, tastefejl)
       const artistId = phaseData?.currentArtistId;
       const drawingWords = phaseData?.drawingWords;
       if (artistId && drawingWords?.[artistId]) {
-        if (text.toLowerCase() === drawingWords[artistId].toLowerCase()) {
+        if (isEffectivelySameWord(text, drawingWords[artistId])) {
           throw new Error("Prøv et andet gæt");
         }
       }
@@ -136,9 +138,16 @@ registerGameHandlers("scrawl", {
       mergedPlayerIds?: string[];
     }> = [];
 
+    const truthKey = normalizeText(realWord);
     for (const s of submissions) {
-      const key = String(s.content).toLowerCase();
-      const existing = seen.get(key);
+      const key = normalizeText(String(s.content));
+      // Sikkerhedsnet: en løgn, der normaliseret ER facit (fx en indsendelse
+      // fra før normaliserings-afvisningen), må aldrig stå som selvstændig
+      // mulighed ved siden af sandheden — kun TRUTH_ID bærer det rigtige svar.
+      if (key && key === truthKey) continue;
+      // En tom nøgle (ren tegnsætning som "???" og "!!!") må aldrig flette to
+      // urelaterede løgne — så ville begge forfattere få point for den enes tekst.
+      const existing = key ? seen.get(key) : undefined;
       if (existing) {
         existing.mergedPlayerIds = existing.mergedPlayerIds ?? [
           existing.playerId,
@@ -151,7 +160,7 @@ registerGameHandlers("scrawl", {
           playerId: s.playerId,
         };
         options.push(entry);
-        seen.set(key, entry);
+        if (key) seen.set(key, entry);
       }
     }
 
