@@ -6,7 +6,7 @@ import type {
   RoomSnapshot,
   Player,
 } from "./types";
-import { advancePhase, getPhaseDuration } from "./phase";
+import { advancePhase, getPhaseDuration, shouldAutoAdvance, AUTO_ADVANCE_PHASES } from "./phase";
 import { getGameHandlers, hasGameHandlers } from "./registry";
 import { getAvatarColor } from "./colors";
 import { denylistFromEnv, keyringFromEnv, verifyLicense } from "./license";
@@ -547,7 +547,7 @@ export default class DystnServer implements Party.Server {
 
     const phase = this.state.currentPhase ?? "";
     const base = phase.split("_")[0];
-    if (!["submit", "vote", "draw", "guess", "write", "commit", "clue"].includes(base)) return;
+    if (!AUTO_ADVANCE_PHASES.includes(base)) return;
 
     // A submission that raced a phase flip must not count toward the new
     // phase (e.g. a fusk fake-text stored as a vote, or a drawing object
@@ -581,27 +581,9 @@ export default class DystnServer implements Party.Server {
    * last outstanding player leaves, the rest shouldn't wait out the timer.
    */
   private checkAllSubmitted() {
-    if (this.state.status !== "playing" || !this.state.gameType) return;
-    const base = (this.state.currentPhase ?? "").split("_")[0];
-    if (!["submit", "vote", "draw", "guess", "write", "commit", "clue"].includes(base)) return;
-
-    const handlers = getGameHandlers(this.state.gameType);
-    const currentPhase = this.state.currentPhase ?? "";
-    const phaseSubmissions = this.state.submissions.filter(
-      (s) => s.round === this.state.roundNumber && s.phase === currentPhase,
-    );
-    const submittedIds = new Set(phaseSubmissions.map((s) => s.playerId));
-    const presentCount = this.state.players.filter(
-      (p) => p.isConnected || submittedIds.has(p.id),
-    ).length;
-    const expectedCount = handlers.getExpectedSubmitterCount
-      ? Math.min(handlers.getExpectedSubmitterCount(this.state), presentCount)
-      : presentCount;
-
-    if (expectedCount > 0 && phaseSubmissions.length >= expectedCount) {
-      this.safeAdvance("ALL_SUBMITTED");
-      this.scheduleNextAlarm();
-    }
+    if (!shouldAutoAdvance(this.state)) return;
+    this.safeAdvance("ALL_SUBMITTED");
+    this.scheduleNextAlarm();
   }
 
   private handleHostAdvance(hostId: string) {
